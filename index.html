@@ -118,10 +118,31 @@ a{color:inherit;text-decoration:none}
 body{padding-bottom:calc(120px + env(safe-area-inset-bottom, 0px))}
 .hello{padding-top:calc(22px + env(safe-area-inset-top, 0px))}
 body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:120px;pointer-events:none;z-index:15;backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.65) 55%,#000 100%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.65) 55%,#000 100%);background:linear-gradient(to bottom,rgba(11,61,46,0),rgba(11,61,46,.55))}
+
+/* Brick 72: a real top bar on the home page, the way his friend's app does it.
+   Sticky, blurred, the wordmark full height and flush left with the bar's curve
+   clipping it, the pills on the right. */
+.topbar{position:sticky;top:0;z-index:40;margin:0 -18px 6px;padding:env(safe-area-inset-top,0px) 12px 0 0;
+  min-height:64px;display:flex;align-items:stretch;gap:10px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(20,70,45,.66),rgba(42,140,60,.48));backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+  border-bottom:1px solid rgba(255,255,255,.22);border-radius:0 0 26px 26px;box-shadow:var(--shadow)}
+.topbar::before{content:"";position:absolute;left:-20%;top:-60%;width:140%;height:110%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,0));transform:rotate(-8deg);pointer-events:none}
+.topbar img{position:relative;align-self:stretch;height:auto;width:auto;max-width:52vw;object-fit:contain;object-position:left center;padding:8px 0 8px 12px;flex:none}
+.topbar .pills{position:relative;margin-left:auto;display:flex;align-items:center;gap:8px}
+.topbar .pill{position:static;font-size:11px;padding:7px 12px}
+.topbar .pill.mode{background:#fff;color:#0E2F22}
+.topbar .pill.when{background:rgba(255,255,255,.12);color:#D9E3DE}
+.hello{padding:6px 0 4px}
+.hello .avatar{display:none}
+.hello .t b{font-size:15px}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="topbar">
+    <img src="shared/logo-mark.png" alt="Sprint Couriers">
+    <div class="pills"><span class="pill when" id="topWhen">example</span><span class="pill mode" id="topMode">EXAMPLE</span></div>
+  </div>
   <div class="hello">
     <div class="avatar"><img src="shared/logo-mark.png" alt=""></div>
     <div class="t"><small id="greet">Good morning</small><b>Sprint Couriers</b></div>
@@ -205,6 +226,22 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:120px;point
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js').catch(function () { /* a browser that will not is fine */ });
 }
+</script>
+<script>
+(function(){
+  var h = location.hostname || '';
+  var onHub = h === 'localhost' || h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
+  var mode = document.getElementById('topMode'), when = document.getElementById('topWhen');
+  if (!onHub || !window.fetch || location.protocol === 'file:') { return; }
+  fetch('/api/sources', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (b) {
+    if (!b || !b.ok) return;
+    if (mode) { mode.textContent = 'LIVE'; mode.style.background = '#3AAA35'; mode.style.color = '#fff'; }
+    if (when && b.data && b.data.generated_at) {
+      var m = Math.max(0, Math.round((Date.now() - Date.parse(b.data.generated_at)) / 60000));
+      when.textContent = m < 1 ? 'just now' : m + 'm ago';
+    }
+  }).catch(function(){});
+})();
 </script>
 </body>
 </html>

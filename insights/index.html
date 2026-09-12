@@ -89,12 +89,26 @@ h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
 
 .hdr-bell{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:10px;vertical-align:middle}
 .hdr-bell svg{width:16px;height:16px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Brick 72: what the system did, the log from his friend's app */
+.didcard{border-radius:22px;padding:14px 16px 8px;margin:12px 0 14px;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
+.didcard .h{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#C9D6CF;margin-bottom:6px}
+.didrow{display:flex;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.10);font-size:13px;line-height:1.4}
+.didrow:first-of-type{border-top:0}
+.didrow .t{flex:none;width:44px;color:#A7B5AE;font-variant-numeric:tabular-nums;font-weight:700}
+.didrow .x{flex:1;color:#E6EEE9}
+.didrow .x b{color:#fff}
+.didrow.skip .x{color:#C9D6CF}
+.didrow.skip .x::before{content:"SKIPPED ";font-weight:800;color:#FDBE74;letter-spacing:.4px;font-size:11px}
+.didrow .w{display:block;font-size:11px;color:#93A29B;margin-top:2px}
+.didfoot{font-size:11.2px;color:#93A29B;padding:10px 0 6px;line-height:1.4}
 </style>
 </head>
 <body>
 <div class="top"><div class="wrap"><b>INSIGHTS</b><span class="dot" id="dot"></span><span id="topline">reading</span><span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><a href="../index.html">Home</a></div></div>
 <main class="wrap">
   <h1>What the system saw this morning</h1>
+<div id="did"></div>
   <p class="lead" id="lead"></p>
 
   <h2>Do this now</h2>
@@ -389,5 +403,36 @@ renderAll();
 })();
 </script>
 <script src="../shared/sprint-notify.js"></script>
+<script>
+
+/* ---------- Brick 72: what the system did ---------- */
+var DID_EXAMPLE = {"did": [{"at": "T-00:41", "kind": "did", "who": "by the system", "text": "Closed a trip the driver forgot to close, because the working day ended in Gaborone. No end odometer was taken and no parcel was touched."}, {"at": "T-01:10", "kind": "did", "who": "by a signed in person", "text": "A lead moved from quoted to lost, reason: price."}, {"at": "T-02:05", "kind": "did", "who": "by the system", "text": "Customer notices were drafted for an incident, 3 of them. None were sent by the system."}, {"at": "T-03:30", "kind": "did", "who": "by a signed in person", "text": "Proof of delivery was captured."}, {"at": "T-06:00", "kind": "did", "who": "by the system", "text": "Positions older than 90 days were deleted, as the driver policy promises."}], "skipped": [{"at": "T-06:00", "kind": "skipped", "who": "by the system", "text": "Fuel purchases were not read: nothing has ever been recorded there. Owner: whoever runs operations."}, {"at": "T-06:00", "kind": "skipped", "who": "by the system", "text": "Vehicle positions were not read: nothing new since the last trip closed. Owner: the driver app while a trip is open."}]};
+function didTime(at){
+  if (!at) return '';
+  if (/^T-/.test(at)) { var m = at.slice(2).split(':'); var d = new Date(Date.now() - (Number(m[0])*60 + Number(m[1])) * 60000); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+  var t = new Date(at); return isNaN(t) ? '' : ('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2);
+}
+function renderDid(payload, isLive){
+  var root = document.getElementById('did'); if (!root) return;
+  var rows = (payload.did || []).concat(payload.skipped || []).map(function(r){ return Object.assign({}, r, {_t: r.at && /^T-/.test(r.at) ? -(Number(r.at.slice(2,4))*60+Number(r.at.slice(5))) : Date.parse(r.at) || 0}); });
+  rows.sort(function(a,b){ return b._t - a._t; });
+  var html = '<div class="didcard"><div class="h">What the system did' + (isLive ? '' : ', example') + '</div>';
+  if (!rows.length) html += '<div class="didrow"><span class="t"></span><span class="x">Nothing has been recorded yet. That is not a quiet night, it is an empty log.</span></div>';
+  rows.slice(0, 12).forEach(function(r){
+    html += '<div class="didrow' + (r.kind === 'skipped' ? ' skip' : '') + '"><span class="t">' + esc(didTime(r.at)) + '</span><span class="x">' + esc(r.text) + '<span class="w">' + esc(r.who || '') + '</span></span></div>';
+  });
+  html += '<div class="didfoot">Every line is something the system did, or chose not to do and why. A thing it skipped is listed as loudly as a thing it did, because silence must never read as good news.</div></div>';
+  root.innerHTML = html;
+}
+(function bootDid(){
+  renderDid(DID_EXAMPLE, false);
+  var h = location.hostname || '';
+  var onHub = h === 'localhost' || h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
+  if (!onHub || !window.fetch || location.protocol === 'file:') return;
+  fetch('/api/activity', { credentials: 'include' }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(b){ if (b && b.ok) renderDid(b.data, true); }).catch(function(){});
+})();
+
+</script>
 </body>
 </html>
