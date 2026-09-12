@@ -97,3 +97,61 @@ select option{background:#12402E;color:#F4F7F5}
 
 /* anything that painted itself with the old dark page colour as an accent square */
 [style*="background:var(--ink)"]{background:rgba(58,170,53,.22) !important}
+
+
+/* ---------- Brick 71: what the iPhone showed, 13 Sep 2026 ----------
+   Luther: "the padding inside cards is broken on ios ... 27 days left needs
+   height padding ... make logo height of nav bar and mask the left of logo
+   with curve ... floating nav bar with sticky and blur ... feather mask for
+   the bottom of content so it fades out." */
+
+/* safe areas: below the notch, above the home indicator */
+html{-webkit-text-size-adjust:100%}
+body{padding-bottom:calc(120px + env(safe-area-inset-bottom, 0px))}
+
+/* the bar floats: sticky, blurred, the page scrolls under it */
+header{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:12px;
+  min-height:64px;
+  padding:env(safe-area-inset-top, 0px) 14px 0 0;
+  box-sizing:border-box;
+}
+header::before{top:-40%}
+/* the logo: full height of the bar, flush left, its corner cut by the bar's own curve */
+header img{
+  align-self:stretch;height:auto;width:auto;max-height:none;
+  min-height:60px;max-width:96px;object-fit:cover;object-position:left center;
+  margin:0 4px 0 0;flex:none;border-radius:0;
+}
+header > *:not(img){align-self:center}
+header h1{margin:0}
+
+/* cards: explicit padding, so no page and no browser is left to guess */
+.panel,.card,.question-card{padding:14px 16px;box-sizing:border-box}
+.item-row{padding:9px 0;min-height:40px;align-items:center}
+.bar-row{padding:2px 0}
+.bar-top,.veh-top{align-items:center;min-height:22px;line-height:1.3}
+.bar-top .val,.veh-top span:last-child{white-space:nowrap;padding-left:8px}
+.veh-card{padding:12px 0}
+.veh-sub{line-height:1.4;margin-top:4px}
+
+/* pills and verdicts: real padding, a line height, never wrapping */
+.verdict,.pill,.sync-badge,.tag{
+  padding:5px 11px;line-height:1.2;white-space:nowrap;display:inline-flex;align-items:center;
+  border-radius:999px;font-weight:800;box-sizing:border-box;min-height:24px;
+}
+.verdict{font-size:10.5px;letter-spacing:.03em}
+.sync-badge{min-height:30px;padding:5px 12px}
+
+/* the bottom feathers out under the floating bar */
+body::after{
+  content:"";position:fixed;left:0;right:0;bottom:0;height:110px;pointer-events:none;z-index:30;
+  backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.65) 55%,#000 100%);
+  mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.65) 55%,#000 100%);
+  background:linear-gradient(to bottom,rgba(11,61,46,0),rgba(11,61,46,.55));
+}
+/* the home page carries its own floating bar above the feather */
+.bar{z-index:45}
+.bar .in{margin-bottom:0}
