@@ -1,0 +1,15 @@
+{
+  "name": "Sprint OS",
+  "short_name": "Sprint",
+  "description": "Where every vehicle is, where the money leaks, who owes what.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B3D2E",
+  "theme_color": "#0B3D2E",
+  "icons": [
+    { "src": "shared/logo-mark.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "shared/logo-mark.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fleet and Fuel - Sprint Couriers</title>
+<meta name="theme-color" content="#131311">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../shared/logo-mark.png">
+<link rel="apple-touch-icon" href="../shared/logo-mark.png">
+<style>
+/* Local first brand type. It never phones home to Google, and it never
+   breaks when there is no internet or no signal on a driver phone. Drop
+   the two real font files into apps/shared/fonts/ to restore the exact
+   brand type offline; see the README there. With no files present this
+   falls back to the system font stack below. */
+@font-face{font-family:'Anton'; font-weight:400; font-display:swap;
+  src:local('Anton'), url('../shared/fonts/Anton-Regular.woff2') format('woff2'), url('../shared/fonts/Anton-Regular.ttf') format('truetype');}
+@font-face{font-family:'Inter'; font-weight:100 900; font-display:swap;
+  src:local('Inter'), url('../shared/fonts/Inter-Variable.woff2') format('woff2'), url('../shared/fonts/Inter-Variable.ttf') format('truetype');}
+:root{
+  --font-display:'Anton', Impact, 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ink:#131311; --panel:#1d1d19; --line:#2c2c27; --bone:#F4F4F1; --dim:#a6a69f;
+  --green:#3AAA35; --orange:#F7941D; --red:#e0483e;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--ink); color:var(--bone); font-family:var(--font-body);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  min-height:100vh; padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+h1,h2,h3,.disp{font-family:var(--font-display); text-transform:uppercase; letter-spacing:0.01em; font-weight:400;}
+::selection{background:var(--orange); color:var(--ink);}
+
+header{position:sticky; top:0; z-index:20; background:var(--ink); border-bottom:1px solid var(--line); padding:10px 14px; display:flex; align-items:center; gap:10px;}
+header img{width:32px; height:32px; object-fit:contain; flex:none;}
+header .titles{flex:1; min-width:0;}
+header h1{font-size:15px; line-height:1.1;}
+header .who{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.sync-badge{font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line); color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;}
+.sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
+.sync-badge.offline{color:var(--orange); border-color:var(--orange);}
+.sync-badge.offline .sync-dot{background:var(--orange);}
+
+main{max-width:820px; margin:0 auto; padding:12px 14px 40px;}
+.banner-example{background:rgba(247,148,29,0.12); border:1px solid var(--orange); color:var(--orange); font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; margin-bottom:12px;}
+.banner-stale{background:var(--panel); border:1px solid var(--line); color:var(--dim); font-size:12px; padding:8px 12px; border-radius:8px; margin-bottom:12px;}
+
+section{margin-bottom:22px;}
+.section-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+.section-head h2{font-size:13px; color:var(--dim); letter-spacing:0.06em; text-transform:uppercase;}
+
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:10px;}
+.empty-note{font-size:12px; color:var(--dim); padding:10px 4px; line-height:1.5;}
+
+/* bars, the house pattern: a quantity is space, never a chip */
+.bar-row{margin-bottom:11px;}
+.bar-row:last-child{margin-bottom:0;}
+.bar-top{display:flex; justify-content:space-between; align-items:baseline; font-size:12px; margin-bottom:4px; gap:8px;}
+.bar-top .lab{font-weight:700;}
+.bar-top .val{color:var(--dim); flex:none; white-space:nowrap;}
+.bar{position:relative; height:16px; background:var(--line); border-radius:4px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:4px; background:var(--green); min-width:2px;}
+.bar-fill.orange{background:var(--orange);}
+.bar-fill.red{background:var(--red);}
+.bar-fill.dim{background:#4a4a42;}
+.bar-marker{position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--bone);}
+.bar-note{font-size:11px; color:var(--dim); margin-top:4px; line-height:1.4;}
+.median-key{font-size:10px; color:var(--dim); margin-top:6px;}
+
+.verdict{font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.03em; padding:2px 8px; border-radius:20px; display:inline-block; flex:none;}
+.verdict.green{color:var(--green); border:1px solid var(--green);}
+.verdict.orange{color:var(--orange); border:1px solid var(--orange);}
+.verdict.red{color:var(--red); border:1px solid var(--red);}
+.verdict.dim{color:var(--dim); border:1px solid var(--line);}
+
+.trend-row{display:flex; align-items:center; gap:6px; margin-bottom:10px;}
+.trend-name{font-size:12px; font-weight:700; width:110px; flex:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.trend-months{display:flex; gap:5px; flex:1; align-items:flex-end; height:34px;}
+.trend-month{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+.trend-bar{width:100%; max-width:26px; border-radius:2px 2px 0 0; background:var(--green);}
+.trend-label{font-size:9px; color:var(--dim); margin-top:3px; white-space:nowrap;}
+
+.question-card{border:1px solid var(--orange); border-radius:8px; padding:11px; margin-bottom:8px; background:rgba(247,148,29,0.08);}
+.question-card.quiet{border-color:var(--line); background:none;}
+.question-top{font-size:12px; font-weight:700; margin-bottom:4px;}
+.question-body{font-size:12px; line-height:1.5; color:var(--bone);}
+
+.item-row{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); font-size:12px;}
+.item-row:last-child{border-bottom:none;}
+.item-name{font-weight:700; flex:1; min-width:0;}
+.item-sub{font-size:11px; color:var(--dim); margin-top:2px;}
+
+.veh-card{border-bottom:1px solid var(--line); padding:10px 0;}
+.veh-card:last-child{border-bottom:none;}
+.veh-top{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; font-weight:700;}
+.veh-sub{font-size:11px; color:var(--dim); margin-top:3px;}
+
+.login-wrap{max-width:320px; margin:18vh auto 0; padding:0 20px;}
+.login-wrap h1{font-size:22px; margin-bottom:4px;}
+.login-wrap p{font-size:12px; color:var(--dim); margin-bottom:18px;}
+.login-wrap form{display:flex; flex-direction:column; gap:10px;}
+.login-wrap input{background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:9px 10px; font-size:14px;}
+.login-hint{font-size:11px; color:var(--dim); margin-top:14px; line-height:1.5;}
+.err{color:var(--red); font-size:12px; margin-top:6px; display:none;}
+.btn{background:var(--green); color:var(--ink); border:none; border-radius:6px; font-weight:700; padding:10px 12px; font-size:13px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em; width:100%; margin-top:10px;}
+.btn.ghost{background:none; border:1px solid var(--line); color:var(--bone);}
+@media(min-width:640px){ main{padding:18px 24px 40px;} }
+
+/* Brick 56, the Fleet page done properly: where every vehicle is, docs/DESIGN-LANGUAGE.md */
+.mapcard{position:relative;border-radius:22px;overflow:hidden;margin:12px 0 10px;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
+.mapcard svg{display:block;width:100%;height:auto}
+.mapcard .pill{position:absolute;top:12px;right:12px;font-size:10.5px;font-weight:800;letter-spacing:.3px;padding:5px 11px;border-radius:999px;background:#F7941D;color:#fff;box-shadow:0 8px 18px -8px rgba(247,148,29,.9)}
+.mapcard .pill.quiet{background:rgba(255,255,255,.14);color:#D9E3DE;box-shadow:none}
+.mapcard .cap{position:absolute;left:14px;top:12px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#C9D6CF}
+.mapcard .legend{display:flex;gap:14px;flex-wrap:wrap;padding:8px 14px 10px;font-size:11px;color:#C9D6CF}
+.mapcard .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.mapcard .detail{display:none;margin:0 14px 12px;padding:9px 12px;border-radius:14px;background:rgba(255,255,255,.08);font-size:12.4px;color:#F4F7F5}
+.mapcard .detail.open{display:block}
+.mapcard .detail b{color:#fff}
+.mapdot{cursor:pointer}
+.mapdot text{font-size:9px;font-weight:800;fill:#E6EEE9;paint-order:stroke;stroke:rgba(8,28,20,.7);stroke-width:3px}
+.fleetbar{margin:0 0 14px}
+.fleetbar .seg{display:flex;height:12px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,.12)}
+.fleetbar .seg i{display:block;height:100%}
+.fleetbar .lab{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;color:#C9D6CF;margin-top:6px;flex-wrap:wrap}
+.fleetbar .lab b{color:#fff}
+.vlive{position:relative;border-radius:22px;padding:13px 14px 12px 16px;margin:0 0 10px;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12);cursor:pointer}
+.vlive .top{display:flex;align-items:center;gap:9px}
+.vlive .dot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 4px rgba(255,255,255,.08)}
+.vlive .dot.moving{background:#3AAA35;box-shadow:0 0 0 4px rgba(58,170,53,.25)}
+.vlive .dot.standing{background:#F7941D;box-shadow:0 0 0 4px rgba(247,148,29,.25)}
+.vlive .dot.incident{background:#FF6B61;box-shadow:0 0 0 4px rgba(255,107,97,.25)}
+.vlive .dot.quiet{background:#9DAAA4}
+.vlive .reg{font-size:15px;font-weight:800;color:#F4F7F5}
+.vlive .type{font-size:11px;color:#A7B5AE;margin-left:auto}
+.vlive .say{font-size:13.6px;font-weight:700;color:#F4F7F5;margin-top:7px;line-height:1.3}
+.vlive .sub{font-size:12px;color:#C9D6CF;margin-top:4px}
+.vlive .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.vlive .chip{font-size:11px;font-weight:800;border-radius:999px;padding:4px 10px;background:rgba(255,255,255,.08);color:#C9D6CF;border:1px solid rgba(255,255,255,.14)}
+.vlive .chip.warn{background:rgba(247,148,29,.18);color:#FDBE74;border-color:rgba(247,148,29,.5)}
+.vlive .chip.bad{background:rgba(255,107,97,.18);color:#FFB3AD;border-color:rgba(255,107,97,.5)}
+.vlive .chip.ok{background:rgba(58,170,53,.16);color:#8FE08A;border-color:rgba(58,170,53,.4)}
+.fleet-live-note{font-size:11.5px;color:#A7B5AE;margin:2px 2px 16px}
+
+/* Brick 61: the bell, same on every page */
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<link rel="stylesheet" href="../shared/sprint-theme.css">
+</head>
+<body>
+
+<header>
+  <img src="../shared/logo-mark.png" alt="Sprint Couriers">
+  <div class="titles"><h1>Fleet and Fuel</h1><div class="who" id="whoLine">Not signed in</div></div>
+  <span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+  <div class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Loading</span></div>
+</header>
+
+
+<div class="mapcard" id="mapcard">
+  <div class="cap">Fleet, last known</div>
+  <span class="pill quiet" id="map-pill">reading</span>
+  <svg id="map-svg" viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" aria-label="Where every vehicle last reported"></svg>
+  <div class="legend"><span><i style="background:#3AAA35"></i>moving</span><span><i style="background:#F7941D"></i>standing</span><span><i style="background:#9DAAA4"></i>no signal or no trip</span><span><i style="background:#FF6B61"></i>in an incident</span></div>
+  <div class="detail" id="map-detail"></div>
+</div>
+<div class="fleetbar" id="fleetbar"></div>
+<section><div class="section-head"><h2>Where every vehicle is</h2></div><div id="fleet-live"></div>
+<div class="fleet-live-note" id="fleet-live-note"></div></section>
+<main id="app"><div style="padding:40px 4px; color:var(--dim); font-size:13px;">Loading the fleet and fuel view...</div></main>
+
+<div class="login-wrap" id="loginWrap" style="display:none;">
+  <h1>Sign in</h1>
+  <p>Sprint Couriers staff PIN</p>
+  <form id="loginForm">
+    <input type="text" id="staffId" placeholder="Staff ID" autocomplete="username" required>
+    <input type="text" inputmode="numeric" pattern="[0-9]*" id="pin" placeholder="PIN" maxlength="8" autocomplete="current-password" required>
+    <button class="btn" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <button class="btn ghost" id="offlineBtn">View example data instead</button>
+</div>
+
+<script>
+function pula(t){ if(t===null||t===undefined) return 'not known'; const p=(Number(t||0)/100); const parts=p.toFixed(2).split('.'); const neg=parts[0].startsWith('-'); if(neg) parts[0]=parts[0].slice(1); parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '); return (neg?'minus ':'')+'P'+parts.join('.'); }
+function localDT(iso){ if(!iso) return 'not recorded'; try{ return new Date(iso).toLocaleString('en-GB',{timeZone:'Africa/Gaborone',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; } }
+function monthLabel(m){ if(!m) return ''; const [y,mo]=m.split('-'); return new Date(Date.UTC(Number(y),Number(mo)-1,1)).toLocaleString('en-GB',{month:'short',timeZone:'UTC'}); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+let ME=null, DATA=null, SYNCED_AT=null;
+const CACHE_KEY='sprintos_fleet_cache_v1';
+
+// Offline fallback and demo data: shaped exactly like GET /api/fleet's own
+// response, and the numbers mirror what hub/db/seed.js's own EXAMPLE fleet
+// and fuel data actually produces, so this screen tells the same story
+// online or off.
+const EXAMPLE = {
+  example: true,
+  vehicles: [
+    { id:'veh_example_1', reg:'EXAMPLE-B123ABC', type:'van', tank_litres:60, last_odometer:12880, last_odometer_at:null, km_per_litre:8.0, is_trend:true, note:null, series:[
+      {month:'2026-07', km:320, litres:40, km_per_litre:8.0, gap:null}, {month:'2026-08', km:320, litres:40, km_per_litre:8.0, gap:null}
+    ]},
+    { id:'veh_example_2', reg:'EXAMPLE-B456ABC', type:'truck', tank_litres:80, last_odometer:68720, last_odometer_at:null, km_per_litre:6.9, is_trend:true, note:null, series:[
+      {month:'2026-07', km:360, litres:52, km_per_litre:6.9, gap:null}, {month:'2026-08', km:180, litres:41, km_per_litre:4.4, gap:null}, {month:'2026-09', km:180, litres:26, km_per_litre:6.9, gap:null}
+    ]},
+    { id:'veh_example_3', reg:'EXAMPLE-B789ABC', type:'van (cold chain)', tank_litres:60, last_odometer:5000, last_odometer_at:null, km_per_litre:null, is_trend:false, note:'No month yet has both a closed trip distance and a fuel purchase to divide it by.', series:[] }
+  ],
+  drivers: [
+    { id:'drv_example_1', name:'EXAMPLE Driver One', km_per_litre:8.0, is_trend:true, note:null },
+    { id:'drv_example_2', name:'EXAMPLE Driver Two', km_per_litre:null, is_trend:false, note:'No closed trips or fuel purchases recorded for this driver yet.' },
+    { id:'drv_example_3', name:'EXAMPLE Driver Three', km_per_litre:6.9, is_trend:true, note:null }
+  ],
+  fleet_median_km_per_litre: 7.5,
+  fuel_spend_by_vehicle: [
+    { vehicle_id:'veh_example_1', reg:'EXAMPLE-B123ABC', this_month_thebe:0, last_month_thebe:70000 },
+    { vehicle_id:'veh_example_2', reg:'EXAMPLE-B456ABC', this_month_thebe:45500, last_month_thebe:71750 },
+    { vehicle_id:'veh_example_3', reg:'EXAMPLE-B789ABC', this_month_thebe:0, last_month_thebe:113750 }
+  ],
+  cost_per_delivery: { by_lane: [ {lane:'Palapye', deliveries:2, average_fuel_cost_thebe:35000}, {lane:'Francistown', deliveries:4, average_fuel_cost_thebe:40688} ] },
+  margin_per_customer: [
+    { customer_id:'c1', customer_name:'EXAMPLE Kgale Hardware', deliveries:4, priced_and_costed:4, revenue_thebe:240000, fuel_cost_thebe:126000, margin_thebe:114000, note:null },
+    { customer_id:'c2', customer_name:'EXAMPLE Mogoditshane Bakery', deliveries:2, priced_and_costed:2, revenue_thebe:80000, fuel_cost_thebe:106750, margin_thebe:-26750, note:null }
+  ],
+  fuel_anomalies: [
+    { vehicle_id:'veh_example_3', reg:'EXAMPLE-B789ABC', type:'over_tank', purchased_at:'2026-08-26', message:'EXAMPLE-B789ABC bought 65 litres in one purchase, more than its 60 litre tank holds. Worth asking about it: a shared vehicle fuelled on one slip, a jerry can for something else, or a typo on the slip are all honest explanations.' },
+    { vehicle_id:'veh_example_2', reg:'EXAMPLE-B456ABC', type:'above_normal_consumption', month:'2026-08', message:'EXAMPLE-B456ABC used 41 litres on a 180 km month where it normally uses about 26.1 litres. Worth asking about it: a shared vehicle, a jerry can, extra idling on a cold chain run, or a missing odometer reading that month are all honest explanations before anything else.' }
+  ],
+  service_due: [
+    { vehicle_id:'veh_example_1', reg:'EXAMPLE-B123ABC', last_odometer:12880, service_due_km:20000, service_due_at:'2026-08-31', overdue_by_km:false, overdue_by_date:true, overdue:true },
+    { vehicle_id:'veh_example_2', reg:'EXAMPLE-B456ABC', last_odometer:68720, service_due_km:68500, service_due_at:null, overdue_by_km:true, overdue_by_date:false, overdue:true },
+    { vehicle_id:'veh_example_3', reg:'EXAMPLE-B789ABC', last_odometer:5000, service_due_km:40000, service_due_at:'2027-01-03', overdue_by_km:false, overdue_by_date:false, overdue:false }
+  ]
+};
+
+async function apiFetch(path, opts){
+  const res = await fetch(path, Object.assign({credentials:'include', headers:{'Content-Type':'application/json'}}, opts));
+  if(res.status===401){ const err=new Error('unauthorized'); err.auth=true; throw err; }
+  if(res.status===403){ const err=new Error('not permitted'); err.forbidden=true; throw err; }
+  const ct = res.headers.get('content-type')||'';
+  if(ct.indexOf('application/json')===-1){ if(!res.ok) throw new Error('HTTP '+res.status); return res.text(); }
+  let json; try{ json = await res.json(); }catch(e){ json={ok:false, error:'Bad response'}; }
+  if(!json.ok){ const err=new Error(json.error || ('HTTP '+res.status)); err.body=json; throw err; }
+  return json.data;
+}
+
+async function boot(){
+  /* phone copy: not served by the office hub, so there is nothing to sign in to.
+     Go straight to the example rather than showing a login screen that cannot work. */
+  var __h = (location.hostname || '');
+  var __onHub = __h === 'localhost' || __h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(__h);
+  if (!__onHub) { loadFallback(); return; }
+
+  try{
+    ME = await apiFetch('/api/me');
+    if(!ME){ showLogin(); return; }
+    document.getElementById('whoLine').textContent = ME.name + ', ' + ME.role;
+    await loadLive();
+  }catch(e){
+    if(e.auth){ showLogin(); } else { loadFallback(); }
+  }
+}
+async function loadLive(){
+  try{
+    const fleet = await apiFetch('/api/fleet');
+    DATA = Object.assign({live:true}, fleet);
+    SYNCED_AT = new Date().toISOString();
+    localStorage.setItem(CACHE_KEY, JSON.stringify({data:fleet, at:SYNCED_AT}));
+    render();
+  }catch(e){
+    // A driver session reaching this screen gets a clean 403 from the hub
+    // (this route carries no driver route group, hub\services\auth.js). A
+    // driver never opens this screen; showing the example view rather than
+    // a bare error keeps the shell consistent with every other app here.
+    loadFallback();
+  }
+}
+function loadFallback(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){
+    try{ const parsed=JSON.parse(cached); DATA=Object.assign({live:false, cached:true}, parsed.data); SYNCED_AT=parsed.at; render(); return; }catch(e){}
+  }
+  DATA = Object.assign({}, EXAMPLE);
+  SYNCED_AT = null;
+  render();
+}
+function showLogin(){
+  document.getElementById('app').innerHTML='';
+  document.getElementById('loginWrap').style.display='block';
+  document.getElementById('syncText').textContent='Sign in';
+}
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const staffId=document.getElementById('staffId').value.trim();
+  const pin=document.getElementById('pin').value.trim();
+  const errEl=document.getElementById('loginErr'); errEl.style.display='none';
+  try{
+    await apiFetch('/api/login', {method:'POST', body:JSON.stringify({staffId,pin})});
+    document.getElementById('loginWrap').style.display='none';
+    await boot();
+  }catch(err){ errEl.textContent='Could not sign in. Check the staff ID and PIN.'; errEl.style.display='block'; }
+});
+document.getElementById('offlineBtn').addEventListener('click', ()=>{
+  document.getElementById('loginWrap').style.display='none'; loadFallback();
+});
+
+function updateSyncBadge(){
+  const badge=document.getElementById('syncBadge'), text=document.getElementById('syncText');
+  if(DATA && DATA.example){ badge.classList.add('offline'); text.textContent='Offline'; }
+  else if(DATA && DATA.live){ badge.classList.remove('offline'); text.textContent='Synced now'; }
+  else if(SYNCED_AT){ badge.classList.add('offline'); text.textContent='Synced '+localDT(SYNCED_AT); }
+  else { badge.classList.add('offline'); text.textContent='Offline'; }
+}
+
+// One orange element per screen (house rule): whichever fact most needs a
+// person today. A fuel question outranks an overdue service, because a
+// question about money moving out of the business is checked sooner than a
+// maintenance date; if neither exists, nothing on the page is orange.
+function pickTodayFocus(){
+  if((DATA.fuel_anomalies||[]).length) return {kind:'anomaly', row:DATA.fuel_anomalies[0]};
+  const overdue = (DATA.service_due||[]).find(v=>v.overdue);
+  if(overdue) return {kind:'service', row:overdue};
+  return null;
+}
+
+function render(){
+  updateSyncBadge();
+  const html=[];
+  if(DATA.example){ html.push('<div class="banner-example">EXAMPLE DATA. Every company, parcel and number on this screen is invented. The hub is offline, or this staff role cannot open this screen.</div>'); }
+  else if(!DATA.live){ html.push('<div class="banner-stale">Showing last synced data from '+localDT(SYNCED_AT)+'. Hub unreachable now.</div>'); }
+
+  const focus = pickTodayFocus();
+  if(focus){
+    html.push('<section><div class="section-head"><h2>Worth a look today</h2></div>');
+    if(focus.kind==='anomaly'){
+      html.push('<div class="question-card"><div class="question-top">'+esc(focus.row.reg)+'</div><div class="question-body">'+esc(focus.row.message)+'</div></div>');
+    } else {
+      html.push('<div class="question-card"><div class="question-top">'+esc(focus.row.reg)+' is overdue for service</div><div class="question-body">'+
+        (focus.row.overdue_by_km ? 'Last odometer reading '+focus.row.last_odometer+' km, service was due at '+focus.row.service_due_km+' km.' : 'Service was due by '+focus.row.service_due_at+'.')+
+      '</div></div>');
+    }
+    html.push('</section>');
+  }
+
+  // Vehicles: last known odometer and when.
+  html.push('<section><div class="section-head"><h2>Vehicles</h2></div><div class="panel">');
+  const vehicles = DATA.vehicles||[];
+  if(!vehicles.length) html.push('<div class="empty-note">No vehicles recorded.</div>');
+  vehicles.forEach(v=>{
+    html.push('<div class="veh-card"><div class="veh-top"><span>'+esc(v.reg)+'</span><span style="color:var(--dim); font-weight:400; font-size:11px;">'+esc(v.type||'')+'</span></div>'+
+      '<div class="veh-sub">'+(v.last_odometer===null||v.last_odometer===undefined ? 'No odometer reading recorded yet.' : v.last_odometer+' km, as of '+localDT(v.last_odometer_at))+
+      (v.tank_litres ? ' &middot; '+v.tank_litres+' litre tank' : ' &middot; tank size not recorded')+
+    '</div></div>');
+  });
+  html.push('</div></section>');
+
+  // Km per litre by vehicle, a bar against the fleet median so the weak one
+  // is visible without reading a number.
+  html.push('<section><div class="section-head"><h2>Kilometres per litre, by vehicle</h2></div><div class="panel">');
+  renderKmlBars(html, vehicles, 'reg');
+  if(DATA.fleet_median_km_per_litre) html.push('<div class="median-key">The white line marks the fleet median, '+DATA.fleet_median_km_per_litre+' km per litre.</div>');
+  html.push('</div></section>');
+
+  // Km per litre by driver, same treatment, named.
+  html.push('<section><div class="section-head"><h2>Kilometres per litre, by driver</h2></div><div class="panel">');
+  renderKmlBars(html, DATA.drivers||[], 'name');
+  html.push('</div></section>');
+
+  // Efficiency trend, month on month, only for vehicles the module itself
+  // is willing to call a trend (at least two months of real figures).
+  html.push('<section><div class="section-head"><h2>Efficiency trend, month on month</h2></div><div class="panel">');
+  const trending = vehicles.filter(v=>v.is_trend && v.series && v.series.length);
+  if(!trending.length) html.push('<div class="empty-note">No vehicle has two months of both a closed trip distance and a fuel purchase yet, so there is nothing to trend. This fills in as more trips close and more fuel is logged.</div>');
+  trending.forEach(v=>{
+    const maxKml = Math.max(1, ...v.series.map(m=>m.km_per_litre||0));
+    html.push('<div class="trend-row"><span class="trend-name">'+esc(v.reg)+'</span><div class="trend-months">');
+    v.series.forEach(m=>{
+      const h = m.km_per_litre ? Math.max(8, Math.round((m.km_per_litre/maxKml)*100)) : 4;
+      const cls = m.km_per_litre===null ? 'dim' : (m.km_per_litre < (DATA.fleet_median_km_per_litre||0)*0.75 ? 'red' : '');
+      html.push('<div class="trend-month"><div class="trend-bar '+cls+'" style="height:'+h+'%;"></div><div class="trend-label">'+monthLabel(m.month)+'</div></div>');
+    });
+    html.push('</div></div>');
+  });
+  html.push('</div></section>');
+
+  // Fuel spend per vehicle, this month against last, always named.
+  html.push('<section><div class="section-head"><h2>Fuel spend, this month against last</h2></div><div class="panel">');
+  const spend = DATA.fuel_spend_by_vehicle||[];
+  if(!spend.length) html.push('<div class="empty-note">No fuel purchases recorded yet.</div>');
+  const maxSpend = Math.max(1, ...spend.map(s=>Math.max(s.this_month_thebe||0, s.last_month_thebe||0)));
+  spend.forEach(s=>{
+    html.push('<div class="bar-row"><div class="bar-top"><span class="lab">'+esc(s.reg)+', this month</span><span class="val">'+pula(s.this_month_thebe)+'</span></div>'+
+      '<div class="bar"><div class="bar-fill" style="width:'+Math.max(s.this_month_thebe?4:0, Math.round((s.this_month_thebe/maxSpend)*100))+'%"></div></div>'+
+      '<div class="bar-top" style="margin-top:6px;"><span class="lab" style="color:var(--dim); font-weight:400;">'+esc(s.reg)+', last month</span><span class="val">'+pula(s.last_month_thebe)+'</span></div>'+
+      '<div class="bar"><div class="bar-fill dim" style="width:'+Math.max(s.last_month_thebe?4:0, Math.round((s.last_month_thebe/maxSpend)*100))+'%"></div></div>'+
+    '</div>');
+  });
+  html.push('</div></section>');
+
+  // Cost per delivery, by lane.
+  html.push('<section><div class="section-head"><h2>Cost per delivery, by lane</h2></div><div class="panel">');
+  const lanes = (DATA.cost_per_delivery && DATA.cost_per_delivery.by_lane) || [];
+  if(!lanes.length) html.push('<div class="empty-note">No delivery yet carries both a priced shipment and a costed trip, so there is no lane figure to show.</div>');
+  lanes.forEach(l=>{
+    html.push('<div class="item-row"><div><span class="item-name">'+esc(l.lane)+'</span><div class="item-sub">'+l.deliveries+' deliveries carrying a fuel cost</div></div><span>'+pula(l.average_fuel_cost_thebe)+' average</span></div>');
+  });
+  html.push('</div></section>');
+
+  // Margin per customer, the register's own "most valuable number".
+  html.push('<section><div class="section-head"><h2>Margin per customer</h2></div><div class="panel">');
+  const margins = DATA.margin_per_customer||[];
+  if(!margins.length) html.push('<div class="empty-note">No customer yet has a shipment that is both priced and carried on a costed trip, so margin cannot be shown honestly yet.</div>');
+  margins.forEach(m=>{
+    if(m.margin_thebe===null||m.margin_thebe===undefined){
+      html.push('<div class="item-row"><div><span class="item-name">'+esc(m.customer_name)+'</span><div class="item-sub">'+esc(m.note||'Margin not available yet.')+'</div></div><span class="verdict dim">no figure</span></div>');
+      return;
+    }
+    const cls = m.margin_thebe>=0 ? 'green' : 'red';
+    html.push('<div class="bar-row"><div class="bar-top"><span class="lab">'+esc(m.customer_name)+'</span><span class="verdict '+cls+'">'+(m.margin_thebe>=0?'profit':'loss')+' '+pula(Math.abs(m.margin_thebe))+'</span></div>'+
+      '<div class="bar-note">Revenue '+pula(m.revenue_thebe)+' minus fuel cost '+pula(m.fuel_cost_thebe)+', over '+m.priced_and_costed+' of '+m.deliveries+' deliveries this window.'+(m.note?' '+esc(m.note):'')+'</div></div>');
+  });
+  html.push('</div></section>');
+
+  // The fuel anomaly signal, worded as a question throughout, never an
+  // accusation. Every purchase and every month not flagged here is quietly
+  // fine, shown once below so silence does not read as "nothing checked".
+  html.push('<section><div class="section-head"><h2>Fuel, worth asking about</h2></div>');
+  const anomalies = DATA.fuel_anomalies||[];
+  if(!anomalies.length){
+    html.push('<div class="question-card quiet"><div class="question-body">Nothing this fleet has bought or driven stands out against its own normal pattern right now.</div></div>');
+  } else {
+    anomalies.forEach(a=>{
+      html.push('<div class="question-card"><div class="question-top">'+esc(a.reg)+(a.month?' &middot; '+monthLabel(a.month)+' '+a.month.slice(0,4):'')+'</div><div class="question-body">'+esc(a.message)+'</div></div>');
+    });
+  }
+  html.push('</section>');
+
+  // Service due, by kilometres and by date.
+  html.push('<section><div class="section-head"><h2>Service due</h2></div><div class="panel">');
+  const service = DATA.service_due||[];
+  if(!service.length) html.push('<div class="empty-note">No vehicles recorded.</div>');
+  service.forEach(s=>{
+    const cls = s.overdue ? 'red' : 'green';
+    const label = s.overdue_by_km ? 'overdue by distance' : (s.overdue_by_date ? 'overdue by date' : 'up to date');
+    let sub = '';
+    if(s.service_due_km) sub += 'due at '+s.service_due_km+' km, last seen '+(s.last_odometer===null?'unknown':s.last_odometer+' km');
+    if(s.service_due_at) sub += (sub?' &middot; ':'')+'due by '+s.service_due_at;
+    if(!sub) sub = 'no service schedule recorded for this vehicle yet';
+    html.push('<div class="item-row"><div><span class="item-name">'+esc(s.reg)+'</span><div class="item-sub">'+sub+'</div></div><span class="verdict '+cls+'">'+label+'</span></div>');
+  });
+  html.push('</div></section>');
+
+  document.getElementById('app').innerHTML = html.join('');
+}
+
+// Shared by the vehicle and driver km per litre sections: a bar per row
+// against the loudest figure present, a marker at the fleet median, and an
+// honest note (never a bar drawn as if it were a real number) when a row
+// has no figure yet.
+function renderKmlBars(html, rows, nameField){
+  if(!rows.length){ html.push('<div class="empty-note">Nothing recorded yet.</div>'); return; }
+  const withFigures = rows.filter(r=>r.km_per_litre!==null && r.km_per_litre!==undefined);
+  const maxKml = Math.max(1, ...withFigures.map(r=>r.km_per_litre));
+  const median = DATA.fleet_median_km_per_litre;
+  rows.forEach(r=>{
+    if(r.km_per_litre===null || r.km_per_litre===undefined){
+      html.push('<div class="bar-row"><div class="bar-top"><span class="lab">'+esc(r[nameField])+'</span><span class="val">no figure yet</span></div>'+
+        '<div class="bar-note">'+esc(r.note||'No closed trip distance and fuel purchase to divide, yet.')+'</div></div>');
+      return;
+    }
+    const pct = Math.max(4, Math.round((r.km_per_litre/maxKml)*100));
+    const markerPct = median ? Math.min(100, Math.round((median/maxKml)*100)) : null;
+    const cls = median && r.km_per_litre < median*0.85 ? 'red' : '';
+    html.push('<div class="bar-row"><div class="bar-top"><span class="lab">'+esc(r[nameField])+'</span><span class="val">'+r.km_per_litre+' km per litre'+(r.is_trend?'':' (one month only)')+'</span></div>'+
+      '<div class="bar">'+(markerPct!==null?'<div class="bar-marker" style="left:'+markerPct+'%;"></div>':'')+'<div class="bar-fill '+cls+'" style="width:'+pct+'%"></div></div></div>');
+  });
+}
+
+boot();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+<script>
+
+/* ---------- Brick 56: where every vehicle is ---------- */
+var FLEET_LIVE_EXAMPLE = {"generated_at": "2026-09-12T21:21:24.000Z", "vehicles": [{"vehicle_id": "veh_example_3", "reg": "EXAMPLE-B789ABC", "type": "van (cold chain)", "state": "moving", "standing_minutes": 0, "position": {"lat": -24.05, "lng": 26.25, "accuracy_m": 12, "recorded_at": "2026-09-12T21:19:24.000Z", "age_minutes": 2}, "trip": {"id": "trp_example_2", "departed_at": "2026-09-12T18:11:24.000Z", "driver_name": "EXAMPLE Driver Two", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 145, "minutes_on_trip": 190, "deliveries_today": 2}, "documents": {"permit_expires_on": "2027-04-01", "insurance_expires_on": "2027-04-10", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": null, "last_odometer": 5000}, "note": null}, {"vehicle_id": "veh_example_2", "reg": "EXAMPLE-B456ABC", "type": "truck", "state": "standing", "standing_minutes": 32, "position": {"lat": -23.12, "lng": 26.8, "accuracy_m": 9, "recorded_at": "2026-09-12T21:20:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_example_5", "departed_at": "2026-09-12T17:41:24.000Z", "driver_name": "EXAMPLE Driver Three", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 95, "minutes_on_trip": 220, "deliveries_today": 3}, "documents": {"permit_expires_on": "2027-02-28", "insurance_expires_on": "2026-10-05", "roadworthy_expires_on": "2026-09-08", "service_due_at": null, "service_due_km": 69000, "last_odometer": 68720}, "note": null}, {"vehicle_id": "veh_example_1", "reg": "EXAMPLE-B123ABC", "type": "van", "state": "no_trip", "standing_minutes": null, "position": null, "trip": null, "utilisation_today": {"minutes_moving": 0, "minutes_on_trip": 0, "deliveries_today": 0}, "documents": {"permit_expires_on": "2027-03-31", "insurance_expires_on": "2027-01-15", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": 13500, "last_odometer": 12880}, "note": "No trip open, and no position ever recorded for this vehicle."}]};
+var WORRY = { standing_min: 20, quiet_min: 15, expiry_days: 60 };
+var MAP_TOWNS = [ {n:'Gaborone', lat:-24.65, lng:25.92}, {n:'Mahalapye', lat:-23.10, lng:26.81}, {n:'Palapye', lat:-22.55, lng:27.12}, {n:'Francistown', lat:-21.17, lng:27.51} ];
+function mapXY(lat, lng){
+  var x = (lng - 25.55) / (27.85 - 25.55) * 600;
+  var y = 230 - ((lat + 25.0) / (-20.9 + 25.0)) * 230;
+  return { x: Math.max(14, Math.min(586, x)), y: Math.max(16, Math.min(214, y)) };
+}
+function mapEl(tag, attrs, text){
+  var n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (var k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  return n;
+}
+function kmBetween(a, b, c, d){
+  var R = 6371, r = Math.PI / 180, dLat = (c - a) * r, dLng = (d - b) * r;
+  var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a * r) * Math.cos(c * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+function nearWhere(pos){
+  if (!pos || typeof pos.lat !== 'number') return '';
+  var best = null, second = null;
+  MAP_TOWNS.forEach(function(t){ var d = kmBetween(pos.lat, pos.lng, t.lat, t.lng); var o = { n: t.n, d: d }; if (!best || d < best.d) { second = best; best = o; } else if (!second || d < second.d) { second = o; } });
+  if (best.d <= 25) return 'near ' + best.n;
+  return Math.round(best.d) + ' km from ' + best.n + (second ? ', on the road to ' + second.n : '');
+}
+function hhmm(iso){ if (!iso) return ''; var d = new Date(iso); return isNaN(d) ? '' : ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+function ageOf(v){
+  if (!v.position) return null;
+  if (typeof v.position.age_minutes === 'number') return v.position.age_minutes;
+  if (v.position.recorded_at) return Math.round((Date.now() - Date.parse(v.position.recorded_at)) / 60000);
+  return null;
+}
+function hm(mins){ mins = Math.round(mins || 0); var h = Math.floor(mins / 60), m = mins % 60; return h ? h + 'h ' + ('0' + m).slice(-2) : m + ' min'; }
+function dotClass(v){ return v.state === 'moving' ? 'moving' : v.state === 'standing' ? 'standing' : v.state === 'incident' ? 'incident' : 'quiet'; }
+function sayWhere(v){
+  var who = v.trip && v.trip.driver_name ? ' with ' + v.trip.driver_name : '';
+  var since = v.trip && v.trip.departed_at ? ', out since ' + hhmm(v.trip.departed_at) : '';
+  var route = v.trip && v.trip.route_label ? ', ' + v.trip.route_label : '';
+  var where = nearWhere(v.position);
+  if (v.state === 'moving') return 'Moving' + (where ? ', ' + where : '') + route + who + since + '.';
+  if (v.state === 'standing') return 'Standing ' + (v.standing_minutes || 0) + ' minutes' + (where ? ' ' + where : '') + who + since + '.';
+  if (v.state === 'incident') return 'In an incident' + (where ? ' ' + where : '') + who + '. Open the Incident Desk.';
+  if (v.state === 'no_signal') return (v.note || 'No signal, trip still open.') + who;
+  if (v.state === 'no_trip') return 'In the yard, no trip open.' + (v.position ? ' Last seen ' + where + '.' : '');
+  return v.note || 'State not known.';
+}
+function daysUntil(d){ if (!d) return null; var t = Date.parse(d); if (isNaN(t)) return null; return Math.round((t - Date.now()) / 86400000); }
+function paperwork(v){
+  var docs = v.documents || {};
+  var items = [];
+  [['permit_expires_on', 'Permit'], ['insurance_expires_on', 'Insurance'], ['roadworthy_expires_on', 'Roadworthy']].forEach(function(p){
+    var d = daysUntil(docs[p[0]]);
+    if (docs[p[0]] == null) items.push({ rank: 2, cls: '', text: p[1] + ' date not recorded' });
+    else if (d < 0) items.push({ rank: 0, cls: 'bad', text: p[1] + ' ran out ' + Math.abs(d) + (Math.abs(d) === 1 ? ' day' : ' days') + ' ago' });
+    else if (d <= WORRY.expiry_days) items.push({ rank: 1, cls: 'warn', text: p[1] + ' runs out in ' + d + (d === 1 ? ' day' : ' days') });
+    else items.push({ rank: 3, cls: 'ok', text: p[1] + ' in order' });
+  });
+  if (docs.service_due_km != null && docs.last_odometer != null) {
+    var left = docs.service_due_km - docs.last_odometer;
+    if (left <= 0) items.push({ rank: 0, cls: 'bad', text: 'Service overdue by ' + Math.abs(left) + ' km' });
+    else if (left <= 1000) items.push({ rank: 1, cls: 'warn', text: 'Service due in ' + left + ' km' });
+    else items.push({ rank: 3, cls: 'ok', text: 'Service in ' + left + ' km' });
+  } else if (docs.service_due_at) {
+    var sd = daysUntil(docs.service_due_at);
+    if (sd < 0) items.push({ rank: 0, cls: 'bad', text: 'Service overdue by ' + Math.abs(sd) + ' days' });
+    else if (sd <= WORRY.expiry_days) items.push({ rank: 1, cls: 'warn', text: 'Service due in ' + sd + ' days' });
+  } else items.push({ rank: 2, cls: '', text: 'Service interval not recorded' });
+  items.sort(function(a, b){ return a.rank - b.rank; });
+  // the worst item leads; the rest fold into one quiet chip so orange stays rare
+  var lead = items[0];
+  var okCount = items.filter(function(i){ return i.rank === 3; }).length;
+  var rest = items.slice(1).filter(function(i){ return i.rank < 3; });
+  var chips = [lead].concat(rest.slice(0, 2));
+  if (okCount && lead.rank !== 3) chips.push({ cls: 'ok', text: okCount + ' in order' });
+  return chips;
+}
+function vehicleCard(v){
+  var age = ageOf(v);
+  var u = v.utilisation_today || {};
+  var sub = [];
+  if (age != null) sub.push('reported ' + (age < 1 ? 'just now' : age + ' min ago'));
+  if (v.trip) sub.push((u.deliveries_today || 0) + (u.deliveries_today === 1 ? ' delivery' : ' deliveries') + ' today');
+  if (v.trip && u.minutes_on_trip) sub.push('moving ' + hm(u.minutes_moving) + ' of ' + hm(u.minutes_on_trip) + ' on the trip');
+  if (!v.trip && !age) sub.push('no position ever recorded');
+  var worry = (v.state === 'standing' && (v.standing_minutes || 0) >= WORRY.standing_min) || (v.state === 'no_signal' && age != null && age >= WORRY.quiet_min) || v.state === 'incident';
+  return '<div class="vlive" onclick="fleetFocus(\'' + esc(v.vehicle_id) + '\')"><div class="top"><span class="dot ' + dotClass(v) + '"></span><span class="reg">' + esc((v.reg || '').replace('EXAMPLE-', 'EX ')) + '</span><span class="type">' + esc(v.type || '') + '</span></div>' +
+    '<div class="say"' + (worry ? ' style="color:#FDBE74"' : '') + '>' + esc(sayWhere(v)) + '</div>' +
+    (sub.length ? '<div class="sub">' + esc(sub.join(' \u00b7 ')) + '</div>' : '') +
+    '<div class="chips">' + paperwork(v).map(function(c){ return '<span class="chip ' + c.cls + '">' + esc(c.text) + '</span>'; }).join('') + '</div></div>';
+}
+var FLEET_LIVE_LAST = null;
+function fleetFocus(id){
+  var v = (FLEET_LIVE_LAST && FLEET_LIVE_LAST.vehicles || []).find(function(x){ return x.vehicle_id === id; });
+  if (!v) return;
+  showMapDetail(v);
+  var mc = document.getElementById('mapcard'); if (mc && mc.scrollIntoView) mc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function renderMap(payload, isLive){
+  var svg = document.getElementById('map-svg'); if (!svg) return;
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  var pts = MAP_TOWNS.map(function(t){ return mapXY(t.lat, t.lng); });
+  var d = 'M ' + pts[0].x + ' ' + pts[0].y + ' C ' + (pts[0].x + 70) + ' ' + (pts[0].y - 20) + ', ' + (pts[1].x - 60) + ' ' + (pts[1].y + 30) + ', ' + pts[1].x + ' ' + pts[1].y +
+          ' S ' + (pts[2].x - 30) + ' ' + (pts[2].y + 10) + ', ' + pts[2].x + ' ' + pts[2].y + ' S ' + (pts[3].x - 40) + ' ' + (pts[3].y + 20) + ', ' + pts[3].x + ' ' + pts[3].y;
+  svg.appendChild(mapEl('path', { d: d, fill: 'none', stroke: 'rgba(255,255,255,.28)', 'stroke-width': 5, 'stroke-linecap': 'round' }));
+  svg.appendChild(mapEl('path', { d: 'M ' + (pts[0].x + 10) + ' ' + (pts[0].y - 6) + ' q 60 -70 150 -60', fill: 'none', stroke: 'rgba(255,255,255,.12)', 'stroke-width': 3, 'stroke-linecap': 'round' }));
+  svg.appendChild(mapEl('path', { d: 'M ' + pts[1].x + ' ' + pts[1].y + ' q 40 60 120 50', fill: 'none', stroke: 'rgba(255,255,255,.12)', 'stroke-width': 3, 'stroke-linecap': 'round' }));
+  MAP_TOWNS.forEach(function(t, i){
+    var p = pts[i];
+    svg.appendChild(mapEl('circle', { cx: p.x, cy: p.y, r: 4, fill: '#C9D6CF' }));
+    svg.appendChild(mapEl('text', { x: p.x, y: p.y - 10, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 700, fill: '#C9D6CF' }, t.n));
+  });
+  var vehicles = (payload && payload.vehicles) || [];
+  var moving = 0, parked = 0, depot = pts[0];
+  vehicles.forEach(function(v){
+    var col = v.state === 'moving' ? '#3AAA35' : v.state === 'standing' ? '#F7941D' : v.state === 'incident' ? '#FF6B61' : '#9DAAA4';
+    var at;
+    if (v.position && typeof v.position.lat === 'number') at = mapXY(v.position.lat, v.position.lng);
+    else { at = { x: depot.x + 22 + parked * 20, y: depot.y + 18 }; parked++; }
+    if (v.state === 'moving') moving++;
+    var g = mapEl('g', { class: 'mapdot' });
+    if (v.state === 'moving') g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 14, fill: 'rgba(58,170,53,.25)' }));
+    g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 8, fill: col, stroke: 'rgba(8,28,20,.8)', 'stroke-width': 2 }));
+    g.appendChild(mapEl('text', { x: at.x, y: at.y + 20, 'text-anchor': 'middle' }, (v.reg || '').replace('EXAMPLE-', 'EX ')));
+    g.addEventListener('click', function(){ showMapDetail(v); });
+    svg.appendChild(g);
+  });
+  var pill = document.getElementById('map-pill');
+  if (pill) {
+    if (!vehicles.length) { pill.textContent = 'no vehicles yet'; pill.className = 'pill quiet'; }
+    else if (moving) { pill.textContent = moving + ' in transit'; pill.className = 'pill'; }
+    else { pill.textContent = 'nothing moving'; pill.className = 'pill quiet'; }
+  }
+  var cap = document.querySelector('#mapcard .cap');
+  if (cap) cap.textContent = isLive ? 'Fleet, live' : 'Fleet, example';
+}
+function showMapDetail(v){
+  var el = document.getElementById('map-detail'); if (!el) return;
+  var age = ageOf(v);
+  el.innerHTML = '<b>' + esc((v.reg || '').replace('EXAMPLE-', 'EX ')) + '</b> ' + esc(v.type || '') + '<br>' + esc(sayWhere(v)) + (age != null ? ' <span style="color:#C9D6CF">Reported ' + (age < 1 ? 'just now' : age + ' min ago') + '.</span>' : '');
+  el.classList.add('open');
+}
+function renderFleetLive(payload, isLive){
+  FLEET_LIVE_LAST = payload;
+  renderMap(payload, isLive);
+  var vehicles = (payload && payload.vehicles) || [];
+  var counts = { moving: 0, standing: 0, incident: 0, quiet: 0 };
+  vehicles.forEach(function(v){ counts[dotClass(v)]++; });
+  var bar = document.getElementById('fleetbar');
+  if (bar) {
+    var n = vehicles.length || 1;
+    var seg = [['moving', '#3AAA35'], ['standing', '#F7941D'], ['incident', '#FF6B61'], ['quiet', '#9DAAA4']].map(function(s){ return counts[s[0]] ? '<i style="width:' + (counts[s[0]] / n * 100) + '%;background:' + s[1] + '"></i>' : ''; }).join('');
+    var onRoad = counts.moving + counts.standing + counts.incident;
+    var newest = null; vehicles.forEach(function(v){ var a = ageOf(v); if (a != null && (newest == null || a < newest)) newest = a; });
+    bar.innerHTML = '<div class="seg">' + seg + '</div><div class="lab"><span><b>' + onRoad + '</b> of ' + vehicles.length + ' on the road' + (counts.standing ? ', <b>' + counts.standing + '</b> standing' : '') + (counts.incident ? ', <b>' + counts.incident + '</b> in an incident' : '') + '</span><span>' + (newest == null ? 'no positions yet' : 'last report ' + (newest < 1 ? 'just now' : newest + ' min ago')) + '</span></div>';
+  }
+  var list = document.getElementById('fleet-live');
+  if (list) {
+    var order = { incident: 0, standing: 1, moving: 2, quiet: 3 };
+    var sorted = vehicles.slice().sort(function(a, b){ return order[dotClass(a)] - order[dotClass(b)]; });
+    list.innerHTML = sorted.length ? sorted.map(vehicleCard).join('') : '<div class="empty-note">No vehicles recorded on the hub yet.</div>';
+  }
+  var note = document.getElementById('fleet-live-note');
+  if (note) note.textContent = isLive ? 'Positions come from the driver app every minute while a trip is open. A vehicle with no driver app on board cannot appear here.' : 'Example fleet. On the office system this reads the drivers\u2019 phones every minute while their trips are open.';
+}
+(function bootFleetLive(){
+  renderFleetLive(FLEET_LIVE_EXAMPLE, false);
+  if (!window.fetch || location.protocol === 'file:') return;
+  var h = location.hostname || '';
+  var onHub = h === 'localhost' || h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
+  if (!onHub) return;
+  var tick = function(){
+    fetch('/api/fleet/live', { credentials: 'include' }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(b){ if (b && b.data && b.data.vehicles) renderFleetLive(b.data, true); }).catch(function(){});
+  };
+  tick(); setInterval(tick, 60000);
+})();
+
+</script>
+<script src="../shared/sprint-notify.js"></script>
+</body>
+</html>

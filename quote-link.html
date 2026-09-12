@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Quote Engine - Sprint Couriers</title>
+<meta name="theme-color" content="#131311">
+<link rel="icon" href="shared/logo-mark.png">
+<style>
+/* Local first brand type. It never phones home to Google, and it never
+   breaks when there is no internet or no signal on a driver phone. Drop
+   the two real font files into apps/shared/fonts/ to restore the exact
+   brand type offline; see the README there. With no files present this
+   falls back to the system font stack below. */
+@font-face{font-family:'Anton'; font-weight:400; font-display:swap;
+  src:local('Anton'), url('shared/fonts/Anton-Regular.woff2') format('woff2'), url('shared/fonts/Anton-Regular.ttf') format('truetype');}
+@font-face{font-family:'Inter'; font-weight:100 900; font-display:swap;
+  src:local('Inter'), url('shared/fonts/Inter-Variable.woff2') format('woff2'), url('shared/fonts/Inter-Variable.ttf') format('truetype');}
+:root{
+  --font-display:'Anton', Impact, 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;--ink:#131311; --panel:#1d1d19; --line:#2c2c27; --bone:#F4F4F1; --dim:#a6a69f; --green:#3AAA35; --orange:#F7941D;}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{background:var(--ink); color:var(--bone); font-family:var(--font-body); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+.card{max-width:420px; width:100%; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:26px 22px;}
+.card img{width:40px; height:40px; margin-bottom:14px;}
+h1{font-family:var(--font-display); text-transform:uppercase; letter-spacing:0.01em; font-size:22px; margin-bottom:10px;}
+p{font-size:13px; color:var(--dim); line-height:1.6; margin-bottom:10px;}
+.name{color:var(--orange); font-weight:700;}
+.steps{background:var(--ink); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin:16px 0; font-size:12px; color:var(--dim); line-height:1.8;}
+.steps b{color:var(--bone);}
+a.btn{
+  display:block; text-align:center; background:var(--green); color:var(--ink); text-decoration:none;
+  font-weight:700; padding:12px; border-radius:6px; text-transform:uppercase; letter-spacing:0.03em; font-size:13px;
+}
+.copybox{display:flex; gap:8px; margin-top:12px;}
+.copybox input{flex:1; background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:8px 10px; font-size:12px;}
+.copybox button{background:none; border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:8px 12px; font-size:12px; cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="card">
+  <img src="shared/logo-mark.png" alt="Sprint Couriers">
+  <h1>Open the Quote Engine</h1>
+  <p>The Quote Engine runs on the office PC and is not reachable from this browser yet.</p>
+  <p id="customerLine"></p>
+  <div class="steps">
+    <b>On the office PC:</b><br>
+    1. Open <b>Sprint-Quote-Engine\QuoteEngine.html</b><br>
+    2. The customer name below will already be in the page address, so it fills in on its own.<br>
+    3. If it does not, paste the name into the customer field.
+  </div>
+  <a class="btn" id="openLink" href="#">Open Quote Engine on this PC</a>
+  <div class="copybox">
+    <input type="text" id="linkBox" readonly>
+    <button onclick="copyLink()">Copy</button>
+  </div>
+</div>
+<script>
+const params = new URLSearchParams(window.location.search);
+const customer = params.get('customer') || '';
+document.getElementById('customerLine').innerHTML = customer
+  ? 'Customer to quote: <span class="name">' + customer.replace(/[<>&]/g,'') + '</span>'
+  : 'No customer name was passed in.';
+const target = '../Sprint-Quote-Engine/QuoteEngine.html#customer=' + encodeURIComponent(customer);
+document.getElementById('openLink').href = target;
+document.getElementById('linkBox').value = target;
+function copyLink(){
+  const box = document.getElementById('linkBox');
+  box.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  if(navigator.clipboard){ navigator.clipboard.writeText(box.value).catch(()=>{}); }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ops Board - Sprint Couriers</title>
+<meta name="theme-color" content="#131311">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../shared/logo-mark.png">
+<link rel="apple-touch-icon" href="../shared/logo-mark.png">
+<style>
+/* Local first brand type. It never phones home to Google, and it never
+   breaks when there is no internet or no signal on a driver phone. Drop
+   the two real font files into apps/shared/fonts/ to restore the exact
+   brand type offline; see the README there. With no files present this
+   falls back to the system font stack below. */
+@font-face{font-family:'Anton'; font-weight:400; font-display:swap;
+  src:local('Anton'), url('../shared/fonts/Anton-Regular.woff2') format('woff2'), url('../shared/fonts/Anton-Regular.ttf') format('truetype');}
+@font-face{font-family:'Inter'; font-weight:100 900; font-display:swap;
+  src:local('Inter'), url('../shared/fonts/Inter-Variable.woff2') format('woff2'), url('../shared/fonts/Inter-Variable.ttf') format('truetype');}
+:root{
+  --font-display:'Anton', Impact, 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ink:#131311; --panel:#1d1d19; --line:#2c2c27; --bone:#F4F4F1; --dim:#a6a69f;
+  --green:#3AAA35; --orange:#F7941D; --red:#e0483e;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--ink); color:var(--bone); font-family:var(--font-body);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  min-height:100vh; padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+h1,h2,h3,.disp{font-family:var(--font-display); text-transform:uppercase; letter-spacing:0.01em; font-weight:400;}
+button{font-family:inherit;}
+::selection{background:var(--orange); color:var(--ink);}
+
+header{position:sticky; top:0; z-index:20; background:var(--ink); border-bottom:1px solid var(--line); padding:10px 14px; display:flex; align-items:center; gap:10px;}
+header img{width:32px; height:32px; object-fit:contain; flex:none;}
+header .titles{flex:1; min-width:0;}
+header h1{font-size:15px; line-height:1.1;}
+header .who{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.sync-badge{font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line); color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;}
+.sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
+.sync-badge.offline{color:var(--orange); border-color:var(--orange);}
+.sync-badge.offline .sync-dot{background:var(--orange);}
+
+main{max-width:760px; margin:0 auto; padding:12px 14px 40px;}
+.banner-example{background:rgba(247,148,29,0.12); border:1px solid var(--orange); color:var(--orange); font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; margin-bottom:12px;}
+.banner-stale{background:var(--panel); border:1px solid var(--line); color:var(--dim); font-size:12px; padding:8px 12px; border-radius:8px; margin-bottom:12px;}
+
+.otr-card{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:18px;}
+.otr-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+.otr-num{font-family:var(--font-display); font-size:34px; letter-spacing:0.01em;}
+.otr-label{font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em;}
+
+section{margin-bottom:20px;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px;}
+.section-head h2{font-size:13px; color:var(--dim); letter-spacing:0.06em; text-transform:uppercase;}
+
+.status-row{display:block; width:100%; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:6px; cursor:pointer;}
+.status-row.open{border-color:var(--orange);}
+.status-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; font-size:12px;}
+.status-name{font-weight:700; letter-spacing:0.03em;}
+.bar{position:relative; height:18px; background:var(--line); border-radius:4px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:4px; background:var(--green); min-width:2px;}
+.bar-fill.exception{background:var(--red);}
+.bar-fill.delivered{background:var(--green);}
+.bar-fill.active{background:var(--orange);}
+.bar-count{position:absolute; right:8px; top:0; bottom:0; display:flex; align-items:center; font-size:11px; font-weight:700;}
+
+.jobs-list{display:none; margin:8px 0 4px; border-top:1px solid var(--line); padding-top:8px;}
+.jobs-list.show{display:block;}
+.job-item{display:flex; justify-content:space-between; align-items:center; padding:9px 6px; border-bottom:1px solid var(--line); cursor:pointer; gap:8px;}
+.job-item:last-child{border-bottom:none;}
+.job-who{font-size:13px; font-weight:600;}
+.job-route{font-size:10px; color:var(--dim);}
+.job-clock{font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.03em; text-align:right; flex:none;}
+.job-clock.late{color:var(--red);}
+.job-clock.soon{color:var(--orange);}
+.job-clock.ok{color:var(--green);}
+.empty-note{font-size:12px; color:var(--dim); padding:10px 4px;}
+
+.drawer-bg{position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:40; display:none;}
+.drawer-bg.show{display:block;}
+.drawer{position:fixed; right:0; top:0; bottom:0; width:100%; max-width:460px; background:var(--panel); border-left:1px solid var(--line); z-index:41; transform:translateX(100%); transition:transform .25s ease; overflow-y:auto; padding:14px 14px 40px;}
+.drawer.show{transform:translateX(0);}
+.drawer-close{background:none; border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:6px 10px; font-size:12px; float:right; cursor:pointer;}
+.drawer h2{font-size:19px; margin:6px 0 2px; clear:both;}
+.drawer .sub{font-size:12px; color:var(--dim); margin-bottom:10px;}
+.field-label{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; margin:14px 0 6px;}
+.verdict{font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px; border-radius:20px; display:inline-block;}
+.verdict.green{color:var(--green); border:1px solid var(--green);}
+.verdict.orange{color:var(--orange); border:1px solid var(--orange);}
+.verdict.red{color:var(--red); border:1px solid var(--red);}
+
+select,input[type=text],input[type=number],textarea{background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:8px 10px; font-size:13px; font-family:inherit; width:100%;}
+textarea{min-height:56px; resize:vertical;}
+.rowfields{display:flex; gap:8px;}
+.rowfields > *{flex:1;}
+.btn{background:var(--green); color:var(--ink); border:none; border-radius:6px; font-weight:700; padding:10px 12px; font-size:13px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em; width:100%; margin-top:10px;}
+.btn.orange{background:var(--orange);}
+.btn.red{background:var(--red); color:var(--bone);}
+.btn.ghost{background:none; border:1px solid var(--line); color:var(--bone);}
+.btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+.btn-row .btn{width:auto; flex:1; margin-top:0;}
+
+.sig-wrap{border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-top:6px; background:#0d0d0b; touch-action:none;}
+canvas{display:block; width:100%; height:140px; touch-action:none;}
+.sig-actions{display:flex; justify-content:flex-end; margin-top:4px;}
+.sig-clear{background:none; border:1px solid var(--line); color:var(--dim); border-radius:5px; padding:4px 10px; font-size:11px; cursor:pointer;}
+
+.login-wrap{max-width:320px; margin:18vh auto 0; padding:0 20px;}
+.login-wrap h1{font-size:22px; margin-bottom:4px;}
+.login-wrap p{font-size:12px; color:var(--dim); margin-bottom:18px;}
+.login-wrap form{display:flex; flex-direction:column; gap:10px;}
+.login-wrap input{background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:9px 10px; font-size:14px;}
+.login-hint{font-size:11px; color:var(--dim); margin-top:14px; line-height:1.5;}
+.err{color:var(--red); font-size:12px; margin-top:6px; display:none;}
+
+@media(min-width:640px){ main{padding:18px 24px 40px;} }
+
+/* the map card, docs/DESIGN-LANGUAGE.md: the fleet is the ground, never behind a click */
+.mapcard{position:relative;border-radius:22px;overflow:hidden;margin:12px 0 14px;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
+.mapcard svg{display:block;width:100%;height:auto}
+.mapcard .pill{position:absolute;top:12px;right:12px;font-size:10.5px;font-weight:800;letter-spacing:.3px;padding:5px 11px;border-radius:999px;background:#F7941D;color:#fff;box-shadow:0 8px 18px -8px rgba(247,148,29,.9)}
+.mapcard .pill.quiet{background:rgba(255,255,255,.14);color:#D9E3DE;box-shadow:none}
+.mapcard .cap{position:absolute;left:14px;top:12px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#C9D6CF}
+.mapcard .legend{display:flex;gap:14px;flex-wrap:wrap;padding:8px 14px 10px;font-size:11px;color:#C9D6CF}
+.mapcard .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.mapcard .detail{display:none;margin:0 14px 12px;padding:9px 12px;border-radius:14px;background:rgba(255,255,255,.08);font-size:12.4px;color:#F4F7F5}
+.mapcard .detail.open{display:block}
+.mapcard .detail b{color:#fff}
+.mapdot{cursor:pointer}
+.mapdot text{font-size:9px;font-weight:800;fill:#E6EEE9;paint-order:stroke;stroke:rgba(8,28,20,.7);stroke-width:3px}
+
+/* Brick 61: the bell, same on every page */
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<link rel="stylesheet" href="../shared/sprint-theme.css">
+</head>
+<body>
+
+<header>
+  <img src="../shared/logo-mark.png" alt="Sprint Couriers">
+  <div class="titles"><h1>Ops Board</h1><div class="who" id="whoLine">Not signed in</div></div>
+  <span id="pulseWidget"></span>
+  <span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+  <div class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Loading</span></div>
+</header>
+
+
+<div class="mapcard" id="mapcard">
+  <div class="cap">Fleet, last known</div>
+  <span class="pill quiet" id="map-pill">reading</span>
+  <svg id="map-svg" viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" aria-label="Where every vehicle last reported"></svg>
+  <div class="legend"><span><i style="background:#3AAA35"></i>moving</span><span><i style="background:#F7941D"></i>standing</span><span><i style="background:#9DAAA4"></i>no signal or no trip</span><span><i style="background:#FF6B61"></i>in an incident</span></div>
+  <div class="detail" id="map-detail"></div>
+</div>
+<main id="app"><div style="padding:40px 4px; color:var(--dim); font-size:13px;">Loading Ops Board...</div></main>
+
+<div class="login-wrap" id="loginWrap" style="display:none;">
+  <h1>Sign in</h1>
+  <p>Sprint Couriers staff PIN</p>
+  <form id="loginForm">
+    <input type="text" id="staffId" placeholder="Staff ID" autocomplete="username" required>
+    <input type="text" inputmode="numeric" pattern="[0-9]*" id="pin" placeholder="PIN" maxlength="8" autocomplete="current-password" required>
+    <button class="btn" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <button class="btn ghost" id="offlineBtn">View example data instead</button>
+</div>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="drawer" id="drawer"></div>
+
+<script src="../shared/recognition-widget.js"></script>
+<script>
+const STATUSES = ['booked','collected','in_transit','out_for_delivery','delivered','exception'];
+const STATUS_LABEL = {booked:'Booked', collected:'Collected', in_transit:'In transit', out_for_delivery:'Out for delivery', delivered:'Delivered', exception:'Exception'};
+const NEXT_STATUS = {booked:'collected', collected:'in_transit', in_transit:'out_for_delivery'};
+const EXC_CODES = [
+  {v:'address_not_found', l:'Address not found'}, {v:'client_closed', l:'Client closed'},
+  {v:'temperature_breach', l:'Temperature breach'}, {v:'damaged', l:'Damaged'},
+  {v:'refused', l:'Refused'}, {v:'other', l:'Other'}
+];
+
+function pula(t){ const p=(Number(t||0)/100); const parts=p.toFixed(2).split('.'); parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '); return 'P'+parts.join('.'); }
+function localDT(iso){ if(!iso) return ''; try{ return new Date(iso).toLocaleString('en-GB',{timeZone:'Africa/Gaborone',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; } }
+function localTimeOnly(iso){ if(!iso) return ''; try{ return new Date(iso).toLocaleString('en-GB',{timeZone:'Africa/Gaborone',hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; } }
+function gaboroneDateStr(d){ d=d||new Date(); return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Gaborone',year:'numeric',month:'2-digit',day:'2-digit'}).format(d); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function shiftDate(days,hours){ const d=new Date(); d.setUTCDate(d.getUTCDate()+(days||0)); if(hours) d.setUTCHours(d.getUTCHours()+hours); return d.toISOString(); }
+function shiftHours(h){ const d=new Date(); d.setUTCHours(d.getUTCHours()+h); return d.toISOString(); }
+
+let ME=null, OFFLINE=false, DATA=null, SYNCED_AT=null;
+const CACHE_KEY='sprintos_ops_cache_v1';
+
+const EXAMPLE = {
+  vehicles: [
+    {id:'V1', reg:'B 123 SPC', type:'Hilux', cold_chain:false},
+    {id:'V2', reg:'B 456 SPC', type:'Hilux Refrigerated', cold_chain:true},
+    {id:'V3', reg:'B 789 SPC', type:'Hilux', cold_chain:false},
+  ],
+  drivers: [
+    {id:'DR1', name:'Kabo Modise'}, {id:'DR2', name:'Tumelo Serite'}, {id:'DR3', name:'Neo Kgosi'},
+  ],
+  shipments: [
+    {id:'S1', customer:'EXAMPLE Kalahari Meats', waybill:'SPR10041', origin:'Gaborone', destination:'Francistown', service:'cold_chain', status:'in_transit', vehicle_id:'V2', driver_id:'DR1', promised_at: shiftHours(1), collected_at: shiftHours(-3)},
+    {id:'S2', customer:'EXAMPLE Naledi Legal Attorneys', waybill:'SPR10042', origin:'Gaborone', destination:'Gaborone', service:'sprint', status:'out_for_delivery', vehicle_id:'V1', driver_id:'DR2', promised_at: shiftHours(-1), collected_at: shiftHours(-2)},
+    {id:'S3', customer:'EXAMPLE BCX Logistics', waybill:'SPR10043', origin:'Gaborone', destination:'Selebi Phikwe', service:'standard', status:'booked', vehicle_id:null, driver_id:null, promised_at: shiftHours(5)},
+    {id:'S4', customer:'EXAMPLE Sunrise Pharmacy Group', waybill:'SPR10044', origin:'Gaborone', destination:'Maun', service:'cold_chain', status:'collected', vehicle_id:'V2', driver_id:'DR3', promised_at: shiftHours(6), collected_at: shiftHours(-1)},
+    {id:'S5', customer:'EXAMPLE Tlokweng Hardware', waybill:'SPR10045', origin:'Gaborone', destination:'Gaborone', service:'sprint', status:'delivered', vehicle_id:'V1', driver_id:'DR2', promised_at: shiftHours(-4), collected_at: shiftHours(-5), delivered_at: shiftHours(-4.5), pod_name:'S. Modise'},
+    {id:'S6', customer:'EXAMPLE Airport Junction Clinic', waybill:'SPR10046', origin:'Gaborone', destination:'Gaborone', service:'cold_chain', status:'exception', vehicle_id:'V2', driver_id:'DR1', promised_at: shiftHours(-2), collected_at: shiftHours(-3), exception_code:'client_closed', exception_note:'Clinic closed for lunch, redelivery at 2pm.'},
+    {id:'S7', customer:'EXAMPLE Diamond Freight Forwarders', waybill:'SPR10047', origin:'Gaborone', destination:'Gaborone', service:'sprint', status:'delivered', vehicle_id:'V3', driver_id:'DR3', promised_at: shiftHours(-6), collected_at: shiftHours(-7), delivered_at: shiftHours(-6.2), pod_name:'T. Freight'},
+    {id:'S8', customer:'EXAMPLE Boteti Mining Supplies', waybill:'SPR10048', origin:'Gaborone', destination:'Boteti', service:'standard', status:'booked', vehicle_id:null, driver_id:null, promised_at: shiftHours(9)},
+  ]
+};
+
+async function apiFetch(path, opts){
+  const res = await fetch(path, Object.assign({credentials:'include', headers:{'Content-Type':'application/json'}}, opts));
+  let json; try{ json = await res.json(); }catch(e){ json={ok:false, error:'Bad response'}; }
+  if(res.status===401){ const err=new Error('unauthorized'); err.auth=true; throw err; }
+  if(!json.ok){ throw new Error(json.error || ('HTTP '+res.status)); }
+  return json.data;
+}
+
+async function boot(){
+  /* phone copy: not served by the office hub, so there is nothing to sign in to.
+     Go straight to the example rather than showing a login screen that cannot work. */
+  var __h = (location.hostname || '');
+  var __onHub = __h === 'localhost' || __h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(__h);
+  if (!__onHub) { loadFallback(); return; }
+
+  try{
+    ME = await apiFetch('/api/me');
+    document.getElementById('whoLine').textContent = ME.name + ' - ' + ME.role;
+    SprintPulseWidget.mount('pulseWidget');
+    await loadLive();
+  }catch(e){
+    if(e.auth){ showLogin(); } else { OFFLINE=true; loadFallback(); }
+  }
+}
+async function loadLive(){
+  try{
+    const [shipments, vehicles, drivers, customers] = await Promise.all([
+      apiFetch('/api/shipments?limit=300'), apiFetch('/api/vehicles?limit=100'),
+      apiFetch('/api/drivers?limit=100'), apiFetch('/api/customers?limit=500'),
+    ]);
+    DATA = {shipments, vehicles, drivers, customers, live:true};
+    SYNCED_AT = new Date().toISOString();
+    localStorage.setItem(CACHE_KEY, JSON.stringify({data:DATA, at:SYNCED_AT}));
+    render();
+  }catch(e){ loadFallback(); }
+}
+function loadFallback(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){
+    try{ const parsed=JSON.parse(cached); DATA=parsed.data; DATA.live=false; DATA.cached=true; SYNCED_AT=parsed.at; render(); return; }catch(e){}
+  }
+  DATA = {example:true, shipments: EXAMPLE.shipments.map(s=>Object.assign({},s)), vehicles: EXAMPLE.vehicles, drivers: EXAMPLE.drivers};
+  SYNCED_AT = null;
+  render();
+}
+function showLogin(){
+  document.getElementById('app').innerHTML='';
+  document.getElementById('loginWrap').style.display='block';
+  document.getElementById('syncText').textContent='Sign in';
+}
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const staffId=document.getElementById('staffId').value.trim();
+  const pin=document.getElementById('pin').value.trim();
+  const errEl=document.getElementById('loginErr'); errEl.style.display='none';
+  try{
+    await apiFetch('/api/login', {method:'POST', body:JSON.stringify({staffId,pin})});
+    document.getElementById('loginWrap').style.display='none';
+    await boot();
+  }catch(err){ errEl.textContent='Could not sign in. Check the staff ID and PIN.'; errEl.style.display='block'; }
+});
+document.getElementById('offlineBtn').addEventListener('click', ()=>{
+  document.getElementById('loginWrap').style.display='none'; OFFLINE=true; loadFallback();
+});
+
+function updateSyncBadge(){
+  const badge=document.getElementById('syncBadge'), text=document.getElementById('syncText');
+  if(DATA && DATA.example){ badge.classList.add('offline'); text.textContent='Offline'; }
+  else if(DATA && DATA.live){ badge.classList.remove('offline'); text.textContent='Synced now'; }
+  else if(SYNCED_AT){ badge.classList.add('offline'); text.textContent='Synced '+localDT(SYNCED_AT); }
+  else { badge.classList.add('offline'); text.textContent='Offline'; }
+}
+
+function customerName(id){
+  if(DATA.example) return id;
+  const c = (DATA.customers||[]).find(x=>x.id===id);
+  return c ? c.name : id;
+}
+function vehicleOf(id){ return (DATA.vehicles||[]).find(v=>v.id===id); }
+function driverOf(id){ return (DATA.drivers||[]).find(d=>d.id===id); }
+
+function jobClock(s){
+  if(s.status==='delivered'){
+    if(s.promised_at && s.delivered_at){
+      const late = new Date(s.delivered_at) > new Date(s.promised_at);
+      return {text: late ? 'DELIVERED LATE' : 'ON TIME', cls: late ? 'late' : 'ok'};
+    }
+    return {text:'DELIVERED', cls:'ok'};
+  }
+  if(!s.promised_at) return {text:'', cls:''};
+  const diffMin = Math.round((new Date(s.promised_at) - new Date())/60000);
+  if(diffMin < 0) return {text:'LATE '+fmtMin(-diffMin), cls:'late'};
+  return {text:'due '+localTimeOnly(s.promised_at), cls:'ok'};
+}
+function fmtMin(min){ if(min<60) return min+'m'; return Math.floor(min/60)+'h '+(min%60)+'m'; }
+
+function todayOnTimeRate(){
+  const today = gaboroneDateStr();
+  const delivered = (DATA.shipments||[]).filter(s=> s.status==='delivered' && s.promised_at && gaboroneDateStr(new Date(s.promised_at))===today);
+  if(delivered.length===0) return null;
+  const onTime = delivered.filter(s=> s.delivered_at && new Date(s.delivered_at) <= new Date(s.promised_at));
+  return {rate: Math.round((onTime.length/delivered.length)*100), total: delivered.length, onTime: onTime.length};
+}
+
+function render(){
+  updateSyncBadge();
+  const shipments = DATA.shipments||[];
+  const html=[];
+
+  if(DATA.example){ html.push('<div class="banner-example">EXAMPLE DATA. Every company, tender, parcel and number on this screen is invented to show how the screen works.</div>'); }
+  else if(!DATA.live){ html.push('<div class="banner-stale">Showing last synced data from '+localDT(SYNCED_AT)+'. Hub unreachable now.</div>'); }
+
+  const otr = todayOnTimeRate();
+  html.push('<div class="otr-card"><div class="otr-top"><span class="otr-label">On time rate today</span></div>');
+  if(otr===null){
+    html.push('<div style="font-size:12px;color:var(--dim);">No deliveries completed today yet.</div>');
+  } else {
+    const cls = otr.rate>=90?'green':(otr.rate>=70?'orange':'red');
+    html.push('<div class="otr-num" style="color:var(--'+cls+');">'+otr.rate+'%</div>');
+    html.push('<div class="bar"><div class="bar-fill '+(cls==='green'?'':cls==='orange'?'active':'exception')+'" style="width:'+Math.max(4,otr.rate)+'%"></div></div>');
+    html.push('<div style="font-size:11px;color:var(--dim);margin-top:6px;">'+otr.onTime+' of '+otr.total+' delivered on time</div>');
+  }
+  html.push('</div>');
+
+  html.push('<section><div class="section-head"><h2>Jobs board</h2></div>');
+  const counts={}; STATUSES.forEach(s=>counts[s]=0);
+  shipments.forEach(s=>{ counts[s.status]=(counts[s.status]||0)+1; });
+  const maxC = Math.max(1, ...STATUSES.map(s=>counts[s]));
+  STATUSES.forEach(status=>{
+    const c = counts[status]||0;
+    const pct = Math.max(c?5:0, Math.round((c/maxC)*100));
+    const cls = status==='exception' ? 'exception' : 'delivered';
+    html.push(
+      '<button class="status-row" data-status="'+status+'" onclick="toggleStatus(\''+status+'\')">'+
+        '<div class="status-top"><span class="status-name">'+STATUS_LABEL[status]+'</span><span style="color:var(--dim);">'+c+' jobs</span></div>'+
+        '<div class="bar"><div class="bar-fill '+cls+'" style="width:'+pct+'%"></div><span class="bar-count">'+c+'</span></div>'+
+      '</button>'+
+      '<div class="jobs-list" id="jobs-'+status+'">' + shipments.filter(s=>s.status===status).map(jobRow).join('') + (c===0?'<div class="empty-note">No jobs in this status.</div>':'') + '</div>'
+    );
+  });
+  html.push('</section>');
+
+  document.getElementById('app').innerHTML = html.join('');
+}
+
+function jobRow(s){
+  const clock = jobClock(s);
+  const who = DATA.example ? s.customer : customerName(s.customer_id);
+  return '<div class="job-item" onclick="openJob(\''+s.id+'\')">'+
+    '<div><div class="job-who">'+esc(who)+'</div><div class="job-route">'+esc(s.origin)+' &rarr; '+esc(s.destination)+' &middot; '+esc(s.waybill||'')+'</div></div>'+
+    '<div class="job-clock '+clock.cls+'">'+clock.text+'</div>'+
+  '</div>';
+}
+
+function toggleStatus(status){
+  document.querySelectorAll('.jobs-list').forEach(el=>{ if(el.id!=='jobs-'+status) el.classList.remove('show'); });
+  document.querySelectorAll('.status-row').forEach(el=>{ if(el.dataset.status!==status) el.classList.remove('open'); });
+  document.getElementById('jobs-'+status).classList.toggle('show');
+  document.querySelector('.status-row[data-status="'+status+'"]').classList.toggle('open');
+}
+
+/* ---------- job drawer ---------- */
+let CURRENT_JOB=null;
+function openJob(id){
+  const s = (DATA.shipments||[]).find(x=>x.id===id);
+  if(!s) return;
+  CURRENT_JOB = s;
+  const who = DATA.example ? s.customer : customerName(s.customer_id);
+  const veh = vehicleOf(s.vehicle_id);
+  const drv = driverOf(s.driver_id);
+  const clock = jobClock(s);
+  const isColdChain = veh && veh.cold_chain;
+
+  const html=[];
+  html.push('<button class="drawer-close" onclick="closeDrawer()">Close</button>');
+  html.push('<h2>'+esc(who)+'</h2>');
+  html.push('<div class="sub">'+esc(s.waybill||'')+' &middot; '+esc(s.origin)+' to '+esc(s.destination)+' &middot; '+esc((s.service||'').replace('_',' '))+'</div>');
+  html.push('<span class="verdict '+(clock.cls==='late'?'red':'green')+'">'+STATUS_LABEL[s.status]+(clock.text?' &middot; '+clock.text:'')+'</span>');
+
+  if(s.status==='exception'){
+    html.push('<div class="field-label">Exception</div>');
+    html.push('<div style="font-size:13px;color:var(--red);font-weight:600;">'+esc((s.exception_code||'').replace(/_/g,' '))+'</div>');
+    html.push('<div style="font-size:12px;color:var(--dim);margin-top:4px;">'+esc(s.exception_note||'')+'</div>');
+    html.push('<div class="field-label">Recover</div>');
+    html.push('<div class="btn-row">'+
+      '<button class="btn" onclick="recoverTo(\'in_transit\')">Back to in transit</button>'+
+      '<button class="btn" onclick="recoverTo(\'out_for_delivery\')">Retry delivery</button>'+
+    '</div>');
+  }
+
+  html.push('<div class="field-label">Assign driver and vehicle</div>');
+  html.push('<div class="rowfields">');
+  html.push('<select id="assignDriver"><option value="">No driver</option>' + (DATA.drivers||[]).map(d=>'<option value="'+d.id+'" '+(s.driver_id===d.id?'selected':'')+'>'+esc(d.name)+'</option>').join('') + '</select>');
+  html.push('<select id="assignVehicle"><option value="">No vehicle</option>' + (DATA.vehicles||[]).map(v=>'<option value="'+v.id+'" '+(s.vehicle_id===v.id?'selected':'')+'>'+esc(v.reg)+(v.cold_chain?' (cold chain)':'')+'</option>').join('') + '</select>');
+  html.push('</div>');
+  html.push('<button class="btn ghost" onclick="saveAssignment()">Save assignment</button>');
+
+  if(NEXT_STATUS[s.status]){
+    html.push('<div class="field-label">Advance status</div>');
+    html.push('<button class="btn" onclick="advanceStatus(\''+NEXT_STATUS[s.status]+'\')">Move to '+STATUS_LABEL[NEXT_STATUS[s.status]]+'</button>');
+  }
+
+  if(s.status!=='delivered' && s.status!=='exception'){
+    html.push('<div class="field-label">Raise exception</div>');
+    html.push('<select id="excCode">' + EXC_CODES.map(c=>'<option value="'+c.v+'">'+c.l+'</option>').join('') + '</select>');
+    html.push('<textarea id="excNote" placeholder="What happened" style="margin-top:6px;"></textarea>');
+    html.push('<button class="btn red" onclick="raiseException()">Raise exception</button>');
+  }
+
+  if(s.status!=='delivered'){
+    html.push('<div class="field-label">Proof of delivery</div>');
+    html.push('<input type="text" id="podName" placeholder="Received by (name)">');
+    if(isColdChain){
+      html.push('<div class="rowfields" style="margin-top:8px;">'+
+        '<input type="number" id="tempMin" placeholder="Temp min (C)">'+
+        '<input type="number" id="tempMax" placeholder="Temp max (C)">'+
+      '</div>');
+    }
+    html.push('<div class="field-label" style="margin-top:10px;">Signature</div>');
+    html.push('<div class="sig-wrap"><canvas id="sigPad"></canvas></div>');
+    html.push('<div class="sig-actions"><button class="sig-clear" onclick="clearSig()">Clear</button></div>');
+    html.push('<div class="field-label">Photo (optional)</div>');
+    html.push('<input type="file" id="podPhoto" accept="image/*" capture="environment">');
+    html.push('<button class="btn orange" onclick="submitPod()">Submit POD and mark delivered</button>');
+  } else {
+    html.push('<div class="field-label">Proof of delivery</div>');
+    html.push('<div style="font-size:12px;color:var(--dim);">Received by '+esc(s.pod_name||'unknown')+' at '+localDT(s.delivered_at)+'</div>');
+  }
+
+  document.getElementById('drawer').innerHTML = html.join('');
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('drawerBg').classList.add('show');
+
+  if(s.status!=='delivered') setupSigPad();
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('drawerBg').classList.remove('show');
+  CURRENT_JOB=null;
+}
+document.getElementById('drawerBg').addEventListener('click', closeDrawer);
+
+async function saveAssignment(){
+  if(!CURRENT_JOB) return;
+  const driver_id = document.getElementById('assignDriver').value || null;
+  const vehicle_id = document.getElementById('assignVehicle').value || null;
+  if(DATA.example || !DATA.live){
+    CURRENT_JOB.driver_id = driver_id; CURRENT_JOB.vehicle_id = vehicle_id;
+    render(); openJob(CURRENT_JOB.id); return;
+  }
+  try{
+    await apiFetch('/api/shipments/'+CURRENT_JOB.id, {method:'PATCH', body:JSON.stringify({driver_id, vehicle_id})});
+    await loadLive(); openJob(CURRENT_JOB.id);
+  }catch(e){ alert('Could not save assignment: '+e.message); }
+}
+
+async function advanceStatus(status){
+  if(!CURRENT_JOB) return;
+  if(DATA.example || !DATA.live){
+    CURRENT_JOB.status = status;
+    if(status==='collected') CURRENT_JOB.collected_at = new Date().toISOString();
+    render(); openJob(CURRENT_JOB.id); return;
+  }
+  try{
+    await apiFetch('/api/shipments/'+CURRENT_JOB.id+'/status', {method:'POST', body:JSON.stringify({status})});
+    await loadLive(); openJob(CURRENT_JOB.id);
+  }catch(e){ alert('Could not advance status: '+e.message); }
+}
+async function recoverTo(status){ return advanceStatus(status); }
+
+async function raiseException(){
+  if(!CURRENT_JOB) return;
+  const exception_code = document.getElementById('excCode').value;
+  const exception_note = document.getElementById('excNote').value;
+  if(DATA.example || !DATA.live){
+    CURRENT_JOB.status='exception'; CURRENT_JOB.exception_code=exception_code; CURRENT_JOB.exception_note=exception_note;
+    render(); openJob(CURRENT_JOB.id); return;
+  }
+  try{
+    await apiFetch('/api/shipments/'+CURRENT_JOB.id+'/status', {method:'POST', body:JSON.stringify({status:'exception', exception_code, exception_note})});
+    await loadLive(); openJob(CURRENT_JOB.id);
+  }catch(e){ alert('Could not raise exception: '+e.message); }
+}
+
+/* signature pad */
+let sigCtx=null, sigDrawing=false, sigHasInk=false;
+function setupSigPad(){
+  const canvas = document.getElementById('sigPad');
+  if(!canvas) return;
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * ratio; canvas.height = 140 * ratio;
+  sigCtx = canvas.getContext('2d');
+  sigCtx.scale(ratio, ratio);
+  sigCtx.strokeStyle = '#F4F4F1'; sigCtx.lineWidth = 2; sigCtx.lineCap='round'; sigCtx.lineJoin='round';
+  sigHasInk = false;
+  function pos(e){
+    const r = canvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+    return {x:cx, y:cy};
+  }
+  function start(e){ sigDrawing=true; sigHasInk=true; const p=pos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x,p.y); e.preventDefault(); }
+  function move(e){ if(!sigDrawing) return; const p=pos(e); sigCtx.lineTo(p.x,p.y); sigCtx.stroke(); e.preventDefault(); }
+  function end(e){ sigDrawing=false; }
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false}); canvas.addEventListener('touchend', end);
+}
+function clearSig(){
+  const canvas = document.getElementById('sigPad');
+  if(!canvas || !sigCtx) return;
+  sigCtx.clearRect(0,0,canvas.width,canvas.height);
+  sigHasInk = false;
+}
+
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function submitPod(){
+  if(!CURRENT_JOB) return;
+  const pod_name = document.getElementById('podName').value.trim();
+  if(!pod_name){ alert('Enter who received the parcel.'); return; }
+  const canvas = document.getElementById('sigPad');
+  const signature_png_base64 = (canvas && sigHasInk) ? canvas.toDataURL('image/png').split(',')[1] : undefined;
+  const photoInput = document.getElementById('podPhoto');
+  let photo_base64;
+  if(photoInput && photoInput.files && photoInput.files[0]){
+    try{ photo_base64 = await fileToBase64(photoInput.files[0]); }catch(e){}
+  }
+  const tempMinEl = document.getElementById('tempMin'), tempMaxEl = document.getElementById('tempMax');
+  const body = {pod_name, signature_png_base64, photo_base64};
+  if(tempMinEl) body.temp_min = tempMinEl.value ? Number(tempMinEl.value) : undefined;
+  if(tempMaxEl) body.temp_max = tempMaxEl.value ? Number(tempMaxEl.value) : undefined;
+
+  if(DATA.example || !DATA.live){
+    CURRENT_JOB.pod_name = pod_name;
+    CURRENT_JOB.status = 'delivered';
+    CURRENT_JOB.delivered_at = new Date().toISOString();
+    if(body.temp_min!==undefined) CURRENT_JOB.temp_min = body.temp_min;
+    if(body.temp_max!==undefined) CURRENT_JOB.temp_max = body.temp_max;
+    render(); closeDrawer();
+    return;
+  }
+  try{
+    await apiFetch('/api/shipments/'+CURRENT_JOB.id+'/pod', {method:'POST', body:JSON.stringify(body)});
+    await apiFetch('/api/shipments/'+CURRENT_JOB.id+'/status', {method:'POST', body:JSON.stringify({status:'delivered', pod_name})});
+    await loadLive(); closeDrawer();
+  }catch(e){ alert('Could not submit POD: '+e.message); }
+}
+
+boot();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+<script>
+
+/* ---------- the map card ---------- */
+var MAP_EXAMPLE = {"generated_at": "2026-09-12T21:21:24.000Z", "vehicles": [{"vehicle_id": "veh_example_3", "reg": "EXAMPLE-B789ABC", "type": "van (cold chain)", "state": "moving", "standing_minutes": 0, "position": {"lat": -24.05, "lng": 26.25, "accuracy_m": 12, "recorded_at": "2026-09-12T21:19:24.000Z", "age_minutes": 2}, "trip": {"id": "trp_example_2", "departed_at": "2026-09-12T18:11:24.000Z", "driver_name": "EXAMPLE Driver Two", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 145, "minutes_on_trip": 190, "deliveries_today": 2}, "documents": {"permit_expires_on": "2027-04-01", "insurance_expires_on": "2027-04-10", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": null, "last_odometer": 5000}, "note": null}, {"vehicle_id": "veh_example_2", "reg": "EXAMPLE-B456ABC", "type": "truck", "state": "standing", "standing_minutes": 32, "position": {"lat": -23.12, "lng": 26.8, "accuracy_m": 9, "recorded_at": "2026-09-12T21:20:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_example_5", "departed_at": "2026-09-12T17:41:24.000Z", "driver_name": "EXAMPLE Driver Three", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 95, "minutes_on_trip": 220, "deliveries_today": 3}, "documents": {"permit_expires_on": "2027-02-28", "insurance_expires_on": "2026-10-05", "roadworthy_expires_on": "2026-09-08", "service_due_at": null, "service_due_km": 69000, "last_odometer": 68720}, "note": null}, {"vehicle_id": "veh_example_1", "reg": "EXAMPLE-B123ABC", "type": "van", "state": "no_trip", "standing_minutes": null, "position": null, "trip": null, "utilisation_today": {"minutes_moving": 0, "minutes_on_trip": 0, "deliveries_today": 0}, "documents": {"permit_expires_on": "2027-03-31", "insurance_expires_on": "2027-01-15", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": 13500, "last_odometer": 12880}, "note": "No trip open, and no position ever recorded for this vehicle."}]};
+var MAP_TOWNS = [ {n:'Gaborone', lat:-24.65, lng:25.92}, {n:'Mahalapye', lat:-23.10, lng:26.81}, {n:'Palapye', lat:-22.55, lng:27.12}, {n:'Francistown', lat:-21.17, lng:27.51} ];
+function mapXY(lat, lng){
+  // the A1 corridor as a box: Gaborone bottom left, Francistown top right, a little air around it
+  var x = (lng - 25.55) / (27.85 - 25.55) * 600;
+  var y = 230 - ((lat + 25.0) / (-20.9 + 25.0)) * 230;
+  return { x: Math.max(14, Math.min(586, x)), y: Math.max(16, Math.min(214, y)) };
+}
+function mapEl(tag, attrs, text){
+  var n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (var k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  return n;
+}
+function renderMap(payload, isLive){
+  var svg = document.getElementById('map-svg'); if (!svg) return;
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  // roads: the corridor, and two side roads so it reads as a map and not a line
+  var pts = MAP_TOWNS.map(function(t){ return mapXY(t.lat, t.lng); });
+  var d = 'M ' + pts[0].x + ' ' + pts[0].y + ' C ' + (pts[0].x + 70) + ' ' + (pts[0].y - 20) + ', ' + (pts[1].x - 60) + ' ' + (pts[1].y + 30) + ', ' + pts[1].x + ' ' + pts[1].y +
+          ' S ' + (pts[2].x - 30) + ' ' + (pts[2].y + 10) + ', ' + pts[2].x + ' ' + pts[2].y + ' S ' + (pts[3].x - 40) + ' ' + (pts[3].y + 20) + ', ' + pts[3].x + ' ' + pts[3].y;
+  svg.appendChild(mapEl('path', { d: d, fill: 'none', stroke: 'rgba(255,255,255,.28)', 'stroke-width': 5, 'stroke-linecap': 'round' }));
+  svg.appendChild(mapEl('path', { d: 'M ' + (pts[0].x + 10) + ' ' + (pts[0].y - 6) + ' q 60 -70 150 -60', fill: 'none', stroke: 'rgba(255,255,255,.12)', 'stroke-width': 3, 'stroke-linecap': 'round' }));
+  svg.appendChild(mapEl('path', { d: 'M ' + pts[1].x + ' ' + pts[1].y + ' q 40 60 120 50', fill: 'none', stroke: 'rgba(255,255,255,.12)', 'stroke-width': 3, 'stroke-linecap': 'round' }));
+  MAP_TOWNS.forEach(function(t, i){
+    var p = pts[i];
+    svg.appendChild(mapEl('circle', { cx: p.x, cy: p.y, r: 4, fill: '#C9D6CF' }));
+    svg.appendChild(mapEl('text', { x: p.x, y: p.y - 10, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 700, fill: '#C9D6CF' }, t.n));
+  });
+  var vehicles = (payload && payload.vehicles) || [];
+  var moving = 0, parked = 0;
+  var depot = pts[0];
+  vehicles.forEach(function(v, i){
+    var state = v.state || 'unknown';
+    var col = state === 'moving' ? '#3AAA35' : state === 'standing' ? '#F7941D' : state === 'incident' ? '#FF6B61' : '#9DAAA4';
+    var at;
+    if (v.position && typeof v.position.lat === 'number') { at = mapXY(v.position.lat, v.position.lng); }
+    else { at = { x: depot.x + 22 + parked * 20, y: depot.y + 18 }; parked++; }
+    if (state === 'moving') moving++;
+    var g = mapEl('g', { class: 'mapdot' });
+    if (state === 'moving') g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 14, fill: 'rgba(58,170,53,.25)' }));
+    g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 8, fill: col, stroke: 'rgba(8,28,20,.8)', 'stroke-width': 2 }));
+    g.appendChild(mapEl('text', { x: at.x, y: at.y + 20, 'text-anchor': 'middle' }, (v.reg || '').replace('EXAMPLE-', 'EX ')));
+    g.addEventListener('click', function(){ showMapDetail(v); });
+    svg.appendChild(g);
+  });
+  var pill = document.getElementById('map-pill');
+  if (pill) {
+    if (!vehicles.length) { pill.textContent = 'no vehicles yet'; pill.className = 'pill quiet'; }
+    else if (moving) { pill.textContent = moving + ' in transit'; pill.className = 'pill'; }
+    else { pill.textContent = 'nothing moving'; pill.className = 'pill quiet'; }
+  }
+  var cap = document.querySelector('#mapcard .cap');
+  if (cap) cap.textContent = isLive ? 'Fleet, live' : 'Fleet, example';
+}
+function showMapDetail(v){
+  var el = document.getElementById('map-detail'); if (!el) return;
+  var age = '';
+  if (v.position && v.position.recorded_at) { var m = Math.round((Date.now() - Date.parse(v.position.recorded_at)) / 60000); age = m < 1 ? 'just now' : m + ' min ago'; }
+  var who = v.trip && v.trip.driver_name ? v.trip.driver_name : 'nobody on a trip';
+  el.innerHTML = '<b>' + esc((v.reg || '').replace('EXAMPLE-', 'EX ')) + '</b> ' + esc(v.type || '') + ' \u00b7 ' + esc(v.state || '') +
+    (v.standing_minutes ? ', standing ' + v.standing_minutes + ' min' : '') + (age ? ' \u00b7 reported ' + age : '') +
+    '<br>Driver: ' + esc(who) + (v.trip && v.trip.route_label ? ' \u00b7 ' + esc(v.trip.route_label) : '') +
+    (v.note ? '<br><span style="color:#C9D6CF">' + esc(v.note) + '</span>' : '');
+  el.classList.add('open');
+}
+(function bootMap(){
+  renderMap(MAP_EXAMPLE, false);
+  if (!window.fetch || location.protocol === 'file:') return;
+  var h = location.hostname || '';
+  var onHub = h === 'localhost' || h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h);
+  if (!onHub) return;
+  var tick = function(){
+    fetch('/api/fleet/live', { credentials: 'include' }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(b){ if (b && b.data && b.data.vehicles) renderMap(b.data, true); }).catch(function(){});
+  };
+  tick(); setInterval(tick, 60000);
+})();
+
+</script>
+<script src="../shared/sprint-notify.js"></script>
+</body>
+</html>

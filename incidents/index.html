@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Incident Desk - Sprint Couriers</title>
+<meta name="theme-color" content="#131311">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../shared/logo-mark.png">
+<link rel="apple-touch-icon" href="../shared/logo-mark.png">
+<style>
+/* Local first brand type. It never phones home to Google, and it never
+   breaks when there is no internet or no signal on a driver phone. Drop
+   the two real font files into apps/shared/fonts/ to restore the exact
+   brand type offline; see the README there. With no files present this
+   falls back to the system font stack below. */
+@font-face{font-family:'Anton'; font-weight:400; font-display:swap;
+  src:local('Anton'), url('../shared/fonts/Anton-Regular.woff2') format('woff2'), url('../shared/fonts/Anton-Regular.ttf') format('truetype');}
+@font-face{font-family:'Inter'; font-weight:100 900; font-display:swap;
+  src:local('Inter'), url('../shared/fonts/Inter-Variable.woff2') format('woff2'), url('../shared/fonts/Inter-Variable.ttf') format('truetype');}
+:root{
+  --font-display:'Anton', Impact, 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ink:#131311; --panel:#1d1d19; --line:#2c2c27; --bone:#F4F4F1; --dim:#a6a69f;
+  --green:#3AAA35; --orange:#F7941D; --red:#e0483e;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--ink); color:var(--bone); font-family:var(--font-body);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  min-height:100vh; padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+h1,h2,h3,.disp{font-family:var(--font-display); text-transform:uppercase; letter-spacing:0.01em; font-weight:400;}
+button{font-family:inherit;}
+::selection{background:var(--orange); color:var(--ink);}
+
+header{position:sticky; top:0; z-index:20; background:var(--ink); border-bottom:1px solid var(--line); padding:10px 14px; display:flex; align-items:center; gap:10px;}
+header img{width:32px; height:32px; object-fit:contain; flex:none;}
+header .titles{flex:1; min-width:0;}
+header h1{font-size:15px; line-height:1.1;}
+header .who{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.sync-badge{font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line); color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;}
+.sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
+.sync-badge.offline{color:var(--orange); border-color:var(--orange);}
+.sync-badge.offline .sync-dot{background:var(--orange);}
+
+main{max-width:760px; margin:0 auto; padding:12px 14px 40px;}
+.banner-example{background:rgba(247,148,29,0.12); border:1px solid var(--orange); color:var(--orange); font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; margin-bottom:12px;}
+.banner-stale{background:var(--panel); border:1px solid var(--line); color:var(--dim); font-size:12px; padding:8px 12px; border-radius:8px; margin-bottom:12px;}
+
+section{margin-bottom:20px;}
+.section-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+.section-head h2{font-size:13px; color:var(--dim); letter-spacing:0.06em; text-transform:uppercase;}
+
+select,input[type=text],input[type=number],textarea{background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:8px 10px; font-size:13px; font-family:inherit; width:100%;}
+textarea{min-height:56px; resize:vertical;}
+.rowfields{display:flex; gap:8px;}
+.rowfields > *{flex:1;}
+.field-label{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; margin:12px 0 6px;}
+.field-label:first-child{margin-top:0;}
+.btn{background:var(--green); color:var(--ink); border:none; border-radius:6px; font-weight:700; padding:10px 12px; font-size:13px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em; width:100%; margin-top:10px;}
+.btn.orange{background:var(--orange);}
+.btn.red{background:var(--red); color:var(--bone);}
+.btn.ghost{background:none; border:1px solid var(--line); color:var(--bone);}
+.btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+.btn-row .btn{width:auto; flex:1; margin-top:0;}
+.btn-sm{width:auto; margin-top:0; padding:6px 10px; font-size:11px;}
+
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:10px;}
+.incident-card{display:block; width:100%; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:8px; cursor:pointer;}
+.incident-card.sev4{border-color:var(--red);}
+.incident-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+.incident-title{font-weight:700; font-size:13px;}
+.incident-meta{font-size:11px; color:var(--dim); margin-top:4px;}
+.tag{font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; padding:3px 8px; border-radius:20px; border:1px solid var(--line); color:var(--dim); flex:none;}
+.tag.status-open{border-color:var(--red); color:var(--red);}
+.tag.status-contained{border-color:var(--orange); color:var(--orange);}
+.tag.status-recovering{border-color:var(--green); color:var(--green);}
+.tag.status-closed{border-color:var(--line); color:var(--dim);}
+.empty-note{font-size:12px; color:var(--dim); padding:10px 4px;}
+
+.pop-row{margin-bottom:10px;}
+.pop-top{display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;}
+.pop-label{color:var(--dim); text-transform:uppercase; letter-spacing:0.05em;}
+.bar{position:relative; height:16px; background:var(--line); border-radius:4px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:4px; background:var(--green); min-width:2px;}
+
+.ship-row{border-bottom:1px solid var(--line); padding:9px 0;}
+.ship-row:last-child{border-bottom:none;}
+.ship-top{display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;}
+.ship-who{font-weight:700;}
+.ship-pop{font-size:10px; color:var(--dim); text-transform:uppercase;}
+
+.step-row{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:12px;}
+.step-row:last-child{border-bottom:none;}
+.step-label{flex:1;}
+.step-status{font-size:10px; font-weight:800; text-transform:uppercase; padding:2px 7px; border-radius:20px; border:1px solid var(--line); color:var(--dim);}
+.step-status.done{border-color:var(--green); color:var(--green);}
+.step-status.doing{border-color:var(--orange); color:var(--orange);}
+.step-status.na{border-color:var(--line); color:var(--dim); text-decoration:line-through;}
+
+.notice-card{border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:8px;}
+.notice-top{display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin-bottom:6px;}
+.notice-body{font-size:12px; line-height:1.5; white-space:pre-wrap;}
+
+pre.summary{white-space:pre-wrap; font-family:var(--font-body); font-size:12px; line-height:1.6; background:var(--ink); border:1px solid var(--line); border-radius:6px; padding:10px; max-height:340px; overflow-y:auto;}
+
+.drawer-bg{position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:40; display:none;}
+.drawer-bg.show{display:block;}
+.drawer{position:fixed; right:0; top:0; bottom:0; width:100%; max-width:520px; background:var(--panel); border-left:1px solid var(--line); z-index:41; transform:translateX(100%); transition:transform .25s ease; overflow-y:auto; padding:14px 14px 40px;}
+.drawer.show{transform:translateX(0);}
+.drawer-close{background:none; border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:6px 10px; font-size:12px; float:right; cursor:pointer;}
+.drawer h2{font-size:18px; margin:6px 0 2px; clear:both;}
+.drawer .sub{font-size:12px; color:var(--dim); margin-bottom:10px;}
+
+.login-wrap{max-width:320px; margin:18vh auto 0; padding:0 20px;}
+.login-wrap h1{font-size:22px; margin-bottom:4px;}
+.login-wrap p{font-size:12px; color:var(--dim); margin-bottom:18px;}
+.login-wrap form{display:flex; flex-direction:column; gap:10px;}
+.login-wrap input{background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:9px 10px; font-size:14px;}
+.login-hint{font-size:11px; color:var(--dim); margin-top:14px; line-height:1.5;}
+.err{color:var(--red); font-size:12px; margin-top:6px; display:none;}
+@media(min-width:640px){ main{padding:18px 24px 40px;} }
+
+/* Text all customers, docs/DESIGN-LANGUAGE.md: the proactive card, orange once as the power button */
+.textall{border-radius:22px;padding:14px 16px 12px;margin:12px 0;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);border-left:5px solid #F7941D;backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
+.textall .h{display:flex;align-items:flex-start;gap:12px}
+.textall .pw{width:42px;height:42px;border-radius:50%;background:#F7941D;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 8px 18px -8px rgba(247,148,29,.9)}
+.textall .pw svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.textall .t{font-size:15px;font-weight:800;line-height:1.25;color:#F4F7F5}
+.textall .w{font-size:12.6px;color:#C9D6CF;margin-top:3px}
+.textall .people{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.textall .person{font-size:11.5px;font-weight:800;background:rgba(58,170,53,.22);color:#8FE08A;border-radius:999px;padding:4px 10px}
+.textall details{margin-top:8px}
+.textall summary{font-size:12.5px;font-weight:800;color:#8FE08A;cursor:pointer;list-style:none}
+.textall summary::before{content:'\25B8  '}
+.textall details[open] summary::before{content:'\25BE  '}
+.textall .msg{background:rgba(255,255,255,.08);border-radius:12px;padding:9px 11px;font-size:12.4px;color:#F4F7F5;margin-top:8px;white-space:pre-wrap}
+.textall .msg b{display:block;font-size:11px;color:#A7B5AE;margin-bottom:3px;font-weight:800}
+.textall .row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.textall .copy{background:#fff;color:#0E2F22;border:0;border-radius:999px;font-weight:800;padding:9px 16px;font-size:13px;cursor:pointer;width:auto}
+.textall .nosend{font-size:11.2px;font-weight:800;color:#C9D6CF;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:3px 10px}
+.textall .numbers{font-size:11.2px;color:#A7B5AE}
+.textall .flash{font-size:12px;color:#8FE08A;font-weight:700;display:none}
+.textall .flash.show{display:inline}
+.textall-mini{display:flex;align-items:center;gap:10px;margin:10px 0 14px;padding:11px 14px;border-radius:16px;background:rgba(247,148,29,.16);border:1px solid rgba(247,148,29,.45);color:#FDBE74;font-size:13px;font-weight:700;cursor:pointer}
+.textall-mini b{color:#fff}
+
+/* Brick 61: the bell, same on every page */
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<link rel="stylesheet" href="../shared/sprint-theme.css">
+</head>
+<body>
+
+<header>
+  <img src="../shared/logo-mark.png" alt="Sprint Couriers">
+  <div class="titles"><h1>Incident Desk</h1><div class="who" id="whoLine">Not signed in</div></div>
+  <span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+  <div class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Loading</span></div>
+</header>
+
+<main id="app"><div style="padding:40px 4px; color:var(--dim); font-size:13px;">Loading Incident Desk...</div></main>
+
+<div class="login-wrap" id="loginWrap" style="display:none;">
+  <h1>Sign in</h1>
+  <p>Sprint Couriers staff PIN</p>
+  <form id="loginForm">
+    <input type="text" id="staffId" placeholder="Staff ID" autocomplete="username" required>
+    <input type="text" inputmode="numeric" pattern="[0-9]*" id="pin" placeholder="PIN" maxlength="8" autocomplete="current-password" required>
+    <button class="btn" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <button class="btn ghost" id="offlineBtn">View example data instead</button>
+</div>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="drawer" id="drawer"></div>
+
+<!-- The single worst defect: every report emergency tap used to send
+     type: 'other' no matter what happened, so this list never had a real
+     word to show ops. apps/shared/emergency-types.js is the one file the
+     driver app's screen and hub/server.js's validation both read; loading
+     it here too means this list shows the exact words the driver pressed,
+     never a second hand copy that can drift. -->
+<script src="../shared/emergency-types.js"></script>
+<script>
+// ORG_TYPES: this repo's older, ops-opened incident taxonomy (a depot
+// fire, a systems outage), kept exactly as it was; 'other' is shared with
+// EMERGENCY_TYPES below and only listed once. TYPES is widened, not
+// replaced, so an existing EXAMPLE incident opened under the old taxonomy
+// still shows a real label.
+const ORG_TYPES = ['vehicle_accident','hijack_theft','cold_chain_failure','driver_incapacity','depot_fire','systems_outage','customs_hold','weather_road_closure'];
+const ORG_TYPE_LABEL = {vehicle_accident:'Vehicle accident', hijack_theft:'Hijack or theft', cold_chain_failure:'Cold chain failure', driver_incapacity:'Driver incapacity', depot_fire:'Depot fire', systems_outage:'Systems outage', customs_hold:'Customs hold', weather_road_closure:'Weather or road closure', other:'Other'};
+const EMERGENCY_TYPE_LABEL = {};
+EMERGENCY_TYPES.forEach((t)=>{ EMERGENCY_TYPE_LABEL[t.type] = t.label; });
+const EMERGENCY_DEFAULT_SEVERITY = {};
+EMERGENCY_TYPES.forEach((t)=>{ EMERGENCY_DEFAULT_SEVERITY[t.type] = t.default_severity; });
+const TYPE_LABEL = Object.assign({}, ORG_TYPE_LABEL, EMERGENCY_TYPE_LABEL);
+const TYPES = Array.from(new Set(ORG_TYPES.concat(EMERGENCY_TYPES.map((t)=>t.type)).concat(['other'])));
+const STATUSES = ['open','contained','recovering','closed'];
+const PARCEL_STATES = ['AT_RISK','LOCATED','INSPECTED_OK','DAMAGED','WET','MISSING','RECOVERED','REDIRECTED','RETURNED','CLAIM_OPEN','WRITTEN_OFF'];
+const SPINE = [
+  {step_key:'protect_life', label:'Protect life'}, {step_key:'stop_movement', label:'Stop movement'},
+  {step_key:'establish_command', label:'Establish command'}, {step_key:'freeze_manifest', label:'Freeze the manifest'},
+  {step_key:'determine_population', label:'Determine the affected population'}, {step_key:'preserve_evidence', label:'Preserve evidence'},
+  {step_key:'communicate', label:'Communicate'}, {step_key:'recover_custody', label:'Recover custody'},
+  {step_key:'reconcile_money', label:'Reconcile money'}, {step_key:'close_corrective_action', label:'Close with corrective action'}
+];
+const ACTION_STATUSES = ['todo','doing','done','na'];
+const POPULATIONS = ['manifest','custody','probable','downstream'];
+
+function pula(t){ const p=(Number(t||0)/100); const parts=p.toFixed(2).split('.'); parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '); return 'P'+parts.join('.'); }
+function localDT(iso){ if(!iso) return ''; try{ return new Date(iso).toLocaleString('en-GB',{timeZone:'Africa/Gaborone',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; } }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// The single worst defect used to leave every emergency with no position
+// at all; hub/server.js now stores a real gps fix or the honest
+// alternative (a last known stop, or nothing), and this is the one place
+// that turns either shape into words for ops. Never guesses a location
+// that was not actually reported.
+function positionText(inc){
+  if(inc.position_lat!=null && inc.position_lng!=null){
+    const acc = inc.position_accuracy_m!=null ? ' (accuracy about '+Math.round(inc.position_accuracy_m)+' m)' : '';
+    return inc.position_lat.toFixed(5)+', '+inc.position_lng.toFixed(5)+acc;
+  }
+  if(inc.position_reference) return 'position unknown, last known: '+inc.position_reference;
+  return 'position unknown';
+}
+function severityText(inc){
+  return inc.severity_clamped_from!=null ? inc.severity+' (raised from '+inc.severity_clamped_from+')' : String(inc.severity);
+}
+function shiftHours(h){ const d=new Date(); d.setUTCHours(d.getUTCHours()+h); return d.toISOString(); }
+
+let ME=null, DATA=null, SYNCED_AT=null, CURRENT=null;
+const CACHE_KEY='sprintos_incidents_cache_v1';
+
+const EXAMPLE = {
+  incidents: [{ id:'inc_example_1', opened_at: shiftHours(-20), type:'vehicle_accident', severity:4, status:'recovering', title:'EXAMPLE: vehicle overturned on the A1', location_text:'EXAMPLE: A1 near Mochudi', trip_id:'trp_example_2', commander_staff_id:'stf_manager', closed_at:null, closed_reason:null, version:1 }],
+  shipments: [
+    {id:'S1', waybill:'EX-0001', customer_id:'C1', destination:'Francistown', declared_value_thebe: 480000},
+    {id:'S2', waybill:'EX-0002', customer_id:'C2', destination:'Francistown', declared_value_thebe: 210000},
+    {id:'S3', waybill:'EX-0003', customer_id:'C3', destination:'Francistown', declared_value_thebe: 95000}
+  ],
+  customers: [{id:'C1', name:'EXAMPLE Kalahari Meats'}, {id:'C2', name:'EXAMPLE Naledi Legal Attorneys'}, {id:'C3', name:'EXAMPLE Riverwalk Optometrists'}],
+  staff: [{id:'stf_example_1', name:'EXAMPLE Staff One'}, {id:'stf_manager', name:'Manager Desk'}, {id:'stf_ops', name:'Ops Desk'}],
+  trips: [{id:'trp_example_2', route_label:'EXAMPLE Gaborone to Francistown run', status:'departed'}],
+  detail: {
+    populations: [
+      {id:'is1', incident_id:'inc_example_1', shipment_id:'S1', population:'manifest', parcel_state:'DAMAGED', inspected_at: shiftHours(-2), note:'EXAMPLE: outer carton crushed on recovery.'},
+      {id:'is2', incident_id:'inc_example_1', shipment_id:'S2', population:'manifest', parcel_state:'LOCATED', inspected_at:null, note:'EXAMPLE: found at the scene, awaiting full inspection.'},
+      {id:'is3', incident_id:'inc_example_1', shipment_id:'S3', population:'manifest', parcel_state:'AT_RISK', inspected_at:null, note:null}
+    ],
+    actions: SPINE.map((s,i)=>({ incident_id:'inc_example_1', step_key:s.step_key, status: i<2?'done':'todo', owner_staff_id:'stf_manager', due_at: shiftHours(i+1), done_at: i<2?shiftHours(-10):null, note: i<2?'EXAMPLE: completed at the scene.':null })),
+    notices: [
+      {id:'icn1', audience:'customer', channel:'whatsapp', status:'draft', customer_id:'C1', body:'Good morning. A vehicle serving your delivery route was involved in an incident during heavy rain last night. Your parcel may arrive later than planned. Our team is recovering and checking every parcel now. We will update you by 11:00. We are sorry for the disruption. Please contact us if your delivery is urgent.'},
+      {id:'icn2', audience:'customer', channel:'whatsapp', status:'draft', customer_id:'C2', body:'Good morning. A vehicle serving your delivery route was involved in an incident during heavy rain last night. Your parcel may arrive later than planned. Our team is recovering and checking every parcel now. We will update you by 11:00. We are sorry for the disruption. Please contact us if your delivery is urgent.'}
+    ]
+  }
+};
+
+async function apiFetch(path, opts){
+  const res = await fetch(path, Object.assign({credentials:'include', headers:{'Content-Type':'application/json'}}, opts));
+  if(res.status===401){ const err=new Error('unauthorized'); err.auth=true; throw err; }
+  const ct = res.headers.get('content-type')||'';
+  if(ct.indexOf('application/json')===-1){ if(!res.ok) throw new Error('HTTP '+res.status); return res.text(); }
+  let json; try{ json = await res.json(); }catch(e){ json={ok:false, error:'Bad response'}; }
+  if(!json.ok){ const err=new Error(json.error || ('HTTP '+res.status)); err.body=json; throw err; }
+  return json.data;
+}
+
+async function boot(){
+  /* phone copy: not served by the office hub, so there is nothing to sign in to.
+     Go straight to the example rather than showing a login screen that cannot work. */
+  var __h = (location.hostname || '');
+  var __onHub = __h === 'localhost' || __h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(__h);
+  if (!__onHub) { loadFallback(); return; }
+
+  try{
+    ME = await apiFetch('/api/me');
+    document.getElementById('whoLine').textContent = ME.name + ' - ' + ME.role;
+    await loadLive();
+  }catch(e){
+    if(e.auth){ showLogin(); } else { loadFallback(); }
+  }
+}
+async function loadLive(){
+  try{
+    const [incidents, customers, staff, trips, shipments] = await Promise.all([
+      apiFetch('/api/incidents'), apiFetch('/api/customers?limit=500'), apiFetch('/api/staff?limit=100'),
+      apiFetch('/api/trips?limit=100'), apiFetch('/api/shipments?limit=500')
+    ]);
+    DATA = {incidents, customers, staff, trips, shipments, live:true};
+    SYNCED_AT = new Date().toISOString();
+    localStorage.setItem(CACHE_KEY, JSON.stringify({data:DATA, at:SYNCED_AT}));
+    render();
+  }catch(e){ loadFallback(); }
+}
+function loadFallback(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){
+    try{ const parsed=JSON.parse(cached); DATA=parsed.data; DATA.live=false; DATA.cached=true; SYNCED_AT=parsed.at; render(); return; }catch(e){}
+  }
+  DATA = Object.assign({example:true}, EXAMPLE);
+  SYNCED_AT = null;
+  render();
+}
+function showLogin(){
+  document.getElementById('app').innerHTML='';
+  document.getElementById('loginWrap').style.display='block';
+  document.getElementById('syncText').textContent='Sign in';
+}
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const staffId=document.getElementById('staffId').value.trim();
+  const pin=document.getElementById('pin').value.trim();
+  const errEl=document.getElementById('loginErr'); errEl.style.display='none';
+  try{
+    await apiFetch('/api/login', {method:'POST', body:JSON.stringify({staffId,pin})});
+    document.getElementById('loginWrap').style.display='none';
+    await boot();
+  }catch(err){ errEl.textContent='Could not sign in. Check the staff ID and PIN.'; errEl.style.display='block'; }
+});
+document.getElementById('offlineBtn').addEventListener('click', ()=>{
+  document.getElementById('loginWrap').style.display='none'; loadFallback();
+});
+
+function updateSyncBadge(){
+  const badge=document.getElementById('syncBadge'), text=document.getElementById('syncText');
+  if(DATA && DATA.example){ badge.classList.add('offline'); text.textContent='Offline'; }
+  else if(DATA && DATA.live){ badge.classList.remove('offline'); text.textContent='Synced now'; }
+  else if(SYNCED_AT){ badge.classList.add('offline'); text.textContent='Synced '+localDT(SYNCED_AT); }
+  else { badge.classList.add('offline'); text.textContent='Offline'; }
+}
+function customerName(id){ const c=(DATA.customers||[]).find(x=>x.id===id); return c?c.name:(id||'Customer on the manifest'); }
+function staffName(id){ if(!id) return 'Unassigned'; const s=(DATA.staff||[]).find(x=>x.id===id); return s?s.name:id; }
+function shipmentOf(id){ return (DATA.shipments||[]).find(x=>x.id===id); }
+
+function render(){
+  updateSyncBadge();
+  const html=[];
+  if(DATA.example){ html.push('<div class="banner-example">EXAMPLE DATA. Every company, tender, parcel and number on this screen is invented to show how the screen works.</div>'); }
+  else if(!DATA.live){ html.push('<div class="banner-stale">Showing last synced data from '+localDT(SYNCED_AT)+'. Hub unreachable now.</div>'); }
+  html.push(textAllMiniHtml());
+
+  html.push('<section><div class="section-head"><h2>Open a new incident</h2><button class="btn-sm btn ghost" style="width:auto;" onclick="toggleOpenForm()">Open incident</button></div>');
+  html.push('<div class="panel" id="openForm" style="display:none;">');
+  html.push('<div class="field-label">Type</div><select id="newType" onchange="onNewTypeChange()">'+TYPES.map(t=>'<option value="'+t+'">'+TYPE_LABEL[t]+'</option>').join('')+'</select>');
+  html.push('<div class="rowfields" style="margin-top:10px;"><div><div class="field-label">Severity</div><select id="newSeverity"><option value="1">1, routine</option><option value="2">2, serious</option><option value="3">3, major</option><option value="4">4, severe</option><option value="5" selected>5, life threatening</option></select></div>');
+  html.push('<div><div class="field-label">Trip (optional)</div><select id="newTrip"><option value="">No trip</option>'+(DATA.trips||[]).map(t=>'<option value="'+t.id+'">'+esc(t.route_label||t.id)+'</option>').join('')+'</select></div></div>');
+  html.push('<div class="field-label">Title</div><input type="text" id="newTitle" placeholder="What happened, in a few words">');
+  html.push('<div class="field-label">Location</div><input type="text" id="newLocation" placeholder="Where">');
+  html.push('<div class="field-label">Incident commander</div><select id="newCommander">'+(DATA.staff||[]).map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')+'</select>');
+  html.push('<button class="btn orange" onclick="createIncident()">Open incident</button>');
+  html.push('</div></section>');
+
+  html.push('<section><div class="section-head"><h2>Incidents</h2></div>');
+  const incidents = (DATA.incidents||[]).slice().sort((a,b)=> (a.status==='closed')-(b.status==='closed') || new Date(b.opened_at)-new Date(a.opened_at));
+  if(!incidents.length) html.push('<div class="empty-note">No incidents open. That is a good sign.</div>');
+  incidents.forEach(inc=>{
+    html.push('<button class="incident-card'+(inc.severity>=4?' sev4':'')+'" onclick="openIncident(\''+inc.id+'\')">'+
+      '<div class="incident-top"><span class="incident-title">'+esc(inc.title)+'</span><span class="tag status-'+inc.status+'">'+inc.status+'</span></div>'+
+      '<div class="incident-meta">'+TYPE_LABEL[inc.type]+' &middot; severity '+severityText(inc)+' &middot; '+esc(positionText(inc))+' &middot; opened '+localDT(inc.opened_at)+'</div>'+
+    '</button>');
+  });
+  html.push('</section>');
+
+  document.getElementById('app').innerHTML = html.join('');
+}
+function toggleOpenForm(){ const el=document.getElementById('openForm'); el.style.display = el.style.display==='none' ? 'block' : 'none'; if(el.style.display==='block') onNewTypeChange(); }
+// A driver may raise a type's default severity but the server never
+// accepts a lower one (hub/server.js clamps it back up and records that
+// it did); this just saves ops a click by starting the picker on the
+// floor a type from the driver's own taxonomy carries, editable upward.
+// A type with no default (the older ops-opened taxonomy) leaves the
+// picker where it was.
+function onNewTypeChange(){
+  const type = document.getElementById('newType').value;
+  const def = EMERGENCY_DEFAULT_SEVERITY[type];
+  if(def) document.getElementById('newSeverity').value = String(def);
+}
+
+async function createIncident(){
+  const body = {
+    type: document.getElementById('newType').value,
+    severity: Number(document.getElementById('newSeverity').value),
+    trip_id: document.getElementById('newTrip').value || undefined,
+    title: document.getElementById('newTitle').value.trim(),
+    location_text: document.getElementById('newLocation').value.trim(),
+    commander_staff_id: document.getElementById('newCommander').value || undefined
+  };
+  if(!body.title){ alert('Give the incident a short title.'); return; }
+  if(DATA.example || !DATA.live){ alert('Example data is read only. Sign in to open a real incident.'); return; }
+  try{
+    await apiFetch('/api/incidents', {method:'POST', body:JSON.stringify(body)});
+    await loadLive();
+  }catch(e){ alert('Could not open the incident: '+e.message); }
+}
+
+async function openIncident(id){
+  if(DATA.example){
+    CURRENT = { incident: DATA.incidents.find(i=>i.id===id), populations: DATA.detail.populations, actions: DATA.detail.actions, notices: DATA.detail.notices };
+    renderDrawer();
+    return;
+  }
+  try{
+    CURRENT = await apiFetch('/api/incidents/'+id);
+    renderDrawer();
+  }catch(e){ alert('Could not open the incident: '+e.message); }
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('drawerBg').classList.remove('show');
+  CURRENT=null;
+}
+document.getElementById('drawerBg').addEventListener('click', closeDrawer);
+
+function popCount(pop){ return (CURRENT.populations||[]).filter(p=>p.population===pop).length; }
+
+
+/* ---------- Text all customers ---------- */
+function lateNoticeFor(waybills, inc){
+  var what = inc && inc.type === 'vehicle_accident' ? 'the vehicle carrying it has been involved in an accident' : 'the vehicle carrying it has been held up';
+  var p = waybills.length > 1 ? 'Your parcels ' + waybills.join(', ') + ' are' : 'Your parcel ' + waybills[0] + ' is';
+  return 'Hello, this is Sprint Couriers. ' + p + ' running late because ' + what + '. We will update you by 15:00 today. We are sorry for the trouble and thank you for your patience.';
+}
+function textAllModel(){
+  if (!CURRENT || !CURRENT.incident) return null;
+  var inc = CURRENT.incident;
+  var pops = (CURRENT.populations || []).filter(function(p){ return p.population !== 'downstream' && p.parcel_state !== 'DELIVERED' && p.parcel_state !== 'WITH_CUSTOMER'; });
+  if (!pops.length) return null;
+  var byCust = {};
+  pops.forEach(function(p){
+    var s = (DATA.shipments || []).find(function(x){ return x.id === p.shipment_id; }) || { id: p.shipment_id, waybill: p.shipment_id, customer_id: null };
+    var c = (DATA.customers || []).find(function(x){ return x.id === s.customer_id; });
+    var name = c ? c.name : 'a customer';
+    if (!byCust[name]) byCust[name] = { name: name, customer_id: s.customer_id, waybills: [] };
+    byCust[name].waybills.push(s.waybill || s.id);
+  });
+  var notices = (CURRENT.notices || []).filter(function(n){ return n.audience === 'customer' && n.body; });
+  var msgs = Object.keys(byCust).map(function(k){
+    var g = byCust[k];
+    var own = notices.find(function(n){ return n.customer_id === g.customer_id; });
+    return { who: g.name, waybills: g.waybills, text: own ? own.body : lateNoticeFor(g.waybills, inc), fromDesk: !!own };
+  });
+  return { inc: inc, parcels: pops.length, msgs: msgs };
+}
+function textAllHtml(){
+  var m = textAllModel(); if (!m) return '';
+  var all = m.msgs.map(function(x){ return x.who + ' (' + x.waybills.join(', ') + '):\n' + x.text; }).join('\n\n');
+  var deskCount = m.msgs.filter(function(x){ return x.fromDesk; }).length;
+  return '<div class="textall"><div class="h"><div class="pw"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/></svg></div>' +
+    '<div><div class="t">Text the ' + m.msgs.length + ' customers with parcels on this incident</div>' +
+    '<div class="w">' + m.parcels + ' parcels are affected. Better they hear it from Sprint first, with a time.' + (deskCount ? ' ' + deskCount + ' of the messages are the desk\u2019s own drafts.' : '') + '</div></div></div>' +
+    '<div class="people">' + m.msgs.map(function(x){ return '<span class="person">' + esc(x.who) + '</span>'; }).join('') + '</div>' +
+    '<details><summary>' + m.msgs.length + ' messages, written</summary>' + m.msgs.map(function(x){ return '<div class="msg"><b>' + esc(x.who) + ' \u00b7 ' + esc(x.waybills.join(', ')) + '</b>' + esc(x.text) + '</div>'; }).join('') + '</details>' +
+    '<textarea id="textall-src" style="position:absolute;left:-9999px">' + esc(all) + '</textarea>' +
+    '<div class="row"><button class="copy" type="button" onclick="textAllCopy()">Copy all ' + m.msgs.length + '</button><span class="nosend">nothing sends itself</span><span class="numbers">numbers are on the office system</span><span class="flash" id="textall-flash">Copied</span></div></div>';
+}
+function textAllCopy(){
+  var ta = document.getElementById('textall-src'); if (!ta) return;
+  var done = function(){ var f = document.getElementById('textall-flash'); if (f) { f.classList.add('show'); setTimeout(function(){ f.classList.remove('show'); }, 1500); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, function(){ ta.select(); try{ document.execCommand('copy'); }catch(e){} done(); });
+  else { ta.select(); try{ document.execCommand('copy'); }catch(e){} done(); }
+}
+function textAllMiniHtml(){
+  // on the list: the first open incident that has affected parcels loaded
+  var open = (DATA.incidents || []).filter(function(i){ return i.status !== 'closed'; });
+  if (!open.length) return '';
+  var i = open[0];
+  var pops = (DATA.detail && DATA.detail.populations || []).filter(function(p){ return p.incident_id === i.id; });
+  var n = pops.length ? pops.length : null;
+  return '<div class="textall-mini" onclick="openIncident(\'' + i.id + '\')"><span>&#9889;</span><span>' + (n ? '<b>' + n + ' parcels</b> on ' : '') + '<b>' + esc(i.title.replace(/^EXAMPLE:\s*/, 'EXAMPLE ')) + '</b>: open it and text every customer with one tap</span></div>';
+}
+
+function renderDrawer(){
+  const inc = CURRENT.incident;
+  const html=[];
+  html.push('<button class="drawer-close" onclick="closeDrawer()">Close</button>');
+  html.push('<h2>'+esc(inc.title)+'</h2>');
+  html.push('<div class="sub">'+TYPE_LABEL[inc.type]+' &middot; severity '+severityText(inc)+' &middot; opened '+localDT(inc.opened_at)+' &middot; '+esc(positionText(inc))+(inc.location_text?' &middot; '+esc(inc.location_text):'')+'</div>');
+
+  html.push('<div class="field-label">Status</div>');
+  html.push('<div class="btn-row">'+STATUSES.map(s=>'<button class="btn'+(s===inc.status?'':' ghost')+' btn-sm" onclick="setStatus(\''+s+'\')">'+s+'</button>').join('')+'</div>');
+
+  html.push(textAllHtml());
+  html.push('<div class="field-label" style="margin-top:16px;">Affected populations</div>');
+  const maxPop = Math.max(1, ...POPULATIONS.map(popCount));
+  POPULATIONS.forEach(p=>{
+    const c = popCount(p);
+    const pct = Math.max(c?6:0, Math.round((c/maxPop)*100));
+    html.push('<div class="pop-row"><div class="pop-top"><span class="pop-label">'+p+'</span><span>'+c+'</span></div><div class="bar"><div class="bar-fill" style="width:'+pct+'%"></div></div></div>');
+  });
+  html.push('<div style="font-size:11px;color:var(--dim);">Downstream is always empty for now, there is no next leg dependency link yet.</div>');
+
+  html.push('<div class="field-label" style="margin-top:16px;">Parcel state board</div><div class="panel">');
+  (CURRENT.populations||[]).forEach(row=>{
+    const ship = shipmentOf(row.shipment_id) || {};
+    const who = DATA.example ? customerName(ship.customer_id) : customerName(ship.customer_id);
+    html.push('<div class="ship-row"><div class="ship-top"><span class="ship-who">'+esc(who)+' &middot; '+esc(ship.waybill||row.shipment_id)+'</span><span class="ship-pop">'+row.population+'</span></div>'+
+      '<div class="rowfields"><select id="state-'+row.shipment_id+'">'+PARCEL_STATES.map(s=>'<option value="'+s+'"'+(s===row.parcel_state?' selected':'')+'>'+s+'</option>').join('')+'</select>'+
+      '<button class="btn btn-sm" style="flex:none;" onclick="saveState(\''+row.shipment_id+'\')">Save</button></div>'+
+      (row.note ? '<div style="font-size:11px;color:var(--dim);margin-top:4px;">'+esc(row.note)+'</div>' : '')+
+    '</div>');
+  });
+  if(!(CURRENT.populations||[]).length) html.push('<div class="empty-note">No shipments classified yet.</div>');
+  html.push('</div>');
+
+  html.push('<div class="field-label" style="margin-top:16px;">Spine checklist</div><div class="panel">');
+  SPINE.forEach(step=>{
+    const row = (CURRENT.actions||[]).find(a=>a.step_key===step.step_key) || {status:'todo'};
+    html.push('<div class="step-row"><span class="step-label">'+step.label+' <span style="color:var(--dim);">('+staffName(row.owner_staff_id)+')</span></span>'+
+      '<select onchange="setActionStatus(\''+step.step_key+'\', this.value)" style="width:auto;">'+ACTION_STATUSES.map(s=>'<option value="'+s+'"'+(s===row.status?' selected':'')+'>'+s+'</option>').join('')+'</select></div>');
+  });
+  html.push('</div>');
+
+  html.push('<div class="field-label" style="margin-top:16px;">Customer notices</div>');
+  html.push('<button class="btn ghost" onclick="generateNotices()">Generate notice drafts</button>');
+  (CURRENT.notices||[]).forEach(n=>{
+    html.push('<div class="notice-card"><div class="notice-top"><span>'+n.audience+' &middot; '+n.channel+' &middot; '+esc(customerName(n.customer_id))+'</span><span class="tag">'+n.status+'</span></div>'+
+      '<div class="notice-body">'+esc(n.body)+'</div>'+
+      (n.status==='draft' ? '<button class="btn btn-sm orange" style="margin-top:8px;" onclick="approveNotice(\''+n.id+'\')">Approve (commander only)</button>' : '')+
+    '</div>');
+  });
+  if(!(CURRENT.notices||[]).length) html.push('<div class="empty-note">No notice drafts yet.</div>');
+
+  html.push('<div class="field-label" style="margin-top:16px;">MD summary</div>');
+  html.push('<button class="btn ghost" onclick="loadSummary()">Load MD summary</button>');
+  html.push('<pre class="summary" id="mdSummary" style="display:none;"></pre>');
+  html.push('<button class="btn ghost" id="copySummary" style="display:none;" onclick="copySummary()">Copy</button>');
+
+  document.getElementById('drawer').innerHTML = html.join('');
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('drawerBg').classList.add('show');
+}
+
+async function setStatus(status){
+  if(!CURRENT) return;
+  let closed_reason;
+  if(status==='closed'){
+    closed_reason = prompt('One line on why this incident is closing now:');
+    if(!closed_reason) return;
+  }
+  if(DATA.example || !DATA.live){ CURRENT.incident.status=status; renderDrawer(); return; }
+  try{
+    await apiFetch('/api/incidents/'+CURRENT.incident.id, {method:'PATCH', body:JSON.stringify({status, expected_version:CURRENT.incident.version, closed_reason})});
+    await openIncident(CURRENT.incident.id);
+    await loadLive();
+  }catch(e){ alert('Could not change status: '+e.message); }
+}
+async function saveState(shipmentId){
+  const state = document.getElementById('state-'+shipmentId).value;
+  if(DATA.example || !DATA.live){
+    const row = CURRENT.populations.find(p=>p.shipment_id===shipmentId);
+    if(row) row.parcel_state = state;
+    renderDrawer(); return;
+  }
+  try{
+    await apiFetch('/api/incidents/'+CURRENT.incident.id+'/shipments/'+shipmentId+'/state', {method:'POST', body:JSON.stringify({state})});
+    await openIncident(CURRENT.incident.id);
+  }catch(e){ alert('Could not save parcel state: '+e.message); }
+}
+async function setActionStatus(stepKey, status){
+  if(DATA.example || !DATA.live){
+    const row = CURRENT.actions.find(a=>a.step_key===stepKey);
+    if(row) row.status=status;
+    return;
+  }
+  try{
+    await apiFetch('/api/incidents/'+CURRENT.incident.id+'/actions/'+stepKey, {method:'POST', body:JSON.stringify({status})});
+    CURRENT = await apiFetch('/api/incidents/'+CURRENT.incident.id);
+  }catch(e){ alert('Could not update this step: '+e.message); }
+}
+async function generateNotices(){
+  if(DATA.example || !DATA.live){ alert('Example data is read only. Sign in to draft real notices.'); return; }
+  try{
+    await apiFetch('/api/incidents/'+CURRENT.incident.id+'/notices/bulk', {method:'POST', body:JSON.stringify({})});
+    await openIncident(CURRENT.incident.id);
+  }catch(e){ alert('Could not generate notices: '+e.message); }
+}
+async function approveNotice(id){
+  if(DATA.example || !DATA.live){ alert('Example data is read only. Sign in to approve a real notice.'); return; }
+  try{
+    await apiFetch('/api/incidents/'+CURRENT.incident.id+'/notices/'+id+'/approve', {method:'POST', body:JSON.stringify({})});
+    await openIncident(CURRENT.incident.id);
+  }catch(e){ alert('Could not approve: '+e.message); }
+}
+async function loadSummary(){
+  const el = document.getElementById('mdSummary');
+  if(DATA.example || !DATA.live){
+    el.textContent = 'Example data. Sign in to load the real MD summary for this incident.';
+    el.style.display='block'; document.getElementById('copySummary').style.display='block';
+    return;
+  }
+  try{
+    const text = await apiFetch('/api/incidents/'+CURRENT.incident.id+'/md-summary');
+    el.textContent = text;
+    el.style.display='block'; document.getElementById('copySummary').style.display='block';
+  }catch(e){ alert('Could not load the MD summary: '+e.message); }
+}
+function copySummary(){
+  const text = document.getElementById('mdSummary').textContent;
+  if(navigator.clipboard) navigator.clipboard.writeText(text).catch(()=>{});
+}
+
+boot();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+<script src="../shared/sprint-notify.js"></script>
+</body>
+</html>

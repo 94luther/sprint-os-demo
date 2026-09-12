@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Accounts - Sprint Couriers</title>
+<meta name="theme-color" content="#131311">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../shared/logo-mark.png">
+<link rel="apple-touch-icon" href="../shared/logo-mark.png">
+<style>
+/* Local first brand type. It never phones home to Google, and it never
+   breaks when there is no internet or no signal on a driver phone. Drop
+   the two real font files into apps/shared/fonts/ to restore the exact
+   brand type offline; see the README there. With no files present this
+   falls back to the system font stack below. */
+@font-face{font-family:'Anton'; font-weight:400; font-display:swap;
+  src:local('Anton'), url('../shared/fonts/Anton-Regular.woff2') format('woff2'), url('../shared/fonts/Anton-Regular.ttf') format('truetype');}
+@font-face{font-family:'Inter'; font-weight:100 900; font-display:swap;
+  src:local('Inter'), url('../shared/fonts/Inter-Variable.woff2') format('woff2'), url('../shared/fonts/Inter-Variable.ttf') format('truetype');}
+:root{
+  --font-display:'Anton', Impact, 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ink:#131311; --panel:#1d1d19; --line:#2c2c27; --bone:#F4F4F1; --dim:#a6a69f;
+  --green:#3AAA35; --orange:#F7941D; --red:#e0483e;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%; max-width:100%; overflow-x:hidden;}
+body{
+  background:var(--ink); color:var(--bone); font-family:var(--font-body);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  min-height:100vh; padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+h1,h2,h3,.disp{font-family:var(--font-display); text-transform:uppercase; letter-spacing:0.01em; font-weight:400;}
+a{color:inherit;}
+button{font-family:inherit;}
+::selection{background:var(--orange); color:var(--ink);}
+
+header{
+  position:sticky; top:0; z-index:20; background:var(--ink);
+  border-bottom:1px solid var(--line); padding:10px 14px;
+  display:flex; align-items:center; gap:10px;
+}
+header img{width:32px; height:32px; object-fit:contain; flex:none;}
+header .titles{flex:1; min-width:0;}
+header h1{font-size:15px; line-height:1.1;}
+header .who{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.sync-badge{
+  font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line);
+  color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;
+}
+.sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
+.sync-badge.offline .sync-dot{background:var(--orange);}
+.sync-badge.offline{color:var(--orange); border-color:var(--orange);}
+
+main{max-width:760px; margin:0 auto; padding:12px 14px 40px;}
+.banner-example{
+  background:rgba(247,148,29,0.12); border:1px solid var(--orange); color:var(--orange);
+  font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; margin-bottom:12px;
+}
+.banner-stale{
+  background:var(--panel); border:1px solid var(--line); color:var(--dim);
+  font-size:12px; padding:8px 12px; border-radius:8px; margin-bottom:12px;
+}
+section{margin-bottom:24px;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:8px;}
+.section-head h2{font-size:14px; color:var(--dim); letter-spacing:0.06em; min-width:0;}
+.section-head .hint{font-size:11px; color:var(--dim); min-width:0; text-align:right; flex-shrink:1;}
+
+/* cash bars */
+.cash-row{margin-bottom:14px;}
+.cash-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+.cash-label{font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em;}
+.cash-amt{font-family:var(--font-display); font-size:22px;}
+.cash-amt.green{color:var(--green);}
+.cash-amt.red{color:var(--red);}
+.bar{position:relative; height:22px; background:var(--line); border-radius:5px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:5px; background:var(--green); min-width:2px;}
+.bar-fill.red{background:var(--red);}
+.cash-who{font-size:11px; color:var(--dim); margin-top:5px;}
+.cash-who b{color:var(--bone); font-weight:600;}
+
+/* ready to invoice */
+.grp{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
+.grp-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+.grp-who{font-size:14px; font-weight:700;}
+.grp-total{font-size:13px; color:var(--dim);}
+.ship-item{display:flex; justify-content:space-between; font-size:12px; color:var(--dim); padding:3px 0; border-top:1px solid var(--line);}
+.ship-item:first-of-type{border-top:none;}
+.grp-actions{margin-top:8px;}
+.btn{
+  background:var(--green); color:var(--ink); border:none; border-radius:6px; font-weight:700;
+  padding:9px 12px; font-size:12px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em;
+}
+.btn.orange{background:var(--orange);}
+.btn.ghost{background:none; border:1px solid var(--line); color:var(--bone);}
+.btn.red-ghost{background:none; border:1px solid var(--red); color:var(--red);}
+.btn:disabled{opacity:0.5; cursor:default;}
+.empty-note{font-size:12px; color:var(--dim); padding:10px 4px;}
+
+/* overdue chase list */
+.od-item{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
+.od-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;}
+.od-who{font-size:13px; font-weight:600;}
+.od-amt{font-size:13px; color:var(--red); font-weight:700;}
+.od-verdict{display:inline-block; font-size:10px; font-weight:700; letter-spacing:0.04em; padding:2px 7px; border-radius:10px; margin-left:6px; vertical-align:1px;}
+.od-verdict.late{background:rgba(224,72,62,0.18); color:var(--red);}
+.age-bar{height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin:6px 0;}
+.age-fill{height:100%; background:var(--orange);}
+.age-fill.late{background:var(--red);}
+.age-text{font-size:10px; color:var(--dim); margin-bottom:8px;}
+
+/* statement */
+.stmt-picker{display:flex; gap:8px; margin-bottom:10px;}
+select,input[type=text]{
+  background:var(--panel); border:1px solid var(--line); color:var(--bone); border-radius:6px;
+  padding:9px 10px; font-size:13px; font-family:inherit; width:100%;
+}
+.stmt-row{display:flex; justify-content:space-between; align-items:center; padding:9px 10px; border-bottom:1px solid var(--line); font-size:12.5px;}
+.stmt-row:last-child{border-bottom:none;}
+.stmt-ref{font-weight:600;}
+.stmt-meta{font-size:10.5px; color:var(--dim); margin-top:2px;}
+.stmt-amt{font-weight:700;}
+.verdict{font-size:9.5px; font-weight:700; letter-spacing:0.04em; padding:2px 6px; border-radius:8px; margin-left:6px;}
+.verdict.paid{background:rgba(58,170,53,0.18); color:var(--green);}
+.verdict.due{background:rgba(166,166,159,0.18); color:var(--dim);}
+.verdict.late{background:rgba(224,72,62,0.18); color:var(--red);}
+.stmt-balance{display:flex; justify-content:space-between; padding:10px; font-weight:700; font-size:13px; border-top:2px solid var(--line); margin-top:2px;}
+.stmt-panel{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:4px 10px;}
+
+/* drawer */
+.drawer-bg{position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:40; display:none;}
+.drawer-bg.show{display:block;}
+.drawer{
+  position:fixed; right:0; top:0; bottom:0; width:100%; max-width:420px; background:var(--panel);
+  border-left:1px solid var(--line); z-index:41; transform:translateX(100%); transition:transform .25s ease;
+  overflow-y:auto; padding:14px 14px 40px;
+}
+.drawer.show{transform:translateX(0);}
+.drawer-close{
+  background:none; border:1px solid var(--line); color:var(--bone); border-radius:6px;
+  padding:6px 10px; font-size:12px; float:right; cursor:pointer;
+}
+.drawer h2{font-size:20px; margin:6px 0 2px; clear:both;}
+.drawer .sub{font-size:12px; color:var(--dim); margin-bottom:14px;}
+.field-label{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; margin:14px 0 6px;}
+textarea{
+  background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px;
+  padding:10px; font-size:13px; font-family:inherit; width:100%; min-height:150px; line-height:1.5;
+}
+.copy-hint{font-size:11px; color:var(--dim); margin-top:8px;}
+
+/* login */
+.login-wrap{max-width:320px; margin:18vh auto 0; padding:0 20px;}
+.login-wrap h1{font-size:22px; margin-bottom:4px;}
+.login-wrap p{font-size:12px; color:var(--dim); margin-bottom:18px;}
+.login-wrap form{display:flex; flex-direction:column; gap:10px;}
+.login-hint{font-size:11px; color:var(--dim); margin-top:14px; line-height:1.5;}
+.err{color:var(--red); font-size:12px; margin-top:6px; display:none;}
+
+@media(min-width:640px){
+  main{padding:18px 24px 40px;}
+  .cash-pair{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+}
+
+/* Brick 61: the bell, same on every page */
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<link rel="stylesheet" href="../shared/sprint-theme.css">
+</head>
+<body>
+
+<header>
+  <img src="../shared/logo-mark.png" alt="Sprint Couriers">
+  <div class="titles">
+    <h1>Accounts</h1>
+    <div class="who" id="whoLine">Not signed in</div>
+  </div>
+  <span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+  <div class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Loading</span></div>
+</header>
+
+<main id="app">
+  <div style="padding:40px 4px; color:var(--dim); font-size:13px;">Loading Accounts...</div>
+</main>
+
+<div class="login-wrap" id="loginWrap" style="display:none;">
+  <h1>Sign in</h1>
+  <p>Sprint Couriers staff PIN</p>
+  <form id="loginForm">
+    <input type="text" id="staffId" placeholder="Staff ID" autocomplete="username" required>
+    <input type="text" inputmode="numeric" pattern="[0-9]*" id="pin" placeholder="PIN" maxlength="8" autocomplete="current-password" required>
+    <button class="btn" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <button class="btn ghost" style="margin-top:10px;width:100%;" id="offlineBtn">View example data instead</button>
+</div>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="drawer" id="drawer"></div>
+
+<script>
+/* ---------- helpers ---------- */
+function pula(thebe){
+  const p = (Number(thebe||0)/100);
+  const parts = p.toFixed(2).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return 'P' + parts.join('.');
+}
+function localDT(iso){
+  if(!iso) return '';
+  try{ return new Date(iso).toLocaleString('en-GB',{timeZone:'Africa/Gaborone',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return iso; }
+}
+function localDate(iso){
+  if(!iso) return '';
+  try{ return new Date(iso).toLocaleDateString('en-GB',{timeZone:'Africa/Gaborone',day:'2-digit',month:'short',year:'numeric'}); }
+  catch(e){ return iso; }
+}
+function daysBetween(isoA, isoB){ return Math.floor((new Date(isoB) - new Date(isoA)) / 86400000); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- state ---------- */
+let ME = null;
+let DATA = null;
+let SYNCED_AT = null;
+const CACHE_KEY = 'sprintos_accounts_cache_v1';
+const INVOICED_KEY = 'sprintos_accounts_invoiced_shipments_v1'; // client side memory of shipments this app has already invoiced;
+// the hub does not yet expose invoice_lines to apps, so this is the only way to keep a
+// just invoiced shipment out of "ready to invoice" until the hub grows that endpoint.
+function getInvoicedSet(){
+  try{ return new Set(JSON.parse(localStorage.getItem(INVOICED_KEY)||'[]')); }catch(e){ return new Set(); }
+}
+function addInvoiced(ids){
+  const s = getInvoicedSet(); ids.forEach(id=>s.add(id));
+  localStorage.setItem(INVOICED_KEY, JSON.stringify([...s]));
+}
+
+/* ---------- example data ---------- */
+function shiftDate(days){ const d = new Date(); d.setUTCDate(d.getUTCDate()+days); return d.toISOString(); }
+const EXAMPLE = {
+  cash: {
+    paid_30d_thebe: 1284500, paid_top: 'EXAMPLE Kalahari Meats',
+    overdue_thebe: 612300, overdue_by_customer: [
+      {customer:'EXAMPLE Boteti Mining Supplies', amount_thebe:284000, days:41},
+      {customer:'EXAMPLE Riverwalk Optometrists', amount_thebe:198300, days:22},
+      {customer:'EXAMPLE Naledi Legal Attorneys', amount_thebe:130000, days:9},
+    ]
+  },
+  ready: [
+    {customer:'EXAMPLE Sunrise Pharmacy Group', shipments:[
+      {id:'s1', waybill:'SC48310', destination:'Gaborone CBD', amount_thebe:87000},
+      {id:'s2', waybill:'SC48311', destination:'Gaborone CBD', amount_thebe:65000},
+    ]},
+    {customer:'EXAMPLE Tlokweng Hardware', shipments:[
+      {id:'s3', waybill:'SC48290', destination:'Tlokweng', amount_thebe:57500},
+    ]},
+  ],
+  overdue: [
+    {id:'i1', customer:'EXAMPLE Boteti Mining Supplies', amount_thebe:284000, due_at: shiftDate(-41), reference:'INV-A1'},
+    {id:'i2', customer:'EXAMPLE Riverwalk Optometrists', amount_thebe:198300, due_at: shiftDate(-22), reference:'INV-A2'},
+    {id:'i3', customer:'EXAMPLE Naledi Legal Attorneys', amount_thebe:130000, due_at: shiftDate(-9), reference:'INV-A3'},
+  ],
+  customers: ['EXAMPLE Kalahari Meats','EXAMPLE Sunrise Pharmacy Group','EXAMPLE Tlokweng Hardware','EXAMPLE Boteti Mining Supplies','EXAMPLE Riverwalk Optometrists','EXAMPLE Naledi Legal Attorneys'],
+  statements: {
+    'EXAMPLE Kalahari Meats': [
+      {reference:'INV-K1', amount_thebe:480000, status:'paid', issued_at:shiftDate(-40), due_at:shiftDate(-25), paid_at:shiftDate(-28)},
+      {reference:'INV-K2', amount_thebe:295000, status:'paid', issued_at:shiftDate(-15), due_at:shiftDate(0), paid_at:shiftDate(-3)},
+    ],
+    'EXAMPLE Boteti Mining Supplies': [
+      {reference:'INV-A1', amount_thebe:284000, status:'overdue', issued_at:shiftDate(-70), due_at:shiftDate(-41), paid_at:null},
+    ]
+  }
+};
+
+/* ---------- api ---------- */
+async function apiFetch(path, opts){
+  const res = await fetch(path, Object.assign({credentials:'include', headers:{'Content-Type':'application/json'}}, opts));
+  let json;
+  try{ json = await res.json(); } catch(e){ json = {ok:false, error:'Bad response'}; }
+  if(res.status === 401){ const err = new Error('unauthorized'); err.auth = true; throw err; }
+  if(!json.ok){ const err = new Error(json.error || ('HTTP '+res.status)); err.status = res.status; throw err; }
+  return json.data;
+}
+
+async function boot(){
+  /* phone copy: not served by the office hub, so there is nothing to sign in to.
+     Go straight to the example rather than showing a login screen that cannot work. */
+  var __h = (location.hostname || '');
+  var __onHub = __h === 'localhost' || __h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(__h);
+  if (!__onHub) { loadFallback(); return; }
+
+  try{
+    const me = await apiFetch('/api/me');
+    if(!me){ showLogin(); return; }
+    ME = me;
+    document.getElementById('whoLine').textContent = ME.name + ' - ' + ME.role;
+    await loadLive();
+  }catch(e){ loadFallback(); }
+}
+async function loadLive(){
+  try{
+    const [cockpit, shipments, invoices, customers, paidInvoices] = await Promise.all([
+      apiFetch('/api/cockpit'),
+      apiFetch('/api/shipments?status=delivered&limit=300'),
+      apiFetch('/api/invoices?status=overdue&limit=300'),
+      apiFetch('/api/customers?limit=500'),
+      apiFetch('/api/invoices?status=paid&limit=300'),
+    ]);
+    const quotesByShipment = {};
+    try{
+      const quotes = await apiFetch('/api/quotes?limit=500');
+      quotes.forEach(q=>{ quotesByShipment[q.id] = q; });
+    }catch(e){}
+    DATA = {cockpit, shipments, invoices, customers, paidInvoices, quotesByShipment, live:true};
+    SYNCED_AT = new Date().toISOString();
+    localStorage.setItem(CACHE_KEY, JSON.stringify({data:DATA, at:SYNCED_AT}));
+    render();
+  }catch(e){ loadFallback(); }
+}
+function loadFallback(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){
+    try{
+      const parsed = JSON.parse(cached);
+      DATA = parsed.data; DATA.live = false; DATA.cached = true;
+      SYNCED_AT = parsed.at;
+      render(); return;
+    }catch(e){}
+  }
+  DATA = {example:true};
+  SYNCED_AT = null;
+  render();
+}
+function showLogin(){
+  document.getElementById('app').innerHTML = '';
+  document.getElementById('loginWrap').style.display = 'block';
+  document.getElementById('syncText').textContent = 'Sign in';
+}
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const staffId = document.getElementById('staffId').value.trim();
+  const pin = document.getElementById('pin').value.trim();
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  try{
+    await apiFetch('/api/login', {method:'POST', body:JSON.stringify({staffId, pin})});
+    document.getElementById('loginWrap').style.display = 'none';
+    await boot();
+  }catch(err){
+    errEl.textContent = 'Could not sign in. Check the staff ID and PIN.';
+    errEl.style.display = 'block';
+  }
+});
+document.getElementById('offlineBtn').addEventListener('click', ()=>{
+  document.getElementById('loginWrap').style.display = 'none';
+  loadFallback();
+});
+
+function updateSyncBadge(){
+  const badge = document.getElementById('syncBadge');
+  const text = document.getElementById('syncText');
+  badge.classList.remove('offline');
+  if(DATA && DATA.example){ badge.classList.add('offline'); text.textContent = 'Offline'; }
+  else if(DATA && DATA.live){ text.textContent = 'Synced now'; }
+  else if(SYNCED_AT){ badge.classList.add('offline'); text.textContent = 'Synced ' + localDT(SYNCED_AT); }
+  else { badge.classList.add('offline'); text.textContent = 'Offline'; }
+}
+function customerName(id){
+  const c = (DATA.customers||[]).find(x=>x.id===id);
+  return c ? c.name : id;
+}
+
+/* ---------- derived views ---------- */
+function getCash(){
+  if(DATA.example) return EXAMPLE.cash;
+  const since30 = new Date(Date.now() - 30*86400000).toISOString();
+  const byCustomer = {};
+  (DATA.paidInvoices||[]).filter(i=>i.paid_at && i.paid_at >= since30).forEach(i=>{
+    byCustomer[i.customer_id] = (byCustomer[i.customer_id]||0) + i.amount_thebe;
+  });
+  let paidTop = null, paidTopAmt = 0;
+  Object.entries(byCustomer).forEach(([cid, amt])=>{ if(amt > paidTopAmt){ paidTopAmt = amt; paidTop = customerName(cid); } });
+  const overdue_by_customer = (DATA.cockpit.cash.overdue_by_customer||[]).map(r=>({
+    customer: r.customer_name || customerName(r.customer_id), amount_thebe: r.amount_thebe
+  }));
+  return {
+    paid_30d_thebe: DATA.cockpit.cash.paid_30d_thebe, paid_top: paidTop,
+    overdue_thebe: DATA.cockpit.cash.overdue_thebe, overdue_by_customer
+  };
+}
+function getReadyToInvoice(){
+  if(DATA.example) return EXAMPLE.ready;
+  const invoiced = getInvoicedSet();
+  const groups = {};
+  (DATA.shipments||[]).filter(s=>!invoiced.has(s.id)).forEach(s=>{
+    const q = s.quote_id ? DATA.quotesByShipment[s.quote_id] : null;
+    const amount_thebe = q ? q.amount_thebe : 0;
+    const name = customerName(s.customer_id);
+    groups[s.customer_id] = groups[s.customer_id] || {customer:name, customer_id:s.customer_id, shipments:[]};
+    groups[s.customer_id].shipments.push({id:s.id, waybill:s.waybill, destination:s.destination, amount_thebe});
+  });
+  return Object.values(groups).filter(g=>g.shipments.some(s=>s.amount_thebe>0));
+}
+function getOverdue(){
+  if(DATA.example) return EXAMPLE.overdue.map(o=>({...o}));
+  return (DATA.invoices||[]).map(i=>({
+    id:i.id, customer: customerName(i.customer_id), customer_id:i.customer_id,
+    amount_thebe:i.amount_thebe, due_at:i.due_at, reference:i.reference
+  }));
+}
+
+/* ---------- render ---------- */
+function render(){
+  updateSyncBadge();
+  const html = [];
+  if(DATA.example){
+    html.push('<div class="banner-example">EXAMPLE DATA. Every company, tender, parcel and number on this screen is invented to show how the screen works.</div>');
+  } else if(!DATA.live){
+    html.push('<div class="banner-stale">Showing last synced data from ' + localDT(SYNCED_AT) + '. Hub unreachable now.</div>');
+  }
+
+  // ---- cash bars ----
+  const cash = getCash();
+  const maxBar = Math.max(cash.paid_30d_thebe, cash.overdue_thebe, 1);
+  const overdueTopName = cash.overdue_by_customer && cash.overdue_by_customer[0] ? cash.overdue_by_customer[0].customer : null;
+  html.push('<section><div class="cash-pair"><div class="cash-row">'+
+    '<div class="cash-top"><span class="cash-label">Cash paid, last 30 days</span></div>'+
+    '<div class="cash-amt green">'+pula(cash.paid_30d_thebe)+'</div>'+
+    '<div class="bar" style="margin-top:6px;"><div class="bar-fill" style="width:'+Math.max(4,Math.round(cash.paid_30d_thebe/maxBar*100))+'%"></div></div>'+
+    '<div class="cash-who">'+(cash.paid_top ? 'Biggest payer: <b>'+esc(cash.paid_top)+'</b>' : 'No payments in the window yet')+'</div>'+
+    '</div><div class="cash-row">'+
+    '<div class="cash-top"><span class="cash-label">Overdue right now</span></div>'+
+    '<div class="cash-amt red">'+pula(cash.overdue_thebe)+'</div>'+
+    '<div class="bar" style="margin-top:6px;"><div class="bar-fill red" style="width:'+Math.max(4,Math.round(cash.overdue_thebe/maxBar*100))+'%"></div></div>'+
+    '<div class="cash-who">'+(overdueTopName ? 'Biggest debtor: <b>'+esc(overdueTopName)+'</b>' : 'Nothing overdue')+'</div>'+
+    '</div></div></section>');
+
+  // ---- ready to invoice ----
+  const ready = getReadyToInvoice();
+  html.push('<section><div class="section-head"><h2>Ready to invoice</h2><span class="hint">delivered, not yet billed</span></div>');
+  if(!ready.length){
+    html.push('<div class="empty-note">Nothing waiting. Every delivered job is billed.</div>');
+  } else {
+    // orange is reserved on this screen for the single most urgent overdue chase below,
+    // so every "Invoice these" action here stays green.
+    ready.forEach((g, idx)=>{
+      const total = g.shipments.reduce((s,x)=>s+x.amount_thebe,0);
+      html.push('<div class="grp">'+
+        '<div class="grp-top"><span class="grp-who">'+esc(g.customer)+'</span><span class="grp-total">'+pula(total)+'</span></div>'+
+        g.shipments.map(s=>'<div class="ship-item"><span>'+esc(s.waybill)+' &middot; '+esc(s.destination||'')+'</span><span>'+pula(s.amount_thebe)+'</span></div>').join('')+
+        '<div class="grp-actions"><button class="btn" onclick=\'invoiceGroup('+JSON.stringify(g).replace(/'/g,"&#39;")+')\'>Invoice these</button></div>'+
+      '</div>');
+    });
+  }
+  html.push('</section>');
+
+  // ---- overdue chase list ----
+  const overdue = getOverdue().map(o=>({...o, days: o.days!=null ? o.days : Math.max(0, daysBetween(o.due_at, new Date().toISOString()))}))
+    .sort((a,b)=> b.days - a.days);
+  html.push('<section><div class="section-head"><h2>Overdue chase list</h2><span class="hint">days over due date</span></div>');
+  if(!overdue.length){
+    html.push('<div class="empty-note">Nothing overdue. Clean book.</div>');
+  } else {
+    overdue.forEach((o, idx)=>{
+      const pct = Math.min(100, Math.max(6, Math.round((o.days/60)*100)));
+      html.push('<div class="od-item">'+
+        '<div class="od-top"><span class="od-who">'+esc(o.customer)+'<span class="od-verdict late">LATE</span></span><span class="od-amt">'+pula(o.amount_thebe)+'</span></div>'+
+        '<div class="age-bar"><div class="age-fill '+(o.days>=30?'late':'')+'" style="width:'+pct+'%"></div></div>'+
+        '<div class="age-text">'+o.days+' days overdue (of a 60 day view) &middot; '+esc(o.reference||'')+'</div>'+
+        '<button class="btn '+(idx===0?'orange':'ghost')+'" onclick=\'openChase('+JSON.stringify(o).replace(/'/g,"&#39;")+')\'>Chase</button>'+
+      '</div>');
+    });
+  }
+  html.push('</section>');
+
+  // ---- statement ----
+  const customerNames = DATA.example ? EXAMPLE.customers : (DATA.customers||[]).map(c=>c.name);
+  html.push('<section><div class="section-head"><h2>Statement</h2><span class="hint">pick a customer</span></div>'+
+    '<div class="stmt-picker"><select id="stmtPick" onchange="renderStatement()"><option value="">Choose a customer</option>'+
+    customerNames.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join('')+
+    '</select></div><div class="stmt-panel" id="stmtPanel"></div></section>');
+
+  document.getElementById('app').innerHTML = html.join('');
+}
+
+/* ---------- statement ---------- */
+function getStatementRows(name){
+  if(DATA.example) return EXAMPLE.statements[name] || [];
+  const cust = (DATA.customers||[]).find(c=>c.name===name);
+  if(!cust) return [];
+  // best effort: combine what we already loaded (overdue + paid); a live customer
+  // could still have draft/sent invoices we have not fetched, noted below.
+  return [];
+}
+async function renderStatement(){
+  const name = document.getElementById('stmtPick').value;
+  const panel = document.getElementById('stmtPanel');
+  if(!name){ panel.innerHTML = ''; return; }
+  panel.innerHTML = '<div class="empty-note">Loading statement...</div>';
+  let rows = [];
+  if(DATA.example){
+    rows = getStatementRows(name);
+  } else {
+    const cust = (DATA.customers||[]).find(c=>c.name===name);
+    if(cust){
+      try{ rows = await apiFetch('/api/invoices?customer_id=' + encodeURIComponent(cust.id) + '&limit=200'); }
+      catch(e){ rows = []; }
+    }
+  }
+  if(!rows.length){ panel.innerHTML = '<div class="empty-note">No invoices for this customer yet.</div>'; return; }
+  let balance = 0;
+  const items = rows.slice().sort((a,b)=> new Date(a.issued_at||0) - new Date(b.issued_at||0)).map(r=>{
+    if(r.status !== 'paid') balance += r.amount_thebe;
+    const verdict = r.status === 'paid' ? 'PAID' : (r.status === 'overdue' ? 'LATE' : 'DUE');
+    const vcls = r.status === 'paid' ? 'paid' : (r.status === 'overdue' ? 'late' : 'due');
+    const payBtn = r.status !== 'paid' ? '<button class="btn ghost" style="padding:5px 8px;font-size:10px;margin-left:8px;" onclick=\'markPaid('+JSON.stringify(r.id)+')\'>Mark paid</button>' : '';
+    return '<div class="stmt-row"><div><div class="stmt-ref">'+esc(r.reference||r.id)+'<span class="verdict '+vcls+'">'+verdict+'</span></div>'+
+      '<div class="stmt-meta">Issued '+localDate(r.issued_at)+' &middot; due '+localDate(r.due_at)+(r.paid_at?(' &middot; paid '+localDate(r.paid_at)):'')+'</div></div>'+
+      '<div style="text-align:right;"><span class="stmt-amt">'+pula(r.amount_thebe)+'</span>'+payBtn+'</div></div>';
+  }).join('');
+  panel.innerHTML = items + '<div class="stmt-balance"><span>Balance owing</span><span>'+pula(balance)+'</span></div>';
+}
+async function markPaid(id){
+  if(DATA.example){
+    Object.keys(EXAMPLE.statements).forEach(k=>{
+      EXAMPLE.statements[k].forEach(r=>{ if(r.reference===id || r.id===id){ r.status='paid'; r.paid_at = new Date().toISOString(); } });
+    });
+    renderStatement(); return;
+  }
+  try{
+    await apiFetch('/api/invoices/'+id, {method:'PATCH', body:JSON.stringify({status:'paid', paid_at:new Date().toISOString()})});
+    await loadLive();
+    renderStatement();
+  }catch(e){ alert('Could not mark paid: '+e.message); }
+}
+
+/* ---------- invoice from shipments ---------- */
+async function invoiceGroup(g){
+  if(DATA.example){
+    alert('Example data: invoicing is simulated only. In the live hub this creates a real draft invoice.');
+    return;
+  }
+  try{
+    const result = await apiFetch('/api/invoices/from-shipments', {method:'POST', body:JSON.stringify({
+      customer_id: g.customer_id, shipment_ids: g.shipments.map(s=>s.id)
+    })});
+    addInvoiced(g.shipments.map(s=>s.id));
+    let msg = 'Invoice ' + (result.invoice.reference||result.invoice.id) + ' created for ' + pula(result.invoice.amount_thebe) + '.';
+    if(result.skipped && result.skipped.length) msg += '\n' + result.skipped.length + ' shipment(s) skipped: ' + result.skipped.map(s=>s.reason).join(', ');
+    alert(msg);
+    await loadLive();
+  }catch(e){ alert('Could not create the invoice: '+e.message); }
+}
+
+/* ---------- chase drawer ---------- */
+function warmReminder(name, amount, days, reference){
+  return "Hello, this is Sprint Couriers accounts.\n\n" +
+    "A quick note on invoice " + reference + " for " + pula(amount) + ". It has been " + days + " days past the due date, and we would love to clear it up.\n\n" +
+    "If it has already been paid, just let us know and we will match it up. If not, would you be able to settle it this week?\n\n" +
+    "Thank you for being a Sprint customer.\n\nWarm regards,\nSprint Couriers Accounts";
+}
+async function openChase(o){
+  const text = warmReminder(o.customer, o.amount_thebe, o.days, o.reference||'');
+  const html = [];
+  html.push('<button class="drawer-close" onclick="closeDrawer()">Close</button>');
+  html.push('<h2>Chase '+esc(o.customer)+'</h2>');
+  html.push('<div class="sub">'+pula(o.amount_thebe)+' &middot; '+o.days+' days overdue</div>');
+  html.push('<div class="field-label">Reminder text (copy this, it is not sent automatically)</div>');
+  html.push('<textarea id="chaseText" readonly>'+esc(text)+'</textarea>');
+  html.push('<button class="btn" style="margin-top:10px;width:100%;" onclick="copyChase()">Copy text</button>');
+  html.push('<div class="copy-hint">This saves a draft record so the team knows a reminder was prepared. Nothing is emailed until a person sends it.</div>');
+  document.getElementById('drawer').innerHTML = html.join('');
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('drawerBg').classList.add('show');
+
+  if(!DATA.example && DATA.live && o.customer_id){
+    try{
+      await apiFetch('/api/interactions', {method:'POST', body:JSON.stringify({
+        customer_id:o.customer_id, channel:'email', direction:'out', subject:'Payment reminder',
+        summary:text, ref:'draft', at:new Date().toISOString()
+      })});
+    }catch(e){}
+  }
+}
+function copyChase(){
+  const t = document.getElementById('chaseText');
+  t.select();
+  try{ navigator.clipboard.writeText(t.value); }catch(e){ document.execCommand('copy'); }
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('drawerBg').classList.remove('show');
+}
+document.getElementById('drawerBg').addEventListener('click', closeDrawer);
+
+/* ---------- boot ---------- */
+boot();
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+<script src="../shared/sprint-notify.js"></script>
+</body>
+</html>

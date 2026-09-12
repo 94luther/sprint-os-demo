@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tender Desk - Sprint Couriers</title>
+<meta name="theme-color" content="#131311">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../shared/logo-mark.png">
+<link rel="apple-touch-icon" href="../shared/logo-mark.png">
+<style>
+/* Local first brand type. It never phones home to Google, and it never
+   breaks when there is no internet or no signal on a driver phone. Drop
+   the two real font files into apps/shared/fonts/ to restore the exact
+   brand type offline; see the README there. With no files present this
+   falls back to the system font stack below. */
+@font-face{font-family:'Anton'; font-weight:400; font-display:swap;
+  src:local('Anton'), url('../shared/fonts/Anton-Regular.woff2') format('woff2'), url('../shared/fonts/Anton-Regular.ttf') format('truetype');}
+@font-face{font-family:'Inter'; font-weight:100 900; font-display:swap;
+  src:local('Inter'), url('../shared/fonts/Inter-Variable.woff2') format('woff2'), url('../shared/fonts/Inter-Variable.ttf') format('truetype');}
+:root{
+  --font-display:'Anton', Impact, 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ink:#131311; --panel:#1d1d19; --line:#2c2c27; --bone:#F4F4F1; --dim:#a6a69f;
+  --green:#3AAA35; --orange:#F7941D; --red:#e0483e;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--ink); color:var(--bone); font-family:var(--font-body);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  min-height:100vh; padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+h1,h2,h3,.disp{font-family:var(--font-display); text-transform:uppercase; letter-spacing:0.01em; font-weight:400;}
+button{font-family:inherit;}
+::selection{background:var(--orange); color:var(--ink);}
+
+header{
+  position:sticky; top:0; z-index:20; background:var(--ink); border-bottom:1px solid var(--line);
+  padding:10px 14px; display:flex; align-items:center; gap:10px;
+}
+header img{width:32px; height:32px; object-fit:contain; flex:none;}
+header .titles{flex:1; min-width:0;}
+header h1{font-size:15px; line-height:1.1;}
+header .who{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.sync-badge{font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line); color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;}
+.sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
+.sync-badge.offline{color:var(--orange); border-color:var(--orange);}
+.sync-badge.offline .sync-dot{background:var(--orange);}
+
+main{max-width:720px; margin:0 auto; padding:12px 14px 40px;}
+.banner-example{background:rgba(247,148,29,0.12); border:1px solid var(--orange); color:var(--orange); font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; margin-bottom:12px;}
+.banner-stale{background:var(--panel); border:1px solid var(--line); color:var(--dim); font-size:12px; padding:8px 12px; border-radius:8px; margin-bottom:12px;}
+
+section{margin-bottom:22px;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px;}
+.section-head h2{font-size:14px; color:var(--dim); letter-spacing:0.06em;}
+.section-head .hint{font-size:11px; color:var(--dim);}
+
+.card{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px; cursor:pointer;}
+.card-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:6px;}
+.card-title{font-size:13px; font-weight:700;}
+.card-sub{font-size:11px; color:var(--dim); margin-top:1px;}
+.verdict{font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px; border-radius:20px; flex:none;}
+.verdict.green{color:var(--green); border:1px solid var(--green);}
+.verdict.orange{color:var(--orange); border:1px solid var(--orange);}
+.verdict.red{color:var(--red); border:1px solid var(--red);}
+.verdict.dim{color:var(--dim); border:1px solid var(--line);}
+
+.bar{position:relative; height:20px; background:var(--line); border-radius:4px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:4px; background:var(--green); min-width:2px;}
+.bar-fill.orange{background:var(--orange);}
+.bar-fill.red{background:var(--red);}
+.bar-label{position:absolute; inset:0; display:flex; align-items:center; justify-content:flex-end; padding:0 8px; font-size:11px; font-weight:700;}
+
+.owner-line{font-size:11px; color:var(--dim); margin-top:6px; display:flex; justify-content:space-between; align-items:center;}
+.owner-line .btn-mini{background:none; border:1px solid var(--line); color:var(--bone); border-radius:5px; padding:4px 8px; font-size:10px; cursor:pointer; text-transform:uppercase;}
+
+.empty-note{font-size:12px; color:var(--dim); padding:10px 4px;}
+
+.drawer-bg{position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:40; display:none;}
+.drawer-bg.show{display:block;}
+.drawer{
+  position:fixed; right:0; top:0; bottom:0; width:100%; max-width:440px; background:var(--panel);
+  border-left:1px solid var(--line); z-index:41; transform:translateX(100%); transition:transform .25s ease;
+  overflow-y:auto; padding:14px 14px 40px;
+}
+.drawer.show{transform:translateX(0);}
+.drawer-close{background:none; border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:6px 10px; font-size:12px; float:right; cursor:pointer;}
+.drawer h2{font-size:19px; margin:6px 0 2px; clear:both;}
+.drawer .sub{font-size:12px; color:var(--dim); margin-bottom:14px;}
+.field-label{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; margin:14px 0 6px;}
+
+.check-item{display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:13px;}
+.check-item:last-child{border-bottom:none;}
+.toggle{
+  width:40px; height:22px; border-radius:20px; background:var(--line); border:1px solid var(--line); position:relative; cursor:pointer; flex:none;
+}
+.toggle.on{background:rgba(58,170,53,0.25); border-color:var(--green);}
+.toggle .knob{position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:var(--dim); transition:left .15s;}
+.toggle.on .knob{left:20px; background:var(--green);}
+
+.completion-wrap{margin-top:4px;}
+.completion-wrap .barlabel{display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin-bottom:4px;}
+
+textarea{background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:8px 10px; font-size:12px; font-family:inherit; width:100%; min-height:56px; resize:vertical;}
+.btn{background:var(--green); color:var(--ink); border:none; border-radius:6px; font-weight:700; padding:10px 12px; font-size:13px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em; width:100%; margin-top:10px;}
+.btn.ghost{background:none; border:1px solid var(--line); color:var(--bone);}
+
+.login-wrap{max-width:320px; margin:18vh auto 0; padding:0 20px;}
+.login-wrap h1{font-size:22px; margin-bottom:4px;}
+.login-wrap p{font-size:12px; color:var(--dim); margin-bottom:18px;}
+.login-wrap form{display:flex; flex-direction:column; gap:10px;}
+.login-wrap input{background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:9px 10px; font-size:14px;}
+.login-hint{font-size:11px; color:var(--dim); margin-top:14px; line-height:1.5;}
+.err{color:var(--red); font-size:12px; margin-top:6px; display:none;}
+
+@media(min-width:640px){ main{padding:18px 24px 40px;} }
+
+/* Brick 61: the bell, same on every page */
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<link rel="stylesheet" href="../shared/sprint-theme.css">
+</head>
+<body>
+
+<header>
+  <img src="../shared/logo-mark.png" alt="Sprint Couriers">
+  <div class="titles"><h1>Tender Desk</h1><div class="who" id="whoLine">Not signed in</div></div>
+  <span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+  <div class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Loading</span></div>
+</header>
+
+<main id="app"><div style="padding:40px 4px; color:var(--dim); font-size:13px;">Loading Tender Desk...</div></main>
+
+<div class="login-wrap" id="loginWrap" style="display:none;">
+  <h1>Sign in</h1>
+  <p>Sprint Couriers staff PIN</p>
+  <form id="loginForm">
+    <input type="text" id="staffId" placeholder="Staff ID" autocomplete="username" required>
+    <input type="text" inputmode="numeric" pattern="[0-9]*" id="pin" placeholder="PIN" maxlength="8" autocomplete="current-password" required>
+    <button class="btn" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <button class="btn ghost" id="offlineBtn">View example data instead</button>
+</div>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="drawer" id="drawer"></div>
+
+<script>
+function pula(thebe){
+  const p = (Number(thebe||0)/100);
+  const parts = p.toFixed(2).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return 'P' + parts.join('.');
+}
+function localDT(iso){
+  if(!iso) return 'never';
+  try{ return new Date(iso).toLocaleString('en-GB',{timeZone:'Africa/Gaborone',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return iso; }
+}
+function daysBetween(isoA, isoB){ return Math.floor((new Date(isoB) - new Date(isoA)) / 86400000); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+const CHECKLIST_ITEMS = [
+  {key:'ppra', label:'PPRA registration current'},
+  {key:'bocra', label:'BOCRA licence current'},
+  {key:'tax', label:'Tax clearance certificate'},
+  {key:'cipa', label:'CIPA registration'},
+  {key:'price_band', label:'Price within 15% band'},
+  {key:'capacity', label:'Capacity to deliver'},
+  {key:'references', label:'References available'},
+];
+const EVIDENCE_DEFAULTS = [
+  'Company profile', 'Trade licence', 'Tax clearance certificate', 'PPRA certificate',
+  'BOCRA operating licence', 'CIPA CIPA1 certificate', 'Bank confirmation letter',
+  'Fleet list', 'Insurance certificate', 'Signed bid document', 'Price schedule', 'References letters'
+];
+
+let ME=null, OFFLINE=false, DATA=null, SYNCED_AT=null;
+const CACHE_KEY='sprintos_tenders_cache_v1';
+
+function shiftDate(days){ const d=new Date(); d.setUTCDate(d.getUTCDate()+days); return d.toISOString(); }
+function daysAgo(days){ return shiftDate(-days); }
+
+function defaultNote(){
+  const checklist={}; CHECKLIST_ITEMS.forEach(c=>checklist[c.key]=false);
+  const evidence = EVIDENCE_DEFAULTS.map(item=>({item, done:false}));
+  return {checklist, evidence, notes:''};
+}
+
+const EXAMPLE = {
+  tenders: [
+    {id:'T1', issuer:'EXAMPLE Standards Board', reference:'EXAMPLE/T/12', title:'Courier and logistics services', closes_at: shiftDate(4), status:'bid',
+      note: {checklist:{ppra:false,bocra:true,tax:true,cipa:true,price_band:true,capacity:true,references:false}, evidence: EVIDENCE_DEFAULTS.map((item,i)=>({item, done: i%3!==0})), notes:'PPRA registration lapsed, renewal filed 2 Sep.'}},
+    {id:'T2', issuer:'EXAMPLE Power Utility', reference:'EXAMPLE/RFQ/44', title:'Weekly parts courier, Gaborone to Morupule', closes_at: shiftDate(11), status:'watch',
+      note: {checklist:{ppra:false,bocra:true,tax:true,cipa:true,price_band:false,capacity:true,references:true}, evidence: EVIDENCE_DEFAULTS.map((item,i)=>({item, done:i%2===0})), notes:''}},
+    {id:'T3', issuer:'EXAMPLE Health Ministry', reference:'EXAMPLE/T/09', title:'Cold chain distribution, vaccines', closes_at: shiftDate(19), status:'watch',
+      note: {checklist:{ppra:false,bocra:true,tax:false,cipa:true,price_band:false,capacity:false,references:false}, evidence: EVIDENCE_DEFAULTS.map(item=>({item, done:false})), notes:'Needs cold chain training sign off before bid.'}},
+    {id:'T4', issuer:'EXAMPLE Mining Group', reference:'EXAMPLE/COUR/07', title:'Site to site courier, Jwaneng and Orapa', closes_at: shiftDate(2), status:'bid',
+      note: {checklist:{ppra:false,bocra:true,tax:true,cipa:true,price_band:true,capacity:true,references:true}, evidence: EVIDENCE_DEFAULTS.map(item=>({item, done:true})), notes:'Ready. Awaiting PPRA renewal to submit.'}},
+    {id:'T5', issuer:'First National Bank Botswana', reference:'FNBB/PROC/21/2026', title:'Branch to branch document courier', closes_at: shiftDate(27), status:'watch',
+      note: defaultNote()},
+  ],
+  documents: [
+    {id:'D1', name:'EXAMPLE trade licence', category:'statutory', owner:'Luther', expires_at: daysAgo(841-30<0?0:0), last_verified_at: shiftDate(-200)},
+    {id:'D2', name:'BOCRA operating licence', category:'licence', owner:'Barbara', expires_at:'2028-08-22T00:00:00.000Z', last_verified_at: shiftDate(-30)},
+    {id:'D3', name:'Tax clearance certificate', category:'statutory', owner:'Accounts', expires_at: shiftDate(45), last_verified_at: shiftDate(-10)},
+    {id:'D4', name:'CIPA CIPA1 certificate', category:'statutory', owner:'Luther', expires_at: shiftDate(300), last_verified_at: shiftDate(-90)},
+    {id:'D5', name:'Fleet insurance certificate', category:'policy', owner:'Ops Desk', expires_at: shiftDate(18), last_verified_at: shiftDate(-60)},
+    {id:'D6', name:'Company profile', category:'profile', owner:'Luther', expires_at: shiftDate(365), last_verified_at: shiftDate(-5)},
+    {id:'D7', name:'Domestic tariff sheet', category:'tariff', owner:'Barbara', expires_at: shiftDate(200), last_verified_at: shiftDate(-2)},
+  ]
+};
+// PPRA doc genuinely lapsed per spec (841 days ago)
+EXAMPLE.documents[0].expires_at = daysAgo(841);
+
+async function apiFetch(path, opts){
+  const res = await fetch(path, Object.assign({credentials:'include', headers:{'Content-Type':'application/json'}}, opts));
+  let json; try{ json = await res.json(); }catch(e){ json={ok:false, error:'Bad response'}; }
+  if(res.status===401){ const err=new Error('unauthorized'); err.auth=true; throw err; }
+  if(!json.ok){ throw new Error(json.error || ('HTTP '+res.status)); }
+  return json.data;
+}
+
+async function boot(){
+  /* phone copy: not served by the office hub, so there is nothing to sign in to.
+     Go straight to the example rather than showing a login screen that cannot work. */
+  var __h = (location.hostname || '');
+  var __onHub = __h === 'localhost' || __h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(__h);
+  if (!__onHub) { loadFallback(); return; }
+
+  try{
+    ME = await apiFetch('/api/me');
+    document.getElementById('whoLine').textContent = ME.name + ' - ' + ME.role;
+    await loadLive();
+  }catch(e){
+    if(e.auth){ showLogin(); } else { OFFLINE=true; loadFallback(); }
+  }
+}
+async function loadLive(){
+  try{
+    const [tenders, documents] = await Promise.all([
+      apiFetch('/api/tenders?limit=200'),
+      apiFetch('/api/documents?limit=300'),
+    ]);
+    tenders.forEach(t=>{ try{ t.note = t.price_band_note ? JSON.parse(t.price_band_note) : defaultNote(); }catch(e){ t.note = defaultNote(); } });
+    DATA = {tenders, documents, live:true};
+    SYNCED_AT = new Date().toISOString();
+    localStorage.setItem(CACHE_KEY, JSON.stringify({data:DATA, at:SYNCED_AT}));
+    render();
+  }catch(e){ loadFallback(); }
+}
+function loadFallback(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){
+    try{ const parsed=JSON.parse(cached); DATA=parsed.data; DATA.live=false; DATA.cached=true; SYNCED_AT=parsed.at; render(); return; }catch(e){}
+  }
+  DATA = {example:true, tenders: EXAMPLE.tenders.map(t=>Object.assign({},t)), documents: EXAMPLE.documents.map(d=>Object.assign({},d))};
+  SYNCED_AT = null;
+  render();
+}
+function showLogin(){
+  document.getElementById('app').innerHTML='';
+  document.getElementById('loginWrap').style.display='block';
+  document.getElementById('syncText').textContent='Sign in';
+}
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const staffId=document.getElementById('staffId').value.trim();
+  const pin=document.getElementById('pin').value.trim();
+  const errEl=document.getElementById('loginErr'); errEl.style.display='none';
+  try{
+    await apiFetch('/api/login', {method:'POST', body:JSON.stringify({staffId,pin})});
+    document.getElementById('loginWrap').style.display='none';
+    await boot();
+  }catch(err){ errEl.textContent='Could not sign in. Check the staff ID and PIN.'; errEl.style.display='block'; }
+});
+document.getElementById('offlineBtn').addEventListener('click', ()=>{
+  document.getElementById('loginWrap').style.display='none'; OFFLINE=true; loadFallback();
+});
+
+function updateSyncBadge(){
+  const badge=document.getElementById('syncBadge'), text=document.getElementById('syncText');
+  if(DATA && DATA.example){ badge.classList.add('offline'); text.textContent='Offline'; }
+  else if(DATA && DATA.live){ badge.classList.remove('offline'); text.textContent='Synced now'; }
+  else if(SYNCED_AT){ badge.classList.add('offline'); text.textContent='Synced '+localDT(SYNCED_AT); }
+  else { badge.classList.add('offline'); text.textContent='Offline'; }
+}
+
+function countdownVerdict(days){
+  if(days < 0) return {label:'CLOSED', cls:'dim'};
+  if(days < 3) return {label:'URGENT', cls:'red'};
+  return {label:'ON TRACK', cls:'green'};
+}
+function checklistCompletion(note){
+  const vals = Object.values(note.checklist||{});
+  const done = vals.filter(Boolean).length;
+  return {done, total: vals.length};
+}
+function evidenceCompletion(note){
+  const ev = note.evidence||[];
+  const done = ev.filter(e=>e.done).length;
+  return {done, total: ev.length};
+}
+function bidVerdict(t){
+  const c = checklistCompletion(t.note);
+  if(t.status==='no_bid') return {label:'NO BID', cls:'dim'};
+  if(c.done===c.total) return {label:'READY', cls:'green'};
+  if(c.done >= c.total-2) return {label:'GAPS', cls:'orange'};
+  return {label:'NOT READY', cls:'red'};
+}
+
+function render(){
+  updateSyncBadge();
+  const tenders = (DATA.tenders||[]).slice().sort((a,b)=> new Date(a.closes_at)-new Date(b.closes_at));
+  const documents = (DATA.documents||[]).slice().sort((a,b)=> new Date(a.expires_at)-new Date(b.expires_at));
+  const html=[];
+
+  if(DATA.example){ html.push('<div class="banner-example">EXAMPLE DATA. Every company, tender, parcel and number on this screen is invented to show how the screen works.</div>'); }
+  else if(!DATA.live){ html.push('<div class="banner-stale">Showing last synced data from '+localDT(SYNCED_AT)+'. Hub unreachable now.</div>'); }
+
+  html.push('<section><div class="section-head"><h2>Tender watchlist</h2><span class="hint">30 day window</span></div>');
+  if(tenders.length===0) html.push('<div class="empty-note">No tenders on the watchlist.</div>');
+  tenders.forEach(t=>{
+    const days = daysBetween(new Date().toISOString(), t.closes_at);
+    const v = countdownVerdict(days);
+    const pct = Math.min(100, Math.max(4, Math.round((Math.max(0,days)/30)*100)));
+    html.push('<div class="card" onclick="openTender(\''+t.id+'\')">'+
+      '<div class="card-top"><div><div class="card-title">'+esc(t.issuer)+'</div><div class="card-sub">'+esc(t.title)+' &middot; '+esc(t.reference)+'</div></div>'+
+      '<span class="verdict '+v.cls+'">'+v.label+'</span></div>'+
+      '<div class="bar"><div class="bar-fill '+v.cls+'" style="width:'+pct+'%"></div><span class="bar-label">'+(days<0?'closed':days+' days left')+'</span></div>'+
+    '</div>');
+  });
+  html.push('</section>');
+
+  html.push('<section><div class="section-head"><h2>Document registry</h2><span class="hint">365 day window</span></div>');
+  if(documents.length===0) html.push('<div class="empty-note">No documents registered.</div>');
+  // Only the single soonest, not-yet-expired document is flagged orange (one orange accent per screen); the rest read green or red.
+  const notExpiredDays = documents.map(d=>daysBetween(new Date().toISOString(), d.expires_at)).filter(x=>x>=0);
+  const soonestDays = notExpiredDays.length ? Math.min(...notExpiredDays) : null;
+  documents.forEach(d=>{
+    const days = daysBetween(new Date().toISOString(), d.expires_at);
+    const isMostUrgent = days>=0 && days===soonestDays && days<60;
+    const cls = days<0 ? 'red' : (isMostUrgent ? 'orange' : 'green');
+    const label = days<0 ? ('EXPIRED '+Math.abs(days)+'d ago') : (days+' days left');
+    const pct = Math.min(100, Math.max(3, Math.round((Math.max(0,days)/365)*100)));
+    html.push('<div class="card" style="cursor:default;">'+
+      '<div class="card-top"><div><div class="card-title">'+esc(d.name)+'</div><div class="card-sub">'+esc(d.category)+'</div></div>'+
+      '<span class="verdict '+cls+'">'+(days<0?'EXPIRED':cls==='orange'?'RENEW SOON':'CURRENT')+'</span></div>'+
+      '<div class="bar"><div class="bar-fill '+cls+'" style="width:'+pct+'%"></div><span class="bar-label">'+label+'</span></div>'+
+      '<div class="owner-line"><span>'+esc(d.owner)+' &middot; last verified '+localDT(d.last_verified_at)+'</span>'+
+      '<button class="btn-mini" onclick="verifyDoc(\''+d.id+'\', event)">Verified today</button></div>'+
+    '</div>');
+  });
+  html.push('</section>');
+
+  document.getElementById('app').innerHTML = html.join('');
+}
+
+async function verifyDoc(id, ev){
+  ev.stopPropagation();
+  const now = new Date().toISOString();
+  const doc = (DATA.documents||[]).find(d=>d.id===id);
+  if(!doc) return;
+  if(DATA.example || !DATA.live){ doc.last_verified_at = now; render(); return; }
+  try{
+    await apiFetch('/api/documents/'+id, {method:'PATCH', body:JSON.stringify({last_verified_at: now})});
+    doc.last_verified_at = now; render();
+  }catch(e){ alert('Could not verify: '+e.message); }
+}
+
+let CURRENT_TENDER=null;
+function openTender(id){
+  const t = (DATA.tenders||[]).find(x=>x.id===id);
+  if(!t) return;
+  CURRENT_TENDER = t;
+  const days = daysBetween(new Date().toISOString(), t.closes_at);
+  const v = countdownVerdict(days);
+  const bv = bidVerdict(t);
+  const ec = evidenceCompletion(t.note);
+  const pct = ec.total ? Math.round((ec.done/ec.total)*100) : 0;
+
+  const html=[];
+  html.push('<button class="drawer-close" onclick="closeDrawer()">Close</button>');
+  html.push('<h2>'+esc(t.issuer)+'</h2>');
+  html.push('<div class="sub">'+esc(t.title)+' &middot; '+esc(t.reference)+' &middot; closes '+localDT(t.closes_at)+'</div>');
+  html.push('<span class="verdict '+v.cls+'">'+v.label+'</span> <span class="verdict '+bv.cls+'" style="margin-left:6px;">'+bv.label+'</span>');
+
+  html.push('<div class="field-label">Bid / no bid checklist</div>');
+  CHECKLIST_ITEMS.forEach(c=>{
+    const on = !!t.note.checklist[c.key];
+    html.push('<div class="check-item"><span>'+c.label+'</span><div class="toggle '+(on?'on':'')+'" onclick="toggleCheck(\''+c.key+'\')"><div class="knob"></div></div></div>');
+  });
+
+  html.push('<div class="field-label">Evidence gap tracker</div>');
+  html.push('<div class="completion-wrap"><div class="barlabel"><span>'+ec.done+' of '+ec.total+' items ready</span><span>'+pct+'%</span></div>'+
+    '<div class="bar"><div class="bar-fill '+(pct===100?'':'orange')+'" style="width:'+Math.max(3,pct)+'%"></div></div></div>');
+  (t.note.evidence||[]).forEach((e,i)=>{
+    html.push('<div class="check-item"><span>'+esc(e.item)+'</span><div class="toggle '+(e.done?'on':'')+'" onclick="toggleEvidence('+i+')"><div class="knob"></div></div></div>');
+  });
+
+  html.push('<div class="field-label">Notes</div>');
+  html.push('<textarea id="tenderNotes" placeholder="Bid notes">'+esc(t.note.notes||'')+'</textarea>');
+  html.push('<button class="btn" onclick="saveNote()">Save checklist and notes</button>');
+
+  document.getElementById('drawer').innerHTML = html.join('');
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('drawerBg').classList.add('show');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('drawerBg').classList.remove('show');
+  CURRENT_TENDER=null;
+}
+document.getElementById('drawerBg').addEventListener('click', closeDrawer);
+
+function toggleCheck(key){
+  if(!CURRENT_TENDER) return;
+  CURRENT_TENDER.note.checklist[key] = !CURRENT_TENDER.note.checklist[key];
+  openTender(CURRENT_TENDER.id);
+}
+function toggleEvidence(i){
+  if(!CURRENT_TENDER) return;
+  CURRENT_TENDER.note.evidence[i].done = !CURRENT_TENDER.note.evidence[i].done;
+  openTender(CURRENT_TENDER.id);
+}
+async function saveNote(){
+  if(!CURRENT_TENDER) return;
+  CURRENT_TENDER.note.notes = document.getElementById('tenderNotes').value;
+  const payload = JSON.stringify(CURRENT_TENDER.note);
+  if(DATA.example || !DATA.live){ render(); closeDrawer(); return; }
+  try{
+    await apiFetch('/api/tenders/'+CURRENT_TENDER.id, {method:'PATCH', body:JSON.stringify({price_band_note: payload})});
+    render(); closeDrawer();
+  }catch(e){ alert('Could not save: '+e.message); }
+}
+
+boot();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+<script src="../shared/sprint-notify.js"></script>
+</body>
+</html>

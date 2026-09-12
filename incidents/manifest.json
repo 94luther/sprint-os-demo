@@ -1,0 +1,15 @@
+{
+  "name": "Sprint Incident Desk",
+  "short_name": "Incident Desk",
+  "description": "Sprint Couriers incident command: populations, parcel states, the spine checklist, notice drafts and the MD summary.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#131311",
+  "theme_color": "#131311",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "../shared/logo-mark.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "../shared/logo-mark.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sales Desk - Sprint Couriers</title>
+<meta name="theme-color" content="#131311">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../shared/logo-mark.png">
+<link rel="apple-touch-icon" href="../shared/logo-mark.png">
+<style>
+/* Local first brand type. It never phones home to Google, and it never
+   breaks when there is no internet or no signal on a driver phone. Drop
+   the two real font files into apps/shared/fonts/ to restore the exact
+   brand type offline; see the README there. With no files present this
+   falls back to the system font stack below. */
+@font-face{font-family:'Anton'; font-weight:400; font-display:swap;
+  src:local('Anton'), url('../shared/fonts/Anton-Regular.woff2') format('woff2'), url('../shared/fonts/Anton-Regular.ttf') format('truetype');}
+@font-face{font-family:'Inter'; font-weight:100 900; font-display:swap;
+  src:local('Inter'), url('../shared/fonts/Inter-Variable.woff2') format('woff2'), url('../shared/fonts/Inter-Variable.ttf') format('truetype');}
+:root{
+  --font-display:'Anton', Impact, 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ink:#131311; --panel:#1d1d19; --line:#2c2c27; --bone:#F4F4F1; --dim:#a6a69f;
+  --green:#3AAA35; --orange:#F7941D; --red:#e0483e;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--ink); color:var(--bone); font-family:var(--font-body);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  min-height:100vh; padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+h1,h2,h3,.disp{font-family:var(--font-display); text-transform:uppercase; letter-spacing:0.01em; font-weight:400;}
+a{color:inherit;}
+button{font-family:inherit;}
+::selection{background:var(--orange); color:var(--ink);}
+
+/* header */
+header{
+  position:sticky; top:0; z-index:20; background:var(--ink);
+  border-bottom:1px solid var(--line); padding:10px 14px;
+  display:flex; align-items:center; gap:10px;
+}
+header img{width:32px; height:32px; object-fit:contain; flex:none;}
+header .titles{flex:1; min-width:0;}
+header h1{font-size:15px; line-height:1.1;}
+header .who{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.sync-badge{
+  font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line);
+  color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;
+}
+.sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
+.sync-badge.offline .sync-dot{background:var(--orange);}
+.sync-badge.offline{color:var(--orange); border-color:var(--orange);}
+
+main{max-width:720px; margin:0 auto; padding:12px 14px 40px;}
+
+.banner-example{
+  background:rgba(247,148,29,0.12); border:1px solid var(--orange); color:var(--orange);
+  font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; margin-bottom:12px;
+}
+.banner-guard{
+  background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--green);
+  font-size:12px; color:var(--dim); padding:8px 12px; border-radius:6px; margin-bottom:14px;
+}
+.banner-guard b{color:var(--bone); font-weight:600;}
+
+section{margin-bottom:22px;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px;}
+.section-head h2{font-size:14px; color:var(--dim); letter-spacing:0.06em;}
+.section-head .hint{font-size:11px; color:var(--dim);}
+
+/* bars */
+.stage-row{
+  display:block; width:100%; text-align:left; background:var(--panel); border:1px solid var(--line);
+  border-radius:8px; padding:10px 12px; margin-bottom:6px; cursor:pointer;
+}
+.stage-row.open{border-color:var(--orange);}
+.stage-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; font-size:12px;}
+.stage-name{font-weight:700; letter-spacing:0.03em;}
+.stage-val{color:var(--dim); font-size:11px;}
+.bar{position:relative; height:20px; background:var(--line); border-radius:4px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:4px; background:var(--green); min-width:2px;}
+.bar-fill.orange{background:var(--orange);}
+.bar-fill.red{background:var(--red);}
+.bar-count{position:absolute; right:8px; top:0; bottom:0; display:flex; align-items:center; font-size:11px; font-weight:700;}
+
+.stage-leads{display:none; margin:8px 0 4px; border-top:1px solid var(--line); padding-top:8px;}
+.stage-leads.show{display:block;}
+.lead-item{
+  display:flex; justify-content:space-between; align-items:center; padding:8px 6px;
+  border-bottom:1px solid var(--line); cursor:pointer;
+}
+.lead-item:last-child{border-bottom:none;}
+.lead-name{font-size:13px; font-weight:600;}
+.lead-track{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.04em;}
+.lead-val{font-size:12px; color:var(--dim);}
+
+/* today panel */
+.today-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+  margin-bottom:8px; cursor:pointer;
+}
+.today-card .row1{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+.today-card .who{font-size:13px; font-weight:600;}
+.today-card .what{font-size:11px; color:var(--dim);}
+.age-bar{height:6px; background:var(--line); border-radius:3px; overflow:hidden;}
+.age-fill{height:100%; background:var(--green);}
+.age-fill.warn{background:var(--orange);}
+.age-fill.late{background:var(--red);}
+.age-text{font-size:10px; color:var(--dim); margin-top:4px;}
+.empty-note{font-size:12px; color:var(--dim); padding:10px 4px;}
+
+/* drawer */
+.drawer-bg{
+  position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:40; display:none;
+}
+.drawer-bg.show{display:block;}
+.drawer{
+  position:fixed; right:0; top:0; bottom:0; width:100%; max-width:420px; background:var(--panel);
+  border-left:1px solid var(--line); z-index:41; transform:translateX(100%); transition:transform .25s ease;
+  overflow-y:auto; padding:14px 14px 40px;
+}
+.drawer.show{transform:translateX(0);}
+.drawer-close{
+  background:none; border:1px solid var(--line); color:var(--bone); border-radius:6px;
+  padding:6px 10px; font-size:12px; float:right; cursor:pointer;
+}
+.drawer h2{font-size:20px; margin:6px 0 2px; clear:both;}
+.drawer .sub{font-size:12px; color:var(--dim); margin-bottom:14px;}
+.field-label{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; margin:14px 0 6px;}
+.stage-btns{display:flex; flex-wrap:wrap; gap:6px;}
+.stage-btn{
+  background:var(--ink); border:1px solid var(--line); color:var(--dim); font-size:11px;
+  padding:7px 10px; border-radius:20px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em;
+}
+.stage-btn.current{background:var(--green); border-color:var(--green); color:var(--ink); font-weight:700;}
+.timeline{border-left:2px solid var(--line); padding-left:12px; margin-top:4px;}
+.tl-item{margin-bottom:12px; position:relative;}
+.tl-item::before{content:''; position:absolute; left:-16.5px; top:3px; width:8px; height:8px; border-radius:50%; background:var(--green);}
+.tl-head{font-size:12px; font-weight:600; display:flex; justify-content:space-between; gap:8px;}
+.tl-meta{font-size:10px; color:var(--dim); margin-top:1px;}
+.tl-body{font-size:12px; color:var(--dim); margin-top:3px;}
+form.debrief{display:flex; flex-direction:column; gap:8px; margin-top:8px;}
+.rowfields{display:flex; gap:8px;}
+select,input[type=text],textarea{
+  background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px;
+  padding:8px 10px; font-size:13px; font-family:inherit; width:100%;
+}
+textarea{min-height:60px; resize:vertical;}
+.btn{
+  background:var(--green); color:var(--ink); border:none; border-radius:6px; font-weight:700;
+  padding:10px 12px; font-size:13px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em;
+}
+.btn.orange{background:var(--orange);}
+.btn.ghost{background:none; border:1px solid var(--line); color:var(--bone);}
+.btn:disabled{opacity:0.5; cursor:default;}
+.guard-flag{display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--orange); margin-top:6px;}
+
+/* login */
+.login-wrap{max-width:320px; margin:18vh auto 0; padding:0 20px;}
+.login-wrap h1{font-size:22px; margin-bottom:4px;}
+.login-wrap p{font-size:12px; color:var(--dim); margin-bottom:18px;}
+.login-wrap form{display:flex; flex-direction:column; gap:10px;}
+.login-hint{font-size:11px; color:var(--dim); margin-top:14px; line-height:1.5;}
+.err{color:var(--red); font-size:12px; margin-top:6px; display:none;}
+
+@media(min-width:640px){
+  main{padding:18px 24px 40px;}
+}
+
+/* Brick 58, the pipeline funnel: docs/DESIGN-LANGUAGE.md, quantities drawn as space */
+.funnel-card{border-radius:22px;padding:15px 16px 13px;margin:12px 0 14px;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
+.funnel-card .fh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.funnel-card .ft{font-size:15px;font-weight:800;color:#F4F7F5}
+.funnel-card .fv{font-size:12px;color:#C9D6CF}
+.funnel-card svg{display:block;width:100%;height:auto;margin:10px 0 2px}
+.fn-band{cursor:pointer}
+.fn-band text{font-weight:800;paint-order:stroke;stroke:rgba(8,28,20,.55);stroke-width:3px}
+.funnel-say{font-size:13.2px;font-weight:700;color:#FDBE74;line-height:1.35;margin-top:8px}
+.funnel-sub{font-size:12px;color:#C9D6CF;line-height:1.35;margin-top:5px}
+.funnel-act{display:inline-flex;align-items:center;gap:9px;margin-top:11px;background:#F7941D;color:#fff;border:0;border-radius:999px;font-weight:800;font-size:13px;padding:10px 17px;cursor:pointer;box-shadow:0 10px 24px -10px rgba(247,148,29,.9);text-align:left}
+.funnel-act svg{width:15px;height:15px;margin:0;stroke:#fff;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.funnel-quiet{display:inline-block;margin-top:11px;font-size:12px;font-weight:800;color:#8FE08A;background:rgba(58,170,53,.16);border:1px solid rgba(58,170,53,.4);border-radius:999px;padding:8px 15px}
+.funnel-foot{font-size:11.2px;color:#A7B5AE;margin-top:9px;line-height:1.35}
+.cold{margin-top:12px}
+.cold .ch{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#C9D6CF;margin-bottom:6px}
+.cold-row{display:flex;align-items:center;gap:9px;padding:6px 0;cursor:pointer}
+.cold-row .cn{font-size:12.8px;font-weight:700;color:#F4F7F5;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cold-row .cs{font-size:11px;font-weight:800;color:#C9D6CF;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:3px 9px;flex:none}
+.cold-row .cd{font-size:11.5px;font-weight:800;width:74px;text-align:right;flex:none}
+.cold-row .cd.warm{color:#C9D6CF} .cold-row .cd.cool{color:#FDBE74} .cold-row .cd.cold{color:#FFB3AD}
+
+/* Brick 60: why a deal was lost */
+.lostbox{margin-top:10px;padding:12px 13px;border-radius:16px;background:rgba(255,107,97,.12);border:1px solid rgba(255,107,97,.42)}
+.lostbox .lt{font-size:13px;font-weight:800;color:#FFB3AD}
+.lostbox .lw{font-size:11.6px;color:#C9D6CF;margin-top:3px}
+.lostbox .lr{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.lostbox .lr button{background:rgba(255,255,255,.10);color:#F4F7F5;border:1px solid rgba(255,255,255,.22);border-radius:999px;font-weight:800;font-size:11.5px;padding:6px 12px;cursor:pointer;width:auto}
+.lostbox .lr button:hover{background:rgba(255,255,255,.18)}
+.lostbox .cancel{margin-top:9px;font-size:11.5px;color:#A7B5AE;cursor:pointer;text-decoration:underline}
+.whylost{margin-top:11px}
+.whylost .wt{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#C9D6CF;margin-bottom:6px}
+.whylost .wr{display:flex;align-items:center;gap:9px;padding:3px 0}
+.whylost .wn{font-size:12.2px;color:#F4F7F5;width:118px;flex:none}
+.whylost .wb{flex:1;height:8px;border-radius:5px;background:rgba(255,255,255,.10);overflow:hidden}
+.whylost .wb i{display:block;height:100%;background:#FF6B61;border-radius:5px}
+.whylost .wc{font-size:11.5px;font-weight:800;color:#C9D6CF;width:22px;text-align:right;flex:none}
+
+/* Brick 61: the bell, same on every page */
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<link rel="stylesheet" href="../shared/sprint-theme.css">
+</head>
+<body>
+
+<header>
+  <img src="../shared/logo-mark.png" alt="Sprint Couriers">
+  <div class="titles">
+    <h1>Sales Desk</h1>
+    <div class="who" id="whoLine">Not signed in</div>
+  </div>
+  <span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+  <div class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Loading</span></div>
+</header>
+
+<main id="app">
+  <div style="padding:40px 4px; color:var(--dim); font-size:13px;">Loading Sales Desk...</div>
+</main>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap" style="display:none;">
+  <h1>Sign in</h1>
+  <p>Sprint Couriers staff PIN</p>
+  <form id="loginForm">
+    <input type="text" id="staffId" placeholder="Staff ID" autocomplete="username" required>
+    <input type="text" inputmode="numeric" pattern="[0-9]*" id="pin" placeholder="PIN" maxlength="8" autocomplete="current-password" required>
+    <button class="btn" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <button class="btn ghost" style="margin-top:10px;width:100%;" id="offlineBtn">View example data instead</button>
+</div>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="drawer" id="drawer"></div>
+
+<script>
+/* ---------- helpers ---------- */
+const STAGES = ['new','contacted','replied','meeting','quoted','won','lost'];
+const STAGE_LABEL = {new:'New', contacted:'Contacted', replied:'Replied', meeting:'Meeting', quoted:'Quoted', won:'Won', lost:'Lost'};
+
+function pula(thebe){
+  const p = (Number(thebe||0)/100);
+  const parts = p.toFixed(2).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return 'P' + parts.join('.');
+}
+function localDT(iso){
+  if(!iso) return '';
+  try{ return new Date(iso).toLocaleString('en-GB',{timeZone:'Africa/Gaborone',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return iso; }
+}
+function gaboroneDateStr(d){
+  d = d || new Date();
+  return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Gaborone',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+}
+function daysBetween(isoA, isoB){
+  return Math.floor((new Date(isoB) - new Date(isoA)) / 86400000);
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- state ---------- */
+let ME = null;
+let OFFLINE = false;
+let DATA = null; // {leads, customers, interactions, campaign_touches}
+let SYNCED_AT = null;
+const CACHE_KEY = 'sprintos_sales_cache_v1';
+
+/* ---------- example data ---------- */
+const EXAMPLE = {
+  leads: [
+    {id:'L1', customer:'EXAMPLE Kalahari Meats', track:'cold_chain', stage:'new', next_action:'Call to introduce Sprint', next_action_at: shiftDate(-1), last_touch_at: shiftDate(-3), stage_since: shiftDate(-5), value_thebe: 480000},
+    {id:'L2', customer:'EXAMPLE Gaborone Dental Studio', track:'general', stage:'contacted', next_action:'Send tariff sheet', next_action_at: shiftDate(0), last_touch_at: shiftDate(-2), stage_since: shiftDate(-4), value_thebe: 95000},
+    {id:'L3', customer:'EXAMPLE Boteti Mining Supplies', track:'general', stage:'replied', next_action:'Answer their question on Zone 4', next_action_at: shiftDate(1), last_touch_at: shiftDate(-4), stage_since: shiftDate(-6), value_thebe: 220000},
+    {id:'L4', customer:'EXAMPLE Sunrise Pharmacy Group', track:'cold_chain', stage:'replied', next_action:'Confirm cold chain training status', next_action_at: shiftDate(-2), last_touch_at: shiftDate(-6), stage_since: shiftDate(-8), value_thebe: 610000},
+    {id:'L5', customer:'EXAMPLE BCX Logistics', track:'tender', stage:'meeting', next_action:'Site visit Thursday', next_action_at: shiftDate(2), last_touch_at: shiftDate(-1), stage_since: shiftDate(-3), value_thebe: 1450000},
+    {id:'L6', customer:'EXAMPLE Naledi Legal Attorneys', track:'general', stage:'quoted', next_action:'Follow up on quote #4021', next_action_at: shiftDate(0), last_touch_at: shiftDate(-2), stage_since: shiftDate(-4), value_thebe: 87000},
+    {id:'L7', customer:'EXAMPLE Diamond Freight Forwarders', track:'international', stage:'quoted', next_action:'Check with Germany client', next_action_at: shiftDate(3), last_touch_at: shiftDate(-1), stage_since: shiftDate(-3), value_thebe: 565000},
+    {id:'L8', customer:'EXAMPLE Tlokweng Hardware', track:'general', stage:'won', next_action:'', next_action_at: null, last_touch_at: shiftDate(-8), stage_since: shiftDate(-10), value_thebe: 132000},
+    {id:'L9', customer:'EXAMPLE Riverwalk Optometrists', track:'general', stage:'lost', lost_reason:'went to a competitor', next_action:'', next_action_at: null, last_touch_at: shiftDate(-15), stage_since: shiftDate(-17), value_thebe: 41000},
+    {id:'L12', customer:'EXAMPLE Gantsi Feed Supply', track:'general', stage:'lost', lost_reason:'price', next_action:'', next_action_at: null, last_touch_at: shiftDate(-22), stage_since: shiftDate(-22), value_thebe: 86000},
+    {id:'L13', customer:'EXAMPLE Mahalapye Auto Spares', track:'general', stage:'lost', lost_reason:null, next_action:'', next_action_at: null, last_touch_at: shiftDate(-40), stage_since: shiftDate(-40), value_thebe: 52000},
+    {id:'L10', customer:'EXAMPLE Palapye Fresh Produce', track:'cold_chain', stage:'new', next_action:'Cold call from campaign list', next_action_at: shiftDate(2), last_touch_at: shiftDate(-1), stage_since: shiftDate(-3), value_thebe: 310000},
+    {id:'L11', customer:'EXAMPLE Airport Junction Clinic', track:'cold_chain', stage:'meeting', next_action:'Send proposal after visit', next_action_at: shiftDate(1), last_touch_at: shiftDate(0), stage_since: shiftDate(-2), value_thebe: 275000},
+  ],
+  interactions: {
+    L1: [{channel:'email', direction:'out', subject:'Intro', summary:'Sent intro email with rate card.', at: shiftDate(-3), staff:'Luther'}],
+    L2: [{channel:'call', direction:'out', subject:'Intro call', summary:'Spoke to receptionist, will forward to owner.', at: shiftDate(-2), staff:'Luther'}],
+    L3: [{channel:'email', direction:'in', subject:'Re: Zone 4 rates', summary:'Asked whether Zone 4 covers Boteti district.', at: shiftDate(-4), staff:'Luther'}],
+    L4: [{channel:'whatsapp', direction:'in', subject:'Cold chain question', summary:'Asked if driver has done cold chain training.', at: shiftDate(-6), staff:'Luther'},
+         {channel:'email', direction:'out', subject:'Training update', summary:'Confirmed training in progress with MD approval.', at: shiftDate(-5), staff:'Luther'}],
+    L5: [{channel:'meeting', direction:'out', subject:'Discovery call', summary:'Discussed weekly mine supply runs, need site visit.', at: shiftDate(-1), staff:'Luther'}],
+    L6: [{channel:'email', direction:'out', subject:'Quote #4021 sent', summary:'Sent quote for weekly courier of filed documents.', at: shiftDate(-2), staff:'Luther'}],
+    L7: [{channel:'email', direction:'out', subject:'Germany quote', summary:'Sent quote 565 pula for 5kg to Germany including fuel and war risk.', at: shiftDate(-1), staff:'Luther'}],
+  },
+  campaign_touches: {L1:shiftDate(-3), L2:shiftDate(-2), L10:shiftDate(-1)}
+};
+function shiftDate(days){
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate()+days);
+  return d.toISOString();
+}
+
+/* ---------- api ---------- */
+async function apiFetch(path, opts){
+  const res = await fetch(path, Object.assign({credentials:'include', headers:{'Content-Type':'application/json'}}, opts));
+  let json;
+  try{ json = await res.json(); } catch(e){ json = {ok:false, error:'Bad response'}; }
+  if(res.status === 401){ const err = new Error('unauthorized'); err.auth = true; throw err; }
+  if(!json.ok){ throw new Error(json.error || ('HTTP '+res.status)); }
+  return json.data;
+}
+
+async function boot(){
+  /* phone copy: not served by the office hub, so there is nothing to sign in to.
+     Go straight to the example rather than showing a login screen that cannot work. */
+  var __h = (location.hostname || '');
+  var __onHub = __h === 'localhost' || __h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(__h);
+  if (!__onHub) { loadFallback(); return; }
+
+  try{
+    ME = await apiFetch('/api/me');
+    document.getElementById('whoLine').textContent = ME.name + ' - ' + ME.role;
+    await loadLive();
+  }catch(e){
+    if(e.auth){ showLogin(); }
+    else { OFFLINE = true; loadFallback(); }
+  }
+}
+
+async function loadLive(){
+  try{
+    const [leads, customers, interactions] = await Promise.all([
+      apiFetch('/api/leads?limit=200'),
+      apiFetch('/api/customers?limit=500'),
+      apiFetch('/api/interactions?limit=300'),
+    ]);
+    DATA = {leads, customers, interactions, live:true};
+    SYNCED_AT = new Date().toISOString();
+    localStorage.setItem(CACHE_KEY, JSON.stringify({data:DATA, at:SYNCED_AT}));
+    render();
+  }catch(e){
+    loadFallback();
+  }
+}
+
+function loadFallback(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){
+    try{
+      const parsed = JSON.parse(cached);
+      DATA = parsed.data; DATA.live = false; DATA.cached = true;
+      SYNCED_AT = parsed.at;
+      render();
+      return;
+    }catch(e){}
+  }
+  DATA = {example:true};
+  SYNCED_AT = null;
+  render();
+}
+
+function showLogin(){
+  document.getElementById('app').innerHTML = '';
+  document.getElementById('loginWrap').style.display = 'block';
+  document.getElementById('syncText').textContent = 'Sign in';
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const staffId = document.getElementById('staffId').value.trim();
+  const pin = document.getElementById('pin').value.trim();
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  try{
+    await apiFetch('/api/login', {method:'POST', body:JSON.stringify({staffId, pin})});
+    document.getElementById('loginWrap').style.display = 'none';
+    await boot();
+  }catch(err){
+    errEl.textContent = 'Could not sign in. Check the staff ID and PIN.';
+    errEl.style.display = 'block';
+  }
+});
+document.getElementById('offlineBtn').addEventListener('click', ()=>{
+  document.getElementById('loginWrap').style.display = 'none';
+  OFFLINE = true;
+  loadFallback();
+});
+
+/* ---------- render ---------- */
+function updateSyncBadge(){
+  const badge = document.getElementById('syncBadge');
+  const text = document.getElementById('syncText');
+  if(DATA && DATA.example){
+    badge.classList.add('offline');
+    text.textContent = 'Offline';
+  } else if(DATA && DATA.live){
+    badge.classList.remove('offline');
+    text.textContent = 'Synced now';
+  } else if(SYNCED_AT){
+    badge.classList.add('offline');
+    text.textContent = 'Synced ' + localDT(SYNCED_AT);
+  } else {
+    badge.classList.add('offline');
+    text.textContent = 'Offline';
+  }
+}
+
+function getLeads(){
+  if(DATA.example) return EXAMPLE.leads;
+  return (DATA.leads||[]).map(l=>({
+    id:l.id, customer: customerName(l.customer_id), track:l.track, stage:l.stage,
+    next_action:l.next_action, next_action_at:l.next_action_at, last_touch_at:l.last_touch_at,
+    // A lead with no quote has no known value. Zero would be a claim that the
+    // deal is worth nothing (feedback_never_print_unproven_zero).
+    value_thebe: (typeof l.value_thebe === 'number' ? l.value_thebe : null),
+    stage_since: l.stage_since || null, lost_reason: l.lost_reason || null, customer_id: l.customer_id
+  }));
+}
+function customerName(id){
+  if(!DATA.customers) return id;
+  const c = DATA.customers.find(x=>x.id===id);
+  return c ? c.name : id;
+}
+function getInteractions(leadOrCustomerId){
+  if(DATA.example) return EXAMPLE.interactions[leadOrCustomerId] || [];
+  return (DATA.interactions||[]).filter(i=>i.customer_id===leadOrCustomerId)
+    .sort((a,b)=> new Date(b.at) - new Date(a.at))
+    .map(i=>({channel:i.channel, direction:i.direction, subject:i.subject, summary:i.summary, at:i.at, staff:i.staff_id}));
+}
+function inGuardWindow(lead){
+  const touches = DATA.example ? EXAMPLE.campaign_touches : {};
+  const t = touches[lead.id];
+  if(!t) return false;
+  return daysBetween(t, new Date().toISOString()) < 4;
+}
+
+
+/* ---------- Brick 58: the pipeline drawn as a funnel ----------
+   Width is the number of leads sitting at a stage. The thin bar under each band
+   is the money at that stage, so one big deal never looks like five small ones.
+   No conversion percentages: a snapshot cannot produce one honestly, and the
+   page says so instead of inventing it. */
+var FUNNEL_STAGES = ['new', 'contacted', 'replied', 'meeting', 'quoted', 'won'];
+function fnEl(tag, attrs, text){
+  var n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (var k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  return n;
+}
+function daysSince(iso){ if (!iso) return null; var t = Date.parse(iso); if (isNaN(t)) return null; return Math.floor((Date.now() - t) / 86400000); }
+function leadValue(l){ return (typeof l.value_thebe === 'number' && l.value_thebe > 0) ? l.value_thebe : null; }
+function funnelModel(){
+  var leads = getLeads();
+  var rows = FUNNEL_STAGES.map(function(s){
+    var at = leads.filter(function(l){ return l.stage === s; });
+    var valued = at.map(leadValue).filter(function(v){ return v !== null; });
+    return { stage: s, label: STAGE_LABEL[s], count: at.length, leads: at,
+             value: valued.reduce(function(a, b){ return a + b; }, 0), valued: valued.length };
+  });
+  var lost = leads.filter(function(l){ return l.stage === 'lost'; });
+  var lostValued = lost.map(leadValue).filter(function(v){ return v !== null; });
+  return { rows: rows, leads: leads,
+           lost: { count: lost.length, value: lostValued.reduce(function(a, b){ return a + b; }, 0), valued: lostValued.length, leads: lost },
+           priced: leads.filter(function(l){ return leadValue(l) !== null; }).length };
+}
+/* What the SHAPE says. Not a conversion rate: the relative weight of the top of
+   the funnel against the bottom, which a snapshot CAN support. */
+function funnelVerdict(m){
+  var by = {};
+  m.rows.forEach(function(r){ by[r.stage] = r.count; });
+  var top = by['new'] + by['contacted'];
+  var mid = by['replied'] + by['meeting'];
+  var late = by['quoted'];
+  var total = m.rows.reduce(function(a, r){ return a + r.count; }, 0);
+  if (total === 0) return { say: 'There are no leads on the desk at all.', sub: 'Nothing here is broken. Nothing has been entered.', tone: 'grey' };
+  if (top === 0) return { say: 'Nothing new is coming in.', sub: 'Every lead on the desk has already been contacted. When these close there is nothing behind them.', tone: 'bad' };
+  if (late > 0 && late >= top) return { say: 'The bottom is heavier than the top.', sub: late + (late === 1 ? ' quote is' : ' quotes are') + ' waiting on an answer while only ' + top + ' new ' + (top === 1 ? 'lead is' : 'leads are') + ' behind them. Chasing the quotes is worth more today than finding more leads.', tone: 'warn' };
+  if (top > 0 && mid === 0 && late === 0) return { say: 'Everything is stuck at the top.', sub: 'Leads are being contacted but none have reached a meeting or a quote. The step that is not working is getting a reply.', tone: 'warn' };
+  return { say: 'The shape is healthy.', sub: top + ' coming in, ' + mid + ' in conversation, ' + late + ' waiting on an answer.', tone: 'good' };
+}
+/* The one call worth making. Biggest money first, and only deals that have
+   actually gone quiet, because a deal touched this morning needs nothing. */
+function funnelAction(m){
+  var LATE = { quoted: 5, meeting: 7, replied: 3, contacted: 7, new: 4 };
+  var candidates = [];
+  m.leads.forEach(function(l){
+    if (l.stage === 'won' || l.stage === 'lost') return;
+    var quiet = daysSince(l.last_touch_at);
+    var overdue = l.next_action_at ? -Math.floor((Date.parse(l.next_action_at) - Date.now()) / 86400000) : null;
+    var limit = LATE[l.stage] || 7;
+    if ((quiet !== null && quiet >= limit) || (overdue !== null && overdue > 0)) {
+      candidates.push({ lead: l, quiet: quiet, overdue: overdue, value: leadValue(l) || 0 });
+    }
+  });
+  if (!candidates.length) return null;
+  candidates.sort(function(a, b){ return (b.value - a.value) || ((b.quiet || 0) - (a.quiet || 0)); });
+  return candidates[0];
+}
+function funnelHtml(){
+  var m = funnelModel();
+  var v = funnelVerdict(m);
+  var maxCount = Math.max(1, Math.max.apply(null, m.rows.map(function(r){ return r.count; })));
+  var maxValue = Math.max(1, Math.max.apply(null, m.rows.map(function(r){ return r.value; })));
+  var W = 320, H = m.rows.length * 44 + 8, mid = W / 2;
+
+  var svg = ['<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" aria-label="The pipeline, ' + m.rows.map(function(r){ return r.count + ' ' + r.label; }).join(', ') + '">'];
+  var widthAt = function(c){ return Math.max(30, (c / maxCount) * (W - 24)); };
+  // the walls of the funnel, so the narrowing is visible as a shape and not as six bars
+  var lx = [], rx = [];
+  m.rows.forEach(function(r, i){ var w = widthAt(r.count); lx.push(mid - w / 2); rx.push(mid + w / 2); });
+  var wall = 'M ' + lx[0] + ' 4';
+  for (var i = 1; i < lx.length; i++) wall += ' L ' + lx[i] + ' ' + (i * 44 + 4);
+  wall += ' L ' + rx[rx.length - 1] + ' ' + ((lx.length - 1) * 44 + 4);
+  for (var j = rx.length - 2; j >= 0; j--) wall += ' L ' + rx[j] + ' ' + (j * 44 + 4);
+  svg.push('<path d="' + wall + ' Z" fill="rgba(255,255,255,.05)"/>');
+
+  m.rows.forEach(function(r, i){
+    var y = i * 44 + 4, w = widthAt(r.count), x = mid - w / 2;
+    var col = r.stage === 'won' ? '#3AAA35' : r.count === 0 ? 'rgba(255,255,255,.10)' : 'rgba(58,170,53,' + (0.30 + 0.10 * i).toFixed(2) + ')';
+    svg.push('<g class="fn-band" onclick="toggleStage(\'' + r.stage + '\')">');
+    svg.push('<rect x="' + x.toFixed(1) + '" y="' + y + '" width="' + w.toFixed(1) + '" height="26" rx="9" fill="' + col + '" stroke="rgba(255,255,255,.20)"/>');
+    // the money at this stage, a thinner bar beneath, on its own scale
+    if (r.value > 0) {
+      var vw = Math.max(8, (r.value / maxValue) * (W - 24));
+      svg.push('<rect x="' + (mid - vw / 2).toFixed(1) + '" y="' + (y + 28) + '" width="' + vw.toFixed(1) + '" height="5" rx="2.5" fill="#F7941D" opacity="0.75"/>');
+    }
+    svg.push('<text x="10" y="' + (y + 18) + '" font-size="11.5" fill="#E6EEE9" text-anchor="start">' + r.label + '</text>');
+    svg.push('<text x="' + (W - 10) + '" y="' + (y + 18) + '" font-size="11.5" fill="#C9D6CF" text-anchor="end">' + r.count + (r.value > 0 ? '  ' + pula(r.value) : '') + '</text>');
+    svg.push('</g>');
+  });
+  svg.push('</svg>');
+
+  var act = funnelAction(m);
+  var actHtml;
+  if (act) {
+    var why = (act.overdue !== null && act.overdue > 0)
+      ? 'its next step was due ' + act.overdue + (act.overdue === 1 ? ' day' : ' days') + ' ago'
+      : 'nobody has touched it in ' + act.quiet + ' days';
+    actHtml = '<button class="funnel-act" type="button" onclick="openLead(\'' + esc(act.lead.id) + '\')">' +
+      '<svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/></svg>' +
+      'Call ' + esc(act.lead.customer.replace(/^EXAMPLE /, '')) + (act.value ? ', ' + pula(act.value) : '') + '</button>' +
+      '<div class="funnel-sub">It is at ' + esc(STAGE_LABEL[act.lead.stage].toLowerCase()) + ' and ' + esc(why) + '. It is the largest thing on the desk that has gone quiet.</div>';
+  } else {
+    actHtml = '<span class="funnel-quiet">Every live deal has been touched recently</span>';
+  }
+
+  // Deals going cold, worst first. Told as "not touched", which is what the data
+  // actually says, unless the hub recorded when the stage changed (brick 58).
+  var cold = m.leads.filter(function(l){ return l.stage !== 'won' && l.stage !== 'lost'; })
+    .map(function(l){ return { l: l, quiet: daysSince(l.last_touch_at), sat: daysSince(l.stage_since) }; })
+    .filter(function(x){ return x.quiet !== null && x.quiet >= 3; })
+    .sort(function(a, b){ return b.quiet - a.quiet; }).slice(0, 5);
+  var coldHtml = '';
+  if (cold.length) {
+    coldHtml = '<div class="cold"><div class="ch">Going cold</div>' + cold.map(function(x){
+      var cls = x.quiet >= 9 ? 'cold' : x.quiet >= 5 ? 'cool' : 'warm';
+      var says = x.sat !== null ? x.sat + 'd at stage' : x.quiet + 'd quiet';
+      return '<div class="cold-row" onclick="openLead(\'' + esc(x.l.id) + '\')"><span class="cn">' + esc(x.l.customer) + '</span>' +
+        '<span class="cs">' + esc(STAGE_LABEL[x.l.stage]) + '</span><span class="cd ' + cls + '">' + esc(says) + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  var unpriced = m.leads.length - m.priced;
+  var foot = [];
+  if (unpriced > 0) foot.push(unpriced + ' of ' + m.leads.length + ' leads carry no quote yet, so the money bars show only what has been priced.');
+  foot.push('The width is how many leads sit at a stage right now. It is not a conversion rate: a snapshot cannot tell how many passed through, only how many are standing there. Real conversion needs the stage history the hub started recording today.');
+  if (m.lost.count) foot.push(m.lost.count + (m.lost.count === 1 ? ' lead has' : ' leads have') + ' been marked lost' + (m.lost.value ? ', worth ' + pula(m.lost.value) : '') + ', and no reason is recorded against any of them.');
+
+  return '<div class="funnel-card"><div class="fh"><span class="ft">The pipeline</span><span class="fv">' +
+    m.leads.filter(function(l){ return l.stage !== 'won' && l.stage !== 'lost'; }).length + ' live, ' + m.lost.count + ' lost</span></div>' +
+    svg.join('') +
+    '<div class="funnel-say"' + (v.tone === 'good' ? ' style="color:#8FE08A"' : v.tone === 'grey' ? ' style="color:#A7B5AE"' : '') + '>' + esc(v.say) + '</div>' +
+    '<div class="funnel-sub">' + esc(v.sub) + '</div>' +
+    actHtml + coldHtml + whyLostHtml() +
+    '<div class="funnel-foot">' + foot.map(esc).join(' ') + '</div></div>';
+}
+
+
+/* ---------- Brick 60: why a deal was lost ---------- */
+var LOST_REASONS = ['price', 'went to a competitor', 'no longer needed', 'no budget', 'we could not serve it', 'no answer from them', 'other'];
+function askWhyLost(){
+  var box = document.getElementById('lostbox');
+  if (box) { box.style.display = 'block'; box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+}
+function cancelLost(){ var box = document.getElementById('lostbox'); if (box) box.style.display = 'none'; }
+function lostBoxHtml(){
+  return '<div class="lostbox" id="lostbox" style="display:none"><div class="lt">Why was it lost?</div>' +
+    '<div class="lw">One tap. It is the first thing anyone asks at a review, and a month of these answers is worth more than any other number on this desk.</div>' +
+    '<div class="lr">' + LOST_REASONS.map(function(r){ return '<button type="button" onclick="moveStage(\'lost\', \'' + r + '\')">' + esc(r) + '</button>'; }).join('') + '</div>' +
+    '<div class="cancel" onclick="cancelLost()">never mind</div></div>';
+}
+function whyLostHtml(){
+  var lost = getLeads().filter(function(l){ return l.stage === 'lost'; });
+  if (!lost.length) return '';
+  var withReason = lost.filter(function(l){ return l.lost_reason; });
+  if (!withReason.length) {
+    return '<div class="whylost"><div class="wt">Why deals are lost</div>' +
+      '<div class="funnel-sub">' + lost.length + (lost.length === 1 ? ' deal has' : ' deals have') + ' been marked lost and not one carries a reason, so this desk cannot yet answer the first question a review asks. From now on marking a deal lost asks why.</div></div>';
+  }
+  var by = {};
+  withReason.forEach(function(l){ by[l.lost_reason] = (by[l.lost_reason] || 0) + 1; });
+  var rows = Object.keys(by).sort(function(a, b){ return by[b] - by[a]; });
+  var top = by[rows[0]];
+  return '<div class="whylost"><div class="wt">Why deals are lost</div>' +
+    rows.map(function(r){
+      return '<div class="wr"><span class="wn">' + esc(r) + '</span><span class="wb"><i style="width:' + Math.max(6, Math.round(by[r] / top * 100)) + '%"></i></span><span class="wc">' + by[r] + '</span></div>';
+    }).join('') +
+    (withReason.length < lost.length ? '<div class="funnel-sub">' + (lost.length - withReason.length) + ' older lost ' + (lost.length - withReason.length === 1 ? 'deal carries' : 'deals carry') + ' no reason, because nobody was asked at the time.</div>' : '') +
+    '</div>';
+}
+
+function render(){
+  updateSyncBadge();
+  const leads = getLeads();
+  const html = [];
+
+  if(DATA.example){
+    html.push('<div class="banner-example">EXAMPLE DATA. Every company, tender, parcel and number on this screen is invented to show how the screen works.</div>');
+  } else if(!DATA.live){
+    html.push('<div class="banner-example" style="color:var(--dim);border-color:var(--line);background:var(--panel);">Showing last synced data from ' + localDT(SYNCED_AT) + '. Hub unreachable now.</div>');
+  }
+
+  html.push('<div class="banner-guard"><b>Cross campaign guard:</b> no lead hears from Sprint twice within 4 days.</div>');
+
+  // Brick 58: the funnel is the headline; the tappable stage list stays beneath it
+  html.push(funnelHtml());
+
+  // pipeline
+  html.push('<section><div class="section-head"><h2>Pipeline</h2><span class="hint">tap a stage</span></div>');
+  const counts = {}; const values = {};
+  STAGES.forEach(s=>{counts[s]=0; values[s]=0;});
+  const priced = {};
+  STAGES.forEach(s=>{priced[s]=0;});
+  leads.forEach(l=>{ counts[l.stage] = (counts[l.stage]||0)+1;
+    if(typeof l.value_thebe === 'number'){ values[l.stage] = (values[l.stage]||0)+l.value_thebe; priced[l.stage] = (priced[l.stage]||0)+1; } });
+  const maxCount = Math.max(1, ...STAGES.map(s=>counts[s]));
+  STAGES.forEach(stage=>{
+    const c = counts[stage]||0;
+    const pct = Math.max(c ? 6 : 0, Math.round((c/maxCount)*100));
+    const cls = stage==='lost' ? 'red' : (stage==='won' ? '' : '');
+    html.push(
+      '<button class="stage-row" data-stage="'+stage+'" onclick="toggleStage(\''+stage+'\')">'+
+        // A stage whose leads have never been quoted is not a stage worth nothing
+      // (feedback_never_print_unproven_zero). Money is shown only for the priced ones.
+      '<div class="stage-top"><span class="stage-name">'+STAGE_LABEL[stage]+'</span><span class="stage-val">'+
+        (c===0 ? 'none' : c+(c===1?' lead':' leads')+' &middot; '+(priced[stage] ? pula(values[stage])+(priced[stage]<c ? ' from '+priced[stage] : '') : 'not quoted yet'))+
+      '</span></div>'+
+        '<div class="bar"><div class="bar-fill '+cls+'" style="width:'+pct+'%"></div><span class="bar-count">'+c+'</span></div>'+
+      '</button>'+
+      '<div class="stage-leads" id="stageleads-'+stage+'">' + leads.filter(l=>l.stage===stage).map(leadRow).join('') + (c===0? '<div class="empty-note">No leads at this stage.</div>':'') + '</div>'
+    );
+  });
+  html.push('</section>');
+
+  // today panel
+  const today = gaboroneDateStr();
+  const followups = leads.filter(l=> l.next_action_at && gaboroneDateStr(new Date(l.next_action_at)) <= today);
+  const unanswered = leads.filter(l=> l.stage==='replied' && l.last_touch_at && daysBetween(l.last_touch_at, new Date().toISOString()) > 2);
+
+  html.push('<section><div class="section-head"><h2>Today</h2></div>');
+  html.push('<div class="section-head" style="margin-bottom:4px;"><span class="hint" style="color:var(--bone);font-weight:600;">Follow ups due</span></div>');
+  if(followups.length===0) html.push('<div class="empty-note">Nothing due. Clean slate.</div>');
+  followups.forEach(l=>{
+    const overdue = -daysBetween(new Date().toISOString(), l.next_action_at);
+    html.push(todayCard(l, l.next_action || 'Follow up', overdue, 7));
+  });
+  html.push('<div class="section-head" style="margin:14px 0 4px;"><span class="hint" style="color:var(--bone);font-weight:600;">Unanswered replies</span></div>');
+  if(unanswered.length===0) html.push('<div class="empty-note">All replies answered.</div>');
+  unanswered.forEach(l=>{
+    const age = daysBetween(l.last_touch_at, new Date().toISOString());
+    html.push(todayCard(l, 'Waiting ' + age + ' days for a reply', age, 7));
+  });
+  html.push('</section>');
+
+  document.getElementById('app').innerHTML = html.join('');
+}
+
+function todayCard(lead, what, ageDays, scale){
+  const pct = Math.min(100, Math.max(6, Math.round((ageDays/scale)*100)));
+  const cls = ageDays >= 5 ? 'late' : '';
+  return '<div class="today-card" onclick="openLead(\''+lead.id+'\')">'+
+    '<div class="row1"><span class="who">'+esc(lead.customer)+'</span><span class="what">'+esc(what)+'</span></div>'+
+    '<div class="age-bar"><div class="age-fill '+cls+'" style="width:'+pct+'%"></div></div>'+
+    '</div>';
+}
+
+function leadRow(l){
+  return '<div class="lead-item" onclick="event.stopPropagation();openLead(\''+l.id+'\')">'+
+    '<div><div class="lead-name">'+esc(l.customer)+'</div><div class="lead-track">'+esc(l.track||'')+'</div></div>'+
+    '<div class="lead-val">'+(l.value_thebe==null ? '<span style="color:var(--dim);font-size:11px;">no quote yet</span>' : pula(l.value_thebe))+'</div>'+
+  '</div>';
+}
+
+function toggleStage(stage){
+  document.querySelectorAll('.stage-leads').forEach(el=>{
+    if(el.id !== 'stageleads-'+stage) el.classList.remove('show');
+  });
+  document.querySelectorAll('.stage-row').forEach(el=>{
+    if(el.dataset.stage !== stage) el.classList.remove('open');
+  });
+  const el = document.getElementById('stageleads-'+stage);
+  el.classList.toggle('show');
+  document.querySelector('.stage-row[data-stage="'+stage+'"]').classList.toggle('open');
+}
+
+/* ---------- drawer ---------- */
+let CURRENT_LEAD = null;
+function openLead(id){
+  const leads = getLeads();
+  const lead = leads.find(l=>l.id===id);
+  if(!lead) return;
+  CURRENT_LEAD = lead;
+  const key = DATA.example ? lead.id : lead.customer_id;
+  const timeline = getInteractions(key);
+  const guard = DATA.example ? inGuardWindow(lead) : false;
+
+  const html = [];
+  html.push('<button class="drawer-close" onclick="closeDrawer()">Close</button>');
+  html.push('<h2>'+esc(lead.customer)+'</h2>');
+  html.push('<div class="sub">'+esc((lead.track||'general').replace('_',' '))+' track &middot; '+pula(lead.value_thebe)+'</div>');
+  if(guard) html.push('<div class="guard-flag">&#9679; touched by a campaign within the last 4 days, hold off</div>');
+
+  html.push('<div class="field-label">Stage</div><div class="stage-btns">');
+  STAGES.forEach(s=>{
+    // Brick 60: lost is the one move that must explain itself
+    const act = s==='lost' ? 'askWhyLost()' : ('moveStage(\''+s+'\')');
+    html.push('<button class="stage-btn '+(s===lead.stage?'current':'')+'" onclick="'+act+'">'+STAGE_LABEL[s]+'</button>');
+  });
+  html.push('</div>');
+  html.push(lostBoxHtml());
+
+  html.push('<div class="field-label">Timeline</div>');
+  if(timeline.length===0){
+    html.push('<div class="empty-note">No interactions logged yet.</div>');
+  } else {
+    html.push('<div class="timeline">');
+    timeline.forEach(t=>{
+      html.push('<div class="tl-item"><div class="tl-head"><span>'+esc(t.subject||t.channel)+'</span><span class="tl-meta">'+localDT(t.at)+'</span></div>'+
+        '<div class="tl-meta">'+esc(t.channel)+' &middot; '+esc(t.direction)+'</div>'+
+        '<div class="tl-body">'+esc(t.summary||'')+'</div></div>');
+    });
+    html.push('</div>');
+  }
+
+  html.push('<div class="field-label">Log a call / meeting debrief</div>');
+  html.push('<form class="debrief" id="debriefForm">'+
+    '<div class="rowfields">'+
+      '<select id="dChannel"><option value="call">Call</option><option value="meeting">Meeting</option><option value="email">Email</option><option value="whatsapp">WhatsApp</option><option value="visit">Visit</option></select>'+
+      '<select id="dDirection"><option value="out">Outbound</option><option value="in">Inbound</option></select>'+
+    '</div>'+
+    '<input type="text" id="dSubject" placeholder="Subject">'+
+    '<textarea id="dSummary" placeholder="What was said" required></textarea>'+
+    '<button class="btn" type="submit">Log it</button>'+
+  '</form>');
+
+  html.push('<div class="field-label">Quote</div>');
+  html.push('<a class="btn orange" style="display:block;text-align:center;text-decoration:none;" href="../quote-link.html?customer='+encodeURIComponent(lead.customer)+'">Quote this lead</a>');
+
+  document.getElementById('drawer').innerHTML = html.join('');
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('drawerBg').classList.add('show');
+
+  document.getElementById('debriefForm').addEventListener('submit', logInteraction);
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('drawerBg').classList.remove('show');
+  CURRENT_LEAD = null;
+}
+document.getElementById('drawerBg').addEventListener('click', closeDrawer);
+
+async function moveStage(stage, lostReason){
+  if(!CURRENT_LEAD) return;
+  if(stage==='lost' && !lostReason){ askWhyLost(); return; }
+  if(DATA.example || !DATA.live){
+    CURRENT_LEAD.stage = stage;
+    if(lostReason) CURRENT_LEAD.lost_reason = lostReason;
+    render(); openLead(CURRENT_LEAD.id);
+    return;
+  }
+  try{
+    await apiFetch('/api/leads/'+CURRENT_LEAD.id+'/stage', {method:'POST', body:JSON.stringify(lostReason ? {stage, lost_reason:lostReason} : {stage})});
+    await loadLive();
+    openLead(CURRENT_LEAD.id);
+  }catch(e){ alert('Could not update stage: ' + e.message); }
+}
+
+async function logInteraction(e){
+  e.preventDefault();
+  if(!CURRENT_LEAD) return;
+  const body = {
+    customer_id: CURRENT_LEAD.customer_id,
+    channel: document.getElementById('dChannel').value,
+    direction: document.getElementById('dDirection').value,
+    subject: document.getElementById('dSubject').value,
+    summary: document.getElementById('dSummary').value,
+    at: new Date().toISOString(),
+  };
+  if(DATA.example || !DATA.live){
+    EXAMPLE.interactions[CURRENT_LEAD.id] = EXAMPLE.interactions[CURRENT_LEAD.id] || [];
+    EXAMPLE.interactions[CURRENT_LEAD.id].unshift(Object.assign({staff:'You'}, body));
+    openLead(CURRENT_LEAD.id);
+    return;
+  }
+  try{
+    await apiFetch('/api/interactions', {method:'POST', body:JSON.stringify(body)});
+    await loadLive();
+    openLead(CURRENT_LEAD.id);
+  }catch(err){ alert('Could not log interaction: ' + err.message); }
+}
+
+/* ---------- boot ---------- */
+boot();
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+<script src="../shared/sprint-notify.js"></script>
+</body>
+</html>

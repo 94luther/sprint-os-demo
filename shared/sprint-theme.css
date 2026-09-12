@@ -1,0 +1,99 @@
+/* Sprint OS theme: smoky glass on deep green and orange. docs/DESIGN-LANGUAGE.md.
+   Luther, 13 Sep 2026: "a smoky glass look... I want the background to change...
+   like this one, but with a deep rich green and orange." So: a rich backdrop
+   that glows through, dark translucent panels with blur, light text, Sprint's
+   green and orange as the only accents. Every department page loads this AFTER
+   its own styles, and the ten colour names those pages already use are given
+   these values. No page logic changes. Brick 51. */
+
+:root{
+  --ink:transparent;               /* the old dark page colour: the backdrop shows through now */
+  --panel:rgba(8,28,20,.40);      /* smoky glass */
+  --line:rgba(255,255,255,.24);
+  --bone:#F4F7F5;                  /* light text on glass */
+  --dim:#A7B5AE;
+  --green:#3AAA35;
+  --orange:#F7941D;
+  --red:#FF6B61;
+  --font-display:"Segoe UI", Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-body:"Segoe UI", Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --sp-glass:rgba(8,28,20,.40);
+  --sp-glass-2:rgba(255,255,255,.07);
+  --sp-edge:rgba(255,255,255,.26);
+  --sp-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12);
+  --sp-r:22px;
+}
+
+/* the backdrop: deep green into deep amber, with two soft glows that make it feel lit */
+html{background:#0B3D2E}
+body{
+  color:#F4F7F5;-webkit-font-smoothing:antialiased;min-height:100vh;
+  background:radial-gradient(520px 440px at 16% 10%, rgba(140,235,150,.42), transparent 62%),radial-gradient(420px 420px at 84% 26%, rgba(255,255,255,.26), transparent 60%),radial-gradient(760px 640px at 90% 94%, rgba(247,148,29,.85), transparent 58%),radial-gradient(400px 400px at 26% 80%, rgba(255,176,70,.30), transparent 60%),radial-gradient(300px 300px at 60% 52%, rgba(255,255,255,.08), transparent 60%),linear-gradient(155deg,#0B3D2E 0%,#176B45 36%,#2A9257 56%,#8A5A1E 82%,#B8671A 100%);background-attachment:fixed;
+}
+
+/* type: a clean sans, no shouting */
+h1,h2,h3,.disp{text-transform:none;letter-spacing:-.2px;font-weight:800;font-family:var(--font-body);color:#F4F7F5}
+h1{font-size:22px} h2{font-size:16px}
+
+/* the header: a band of stronger green glass */
+header{
+  background:linear-gradient(135deg,rgba(20,70,45,.62),rgba(42,140,60,.46));
+  backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+  color:#fff;border-radius:0 0 26px 26px;box-shadow:var(--sp-shadow);position:relative;overflow:hidden;
+  border-bottom:1px solid var(--sp-edge);
+}
+header::before{content:"";position:absolute;left:-20%;top:-60%;width:140%;height:110%;border-radius:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,0));transform:rotate(-8deg);pointer-events:none}
+header *{position:relative}
+header a{color:#fff}
+
+/* smoky glass cards */
+.panel,.card,.question-card,.login-wrap,.drawer,.item-row,.bar-row,.cash-row{
+  background:var(--sp-glass);border:1px solid var(--sp-edge);border-radius:var(--sp-r);box-shadow:var(--sp-shadow);
+  backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+}
+.item-row,.bar-row,.cash-row{border-radius:16px}
+.panel .panel,.card .card{box-shadow:none;background:var(--sp-glass-2)}
+.section-head{margin-bottom:10px}
+.section-head span,.section-head small,.section-head a{color:#FDBE74;font-weight:700}
+
+/* buttons: white pill for the main act, green primary, glass ghost, orange only as the one accent */
+.btn{background:#fff;color:#0E2F22;border:0;border-radius:999px;font-weight:800;text-transform:none;letter-spacing:0;padding:10px 16px}
+.btn.primary,.btn[data-primary]{background:#3AAA35;color:#fff;border-color:#3AAA35}
+.btn.ghost{background:rgba(255,255,255,.08);color:#F4F7F5;border:1px solid var(--sp-edge)}
+.btn.danger{background:#D6453D;color:#fff}
+.btn.orange,.btn.accent{background:#F7941D;color:#fff;box-shadow:0 10px 24px -10px rgba(247,148,29,.8)}
+
+/* pills and badges */
+.sync-badge{background:rgba(255,255,255,.08);border:1px solid var(--sp-edge);color:#D9E3DE;border-radius:999px;font-weight:800}
+.sync-badge.offline{color:#FDBE74;border-color:rgba(247,148,29,.5);background:rgba(247,148,29,.16)}
+.sync-badge.live,.sync-badge.online{color:#fff;border-color:#3AAA35;background:#3AAA35}
+.banner-example{background:rgba(247,148,29,.16);border:1px solid rgba(247,148,29,.45);color:#FDBE74;border-radius:14px;font-weight:700}
+.banner-stale{background:rgba(247,148,29,.16);border:1px solid rgba(247,148,29,.45);color:#FDBE74;border-radius:14px}
+.verdict{border-radius:999px;font-weight:800}
+.hint,.empty-note,.field-label{color:var(--dim)}
+.err{color:#FFB3AD;background:rgba(214,69,61,.18);border-radius:12px;padding:8px 10px}
+
+/* bars: quantities drawn as space */
+.bar{background:rgba(255,255,255,.12);border-radius:7px;height:13px}
+.bar-fill{background:#3AAA35;border-radius:7px}
+.bar-fill.warn{background:#F7941D}
+.bar-fill.bad{background:#FF6B61}
+
+/* fields */
+input,select,textarea{background:rgba(255,255,255,.08);color:#F4F7F5;border:1px solid var(--sp-edge);border-radius:12px;font-family:var(--font-body)}
+input::placeholder,textarea::placeholder{color:#9DAAA4}
+input:focus,select:focus,textarea:focus{outline:2px solid #3AAA35;outline-offset:1px;border-color:#3AAA35}
+select option{background:#12402E;color:#F4F7F5}
+
+/* the login card, on the office copy */
+.login-wrap{padding:18px}
+.login-hint{color:var(--dim)}
+
+/* drawers */
+.drawer-bg{background:rgba(5,15,10,.55)}
+.drawer{border-radius:22px 22px 0 0}
+.drawer-close{background:rgba(255,255,255,.1);color:#F4F7F5;border-radius:999px;border:1px solid var(--sp-edge)}
+
+/* anything that painted itself with the old dark page colour as an accent square */
+[style*="background:var(--ink)"]{background:rgba(58,170,53,.22) !important}

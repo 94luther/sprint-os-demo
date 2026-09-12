@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Customer Care - Sprint Couriers</title>
+<meta name="theme-color" content="#131311">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../shared/logo-mark.png">
+<link rel="apple-touch-icon" href="../shared/logo-mark.png">
+<style>
+/* Local first brand type. It never phones home to Google, and it never
+   breaks when there is no internet or no signal on a driver phone. Drop
+   the two real font files into apps/shared/fonts/ to restore the exact
+   brand type offline; see the README there. With no files present this
+   falls back to the system font stack below. */
+@font-face{font-family:'Anton'; font-weight:400; font-display:swap;
+  src:local('Anton'), url('../shared/fonts/Anton-Regular.woff2') format('woff2'), url('../shared/fonts/Anton-Regular.ttf') format('truetype');}
+@font-face{font-family:'Inter'; font-weight:100 900; font-display:swap;
+  src:local('Inter'), url('../shared/fonts/Inter-Variable.woff2') format('woff2'), url('../shared/fonts/Inter-Variable.ttf') format('truetype');}
+:root{
+  --font-display:'Anton', Impact, 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ink:#131311; --panel:#1d1d19; --line:#2c2c27; --bone:#F4F4F1; --dim:#a6a69f;
+  --green:#3AAA35; --orange:#F7941D; --red:#e0483e;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%; max-width:100%; overflow-x:hidden;}
+body{
+  background:var(--ink); color:var(--bone); font-family:var(--font-body);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  min-height:100vh; padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+h1,h2,h3,.disp{font-family:var(--font-display); text-transform:uppercase; letter-spacing:0.01em; font-weight:400;}
+a{color:inherit;}
+button{font-family:inherit;}
+::selection{background:var(--orange); color:var(--ink);}
+
+header{
+  position:sticky; top:0; z-index:20; background:var(--ink);
+  border-bottom:1px solid var(--line); padding:10px 14px;
+  display:flex; align-items:center; gap:10px;
+}
+header img{width:32px; height:32px; object-fit:contain; flex:none;}
+header .titles{flex:1; min-width:0;}
+header h1{font-size:15px; line-height:1.1;}
+header .who{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.sync-badge{
+  font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line);
+  color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;
+}
+.sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
+.sync-badge.offline .sync-dot{background:var(--orange);}
+.sync-badge.offline{color:var(--orange); border-color:var(--orange);}
+
+.wa-note{
+  background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--green);
+  font-size:11.5px; color:var(--dim); padding:8px 14px; line-height:1.4;
+}
+.wa-note b{color:var(--bone); font-weight:600;}
+
+.banner-example{
+  background:rgba(247,148,29,0.12); border:1px solid var(--orange); color:var(--orange);
+  font-size:12px; font-weight:600; padding:8px 12px; margin:10px 14px 0;
+  border-radius:8px;
+}
+
+/* tabs (phone) */
+.tabbar{display:flex; border-bottom:1px solid var(--line); margin:10px 14px 0; min-width:0;}
+.tabbtn{
+  flex:1; min-width:0; text-align:center; background:none; border:none; color:var(--dim); font-size:12px;
+  font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:10px 4px;
+  border-bottom:2px solid transparent; cursor:pointer;
+}
+.tabbtn.active{color:var(--bone); border-bottom-color:var(--green);}
+.tabbtn .cnt{display:inline-block; margin-left:5px; background:var(--line); color:var(--bone); border-radius:10px; padding:1px 6px; font-size:10px;}
+.tabbtn.active .cnt.urgent{background:var(--orange); color:var(--ink);}
+
+.layout{padding:12px 14px 40px; max-width:1100px; margin:0 auto;}
+.pane{display:none;}
+.pane.show{display:block;}
+
+/* ---- Pane A: chat ---- */
+.chat-shell{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; display:flex; flex-direction:column; height:min(66vh,560px);}
+.chat-scroll{flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:2px;}
+.msg{max-width:82%; padding:9px 12px; border-radius:12px; font-size:13px; line-height:1.4;}
+.msg.bot{align-self:flex-start; background:var(--ink); border:1px solid var(--line); border-bottom-left-radius:3px;}
+.msg.user{align-self:flex-end; background:var(--green); color:var(--ink); font-weight:600; border-bottom-right-radius:3px;}
+.msg.sys{align-self:center; background:none; color:var(--dim); font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; padding:2px;}
+.msg .lines{margin-top:4px; font-weight:400;}
+.msg .lines div{display:flex; justify-content:space-between; gap:10px; font-size:12px; padding:2px 0; border-top:1px solid rgba(255,255,255,0.08);}
+.msg .lines div:first-child{border-top:none;}
+.msg .total{font-family:var(--font-display); font-size:20px; text-transform:uppercase; margin-top:6px;}
+.choice-row{display:flex; flex-wrap:wrap; gap:6px; align-self:flex-start; max-width:92%;}
+.choice-btn{
+  background:var(--ink); border:1px solid var(--green); color:var(--bone); font-size:12.5px;
+  font-weight:600; padding:8px 12px; border-radius:20px; cursor:pointer;
+}
+.choice-btn:hover{background:var(--green); color:var(--ink);}
+.chat-input{display:flex; gap:8px; margin-top:10px;}
+.chat-input input{
+  flex:1; background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:20px;
+  padding:10px 14px; font-size:13px; font-family:inherit;
+}
+.chat-send{
+  background:var(--green); color:var(--ink); border:none; border-radius:20px; font-weight:700;
+  padding:10px 16px; font-size:12px; cursor:pointer; text-transform:uppercase;
+}
+.chat-restart{
+  background:none; border:1px solid var(--line); color:var(--dim); border-radius:20px; font-size:11px;
+  padding:6px 12px; cursor:pointer; margin-top:8px; align-self:center;
+}
+
+/* ---- Pane B: queue ---- */
+.q-item{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
+.q-item.urgent{border-color:var(--orange);}
+.q-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:4px;}
+.q-subject{font-size:11px; color:var(--red); font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
+.q-subject.human{color:var(--orange);}
+.q-who{font-size:13px; font-weight:600;}
+.q-body{font-size:12.5px; color:var(--dim); margin:4px 0 8px; line-height:1.4;}
+.age-bar{height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-bottom:8px;}
+.age-fill{height:100%; background:var(--green);}
+.age-fill.warn{background:var(--orange);}
+.age-fill.late{background:var(--red);}
+.age-text{font-size:10px; color:var(--dim); margin:-4px 0 8px;}
+.q-actions{display:flex; gap:8px;}
+.btn{
+  background:var(--green); color:var(--ink); border:none; border-radius:6px; font-weight:700;
+  padding:9px 12px; font-size:12px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em;
+}
+.btn.orange{background:var(--orange);}
+.btn.ghost{background:none; border:1px solid var(--line); color:var(--bone);}
+.btn:disabled{opacity:0.5; cursor:default;}
+.empty-note{font-size:12px; color:var(--dim); padding:14px 4px;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:8px;}
+.section-head h2{font-size:14px; color:var(--dim); letter-spacing:0.06em; min-width:0;}
+.section-head .hint{font-size:11px; color:var(--dim); min-width:0; text-align:right; flex-shrink:1;}
+.claimed-tag{font-size:10px; color:var(--dim); margin-bottom:6px;}
+
+/* login */
+.login-wrap{max-width:320px; margin:18vh auto 0; padding:0 20px;}
+.login-wrap h1{font-size:22px; margin-bottom:4px;}
+.login-wrap p{font-size:12px; color:var(--dim); margin-bottom:18px;}
+.login-wrap form{display:flex; flex-direction:column; gap:10px;}
+.login-wrap input{background:var(--panel); border:1px solid var(--line); color:var(--bone); border-radius:6px; padding:9px 12px; font-size:14px; font-family:inherit;}
+.login-hint{font-size:11px; color:var(--dim); margin-top:14px; line-height:1.5;}
+.err{color:var(--red); font-size:12px; margin-top:6px; display:none;}
+
+@media(min-width:900px){
+  .tabbar{display:none;}
+  .layout{padding:16px 24px 40px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;}
+  .pane{display:block;}
+  .chat-shell{height:min(72vh,640px);}
+}
+
+/* Brick 61: the bell, same on every page */
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<link rel="stylesheet" href="../shared/sprint-theme.css">
+</head>
+<body>
+
+<header>
+  <img src="../shared/logo-mark.png" alt="Sprint Couriers">
+  <div class="titles">
+    <h1>Customer Care</h1>
+    <div class="who" id="whoLine">Not signed in</div>
+  </div>
+  <span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+  <div class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Loading</span></div>
+</header>
+
+<div class="wa-note"><b>This same flow will run on the Sprint WhatsApp number once Meta approval lands.</b> Right now it runs here, as a web chat, and everything a customer says is saved the same way.</div>
+
+<div id="exampleBanner" class="banner-example" style="display:none;">EXAMPLE DATA. Every company, tender, parcel and number on this screen is invented to show how the screen works.</div>
+
+<div class="tabbar" id="tabbar">
+  <button class="tabbtn active" id="tabIntakeBtn" onclick="showTab('intake')">Intake</button>
+  <button class="tabbtn" id="tabQueueBtn" onclick="showTab('queue')">Handoff queue <span class="cnt" id="tabQueueCnt">0</span></button>
+</div>
+
+<div class="layout">
+  <div class="grid2">
+    <div class="pane show" id="paneIntake">
+      <div class="section-head"><h2>Intake</h2><span class="hint">what the WhatsApp bot will say</span></div>
+      <div class="chat-shell">
+        <div class="chat-scroll" id="chatScroll"></div>
+      </div>
+      <div class="chat-input" id="chatInputRow" style="display:none;">
+        <input type="text" id="chatText" placeholder="Type your answer">
+        <button class="chat-send" id="chatSendBtn">Send</button>
+      </div>
+      <div style="text-align:center;"><button class="chat-restart" onclick="restartFlow()">Start over</button></div>
+    </div>
+
+    <div class="pane" id="paneQueue">
+      <div class="section-head"><h2>Handoff queue</h2><span class="hint">complaints &middot; last 7 days</span></div>
+      <div id="queueList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="login-wrap" id="loginWrap" style="display:none;">
+  <h1>Sign in</h1>
+  <p>Sprint Couriers staff PIN</p>
+  <form id="loginForm">
+    <input type="text" id="staffId" placeholder="Staff ID" autocomplete="username" required>
+    <input type="text" inputmode="numeric" pattern="[0-9]*" id="pin" placeholder="PIN" maxlength="8" autocomplete="current-password" required>
+    <button class="btn" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <button class="btn ghost" style="margin-top:10px;width:100%;" id="offlineBtn">View example data instead</button>
+</div>
+
+<script>
+/* =========================================================================
+   FLOW DEFINITION
+   A plain JSON-shaped object: nodes keyed by id, each with prompt, type
+   (text|choice|number|result|end), next (a node id, or a map of answer
+   value -> node id for choice branches) and an optional action run once
+   the answer for that node is captured. This is the same shape the
+   whatsapp-engine's branching question flow uses (see
+   last-resort-whatsapp-engine/functions/src/config/questions.js) so it can
+   be dropped into that engine unchanged once the Sprint WhatsApp number
+   has Meta approval.
+   ========================================================================= */
+const FLOW = {
+  start: 'welcome',
+  nodes: {
+    welcome: {
+      id:'welcome', type:'choice',
+      prompt:"Hi, I'm Sprint's assistant. What can I help you with today?",
+      options:[
+        {value:'track', label:'Track my parcel'},
+        {value:'quote', label:'Get a quote'},
+        {value:'book', label:'Book a collection'},
+        {value:'complaint', label:'Complaint'}
+      ],
+      next:{track:'track_waybill', quote:'quote_destination', book:'book_name', complaint:'complaint_waybill'}
+    },
+
+    track_waybill:{id:'track_waybill', type:'text', field:'waybill', prompt:'Sure. What is your waybill number?', next:'track_result', action:'lookup_shipment'},
+    track_result:{id:'track_result', type:'result', next:'end'},
+
+    quote_destination:{id:'quote_destination', type:'text', field:'destination', prompt:'Where is it going?', next:'quote_kg'},
+    quote_kg:{id:'quote_kg', type:'number', field:'kg', prompt:'About how many kilograms?', next:'quote_pieces'},
+    quote_pieces:{id:'quote_pieces', type:'number', field:'pieces', prompt:'How many pieces in total?', next:'quote_result', action:'get_quote'},
+    quote_result:{id:'quote_result', type:'result', next:'quote_send'},
+    quote_send:{
+      id:'quote_send', type:'choice', prompt:'Would you like this sent to you on WhatsApp?',
+      options:[{value:'yes', label:'Send me the proposal'}, {value:'no', label:'No thanks'}],
+      next:{yes:'quote_sent', no:'end'}, action:'send_proposal'
+    },
+    quote_sent:{id:'quote_sent', type:'result', prompt:"Done, that's on its way to you.", next:'end'},
+
+    book_name:{id:'book_name', type:'text', field:'name', prompt:'Happy to book that for you. What is your name?', next:'book_phone'},
+    book_phone:{id:'book_phone', type:'text', field:'phone', prompt:'And the best phone number for the driver?', next:'book_pickup'},
+    book_pickup:{id:'book_pickup', type:'text', field:'pickup', prompt:'Where should we collect from?', next:'book_destination'},
+    book_destination:{id:'book_destination', type:'text', field:'destination', prompt:'Where is it going?', next:'book_kg'},
+    book_kg:{id:'book_kg', type:'number', field:'kg', prompt:'About how many kilograms?', next:'book_ready'},
+    book_ready:{id:'book_ready', type:'text', field:'ready', prompt:'What time will it be ready for collection?', next:'book_result', action:'create_booking'},
+    book_result:{id:'book_result', type:'result', next:'end'},
+
+    complaint_waybill:{id:'complaint_waybill', type:'text', field:'waybill', prompt:'Sorry to hear that. What is the waybill number, if you have one?', next:'complaint_what'},
+    complaint_what:{id:'complaint_what', type:'text', field:'what', prompt:'Tell me what happened, in your own words.', next:'complaint_result', action:'log_complaint'},
+    complaint_result:{id:'complaint_result', type:'result', next:'end'},
+
+    end:{id:'end', type:'choice', prompt:'Anything else I can help with?', options:[{value:'more', label:'Yes, something else'}, {value:'done', label:"No, that's all"}], next:{more:'welcome', done:'bye'}},
+    bye:{id:'bye', type:'result', prompt:'Thanks for messaging Sprint. Have a good one.', next:null}
+  }
+};
+
+/* ---------- helpers (shared style with the rest of Sprint OS) ---------- */
+function pula(thebe){
+  const p = (Number(thebe||0)/100);
+  const parts = p.toFixed(2).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return 'P' + parts.join('.');
+}
+function localDT(iso){
+  if(!iso) return '';
+  try{ return new Date(iso).toLocaleString('en-GB',{timeZone:'Africa/Gaborone',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return iso; }
+}
+function daysBetween(isoA, isoB){ return (new Date(isoB) - new Date(isoA)) / 86400000; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- state ---------- */
+let ME = null;
+let DATA = null;
+let SYNCED_AT = null;
+const CACHE_KEY = 'sprintos_care_cache_v1';
+let WALKIN_CUSTOMER_ID = null;
+
+/* ---------- example data (hub offline) ---------- */
+function shiftDate(days, hours){
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate()+(days||0));
+  if(hours) d.setUTCHours(d.getUTCHours()-hours);
+  return d.toISOString();
+}
+const EXAMPLE_QUEUE = [
+  {id:'ex1', customer:'EXAMPLE Palapye Fresh Produce', subject:'Complaint', summary:'Waybill SC48213: box arrived with a torn corner, one item missing.', at: shiftDate(-2), staff_id:null, ref:'needs_human'},
+  {id:'ex2', customer:'EXAMPLE Naledi Legal Attorneys', subject:'Complaint', summary:'Waybill SC48097: documents were promised by 10am, still not delivered at 2pm.', at: shiftDate(-1), staff_id:null, ref:'needs_human'},
+  {id:'ex3', customer:'EXAMPLE Riverwalk Optometrists', subject:'Complaint', summary:'Waybill SC47950: driver could not find the plot, no callback received.', at: shiftDate(0,3), staff_id:'stf_example_1', ref:'needs_human'},
+];
+const EXAMPLE_SHIPMENTS = {
+  'SC48213':{waybill:'SC48213', status:'delivered', promised_at:shiftDate(-2), delivered_at:shiftDate(-2,2), destination:'Palapye', exception_note:null},
+  'SC48097':{waybill:'SC48097', status:'out_for_delivery', promised_at:shiftDate(0,-2), delivered_at:null, destination:'Gaborone CBD', exception_note:null},
+  'SC10001':{waybill:'SC10001', status:'in_transit', promised_at:shiftDate(0,-6), delivered_at:null, destination:'Francistown', exception_note:null},
+};
+
+/* ---------- api ---------- */
+async function apiFetch(path, opts){
+  const res = await fetch(path, Object.assign({credentials:'include', headers:{'Content-Type':'application/json'}}, opts));
+  let json;
+  try{ json = await res.json(); } catch(e){ json = {ok:false, error:'Bad response'}; }
+  if(res.status === 401){ const err = new Error('unauthorized'); err.auth = true; throw err; }
+  if(!json.ok){ const err = new Error(json.error || ('HTTP '+res.status)); err.status = res.status; throw err; }
+  return json.data;
+}
+
+async function boot(){
+  /* phone copy: not served by the office hub, so there is nothing to sign in to.
+     Go straight to the example rather than showing a login screen that cannot work. */
+  var __h = (location.hostname || '');
+  var __onHub = __h === 'localhost' || __h === '127.0.0.1' || /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(__h);
+  if (!__onHub) { loadFallback(); return; }
+
+  try{
+    const me = await apiFetch('/api/me');
+    if(!me){ showLogin(); return; }
+    ME = me;
+    document.getElementById('whoLine').textContent = ME.name + ' - ' + ME.role;
+    await loadLive();
+  }catch(e){
+    loadFallback();
+  }
+}
+async function loadLive(){
+  try{
+    const interactions = await apiFetch('/api/interactions?limit=300');
+    DATA = {interactions, live:true};
+    SYNCED_AT = new Date().toISOString();
+    localStorage.setItem(CACHE_KEY, JSON.stringify({data:DATA, at:SYNCED_AT}));
+    renderQueue();
+    updateSyncBadge();
+  }catch(e){ loadFallback(); }
+}
+function loadFallback(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){
+    try{
+      const parsed = JSON.parse(cached);
+      DATA = parsed.data; DATA.live = false; DATA.cached = true;
+      SYNCED_AT = parsed.at;
+      renderQueue(); updateSyncBadge();
+      return;
+    }catch(e){}
+  }
+  DATA = {example:true};
+  SYNCED_AT = null;
+  renderQueue(); updateSyncBadge();
+}
+function showLogin(){
+  document.getElementById('loginWrap').style.display = 'block';
+  document.getElementById('syncText').textContent = 'Sign in';
+}
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const staffId = document.getElementById('staffId').value.trim();
+  const pin = document.getElementById('pin').value.trim();
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  try{
+    await apiFetch('/api/login', {method:'POST', body:JSON.stringify({staffId, pin})});
+    document.getElementById('loginWrap').style.display = 'none';
+    await boot();
+  }catch(err){
+    errEl.textContent = 'Could not sign in. Check the staff ID and PIN.';
+    errEl.style.display = 'block';
+  }
+});
+document.getElementById('offlineBtn').addEventListener('click', ()=>{
+  document.getElementById('loginWrap').style.display = 'none';
+  loadFallback();
+});
+
+function updateSyncBadge(){
+  const badge = document.getElementById('syncBadge');
+  const text = document.getElementById('syncText');
+  const banner = document.getElementById('exampleBanner');
+  badge.classList.remove('offline'); banner.style.display = 'none';
+  if(DATA && DATA.example){
+    badge.classList.add('offline'); text.textContent = 'Offline'; banner.style.display = 'block';
+  } else if(DATA && DATA.live){
+    text.textContent = 'Synced now';
+  } else if(SYNCED_AT){
+    badge.classList.add('offline'); text.textContent = 'Synced ' + localDT(SYNCED_AT);
+  } else {
+    badge.classList.add('offline'); text.textContent = 'Offline';
+  }
+}
+
+/* ---------- resolve a customer id for logging when the flow has no identity yet ---------- */
+async function resolveWalkInCustomerId(){
+  if(WALKIN_CUSTOMER_ID) return WALKIN_CUSTOMER_ID;
+  try{
+    const existing = await apiFetch('/api/customers?name=' + encodeURIComponent('WhatsApp Unmatched Caller'));
+    if(existing && existing.length){ WALKIN_CUSTOMER_ID = existing[0].id; return WALKIN_CUSTOMER_ID; }
+    const created = await apiFetch('/api/customers', {method:'POST', body:JSON.stringify({name:'WhatsApp Unmatched Caller', type:'individual'})});
+    WALKIN_CUSTOMER_ID = created.id;
+    return WALKIN_CUSTOMER_ID;
+  }catch(e){ return null; }
+}
+
+/* ---------- tabs (phone) ---------- */
+function showTab(which){
+  document.getElementById('paneIntake').classList.toggle('show', which==='intake');
+  document.getElementById('paneQueue').classList.toggle('show', which==='queue');
+  document.getElementById('tabIntakeBtn').classList.toggle('active', which==='intake');
+  document.getElementById('tabQueueBtn').classList.toggle('active', which==='queue');
+}
+
+/* ---------- QUEUE (Pane B) ---------- */
+function getQueueItems(){
+  const now = new Date().toISOString();
+  if(DATA.example){
+    return EXAMPLE_QUEUE.filter(i => daysBetween(i.at, now) <= 7 && i.ref !== 'resolved')
+      .map(i => ({id:i.id, customer:i.customer, subject:i.subject, summary:i.summary, at:i.at, staff_id:i.staff_id, ref:i.ref}))
+      .sort((a,b)=> new Date(a.at) - new Date(b.at));
+  }
+  const rows = (DATA.interactions||[]).filter(i =>
+    (i.subject === 'Complaint' || i.ref === 'needs_human') && i.ref !== 'resolved' && daysBetween(i.at, now) <= 7
+  );
+  return rows.map(i => ({id:i.id, customer_id:i.customer_id, customer:i.customer_id, subject:i.subject, summary:i.summary, at:i.at, staff_id:i.staff_id, ref:i.ref}))
+    .sort((a,b)=> new Date(a.at) - new Date(b.at));
+}
+function renderQueue(){
+  const items = getQueueItems();
+  document.getElementById('tabQueueCnt').textContent = items.length;
+  document.getElementById('tabQueueCnt').classList.toggle('urgent', items.length>0);
+  const el = document.getElementById('queueList');
+  if(!items.length){ el.innerHTML = '<div class="empty-note">Nothing waiting for a human. Clean queue.</div>'; return; }
+  el.innerHTML = items.map((it, idx)=>{
+    const ageDays = daysBetween(it.at, new Date().toISOString());
+    const ageHrs = ageDays*24;
+    const pct = Math.min(100, Math.max(6, Math.round((ageDays/7)*100)));
+    const cls = ageDays >= 2 ? 'late' : (ageDays >= 1 ? 'warn' : '');
+    const urgent = idx === 0; // oldest = single most urgent item on this screen
+    const claimed = !!it.staff_id;
+    return '<div class="q-item '+(urgent?'urgent':'')+'">'+
+      '<div class="q-top"><span class="q-subject '+(it.subject==='Complaint'?'':'human')+'">'+esc(it.subject||'Needs a human')+'</span>'+
+      '<span class="age-text" style="margin:0;">'+ (ageHrs<24 ? Math.round(ageHrs)+'h old' : Math.round(ageDays)+'d old') +'</span></div>'+
+      '<div class="q-who">'+esc(it.customer)+'</div>'+
+      '<div class="q-body">'+esc(it.summary||'')+'</div>'+
+      '<div class="age-bar"><div class="age-fill '+cls+'" style="width:'+pct+'%"></div></div>'+
+      (claimed ? '<div class="claimed-tag">Taken by '+esc(it.staff_id)+'</div>' : '') +
+      '<div class="q-actions">'+
+        '<button class="btn '+(urgent && !claimed ? 'orange' : 'ghost')+'" '+(claimed?'disabled':'')+' onclick="takeItem(\''+it.id+'\')">'+(claimed?'Taken':'Take it')+'</button>'+
+        '<button class="btn ghost" onclick="resolveItem(\''+it.id+'\')">Resolved</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+async function takeItem(id){
+  if(DATA.example){
+    const it = EXAMPLE_QUEUE.find(x=>x.id===id); if(it) it.staff_id = ME ? ME.id : 'you';
+    renderQueue(); return;
+  }
+  try{
+    await apiFetch('/api/interactions/'+id, {method:'PATCH', body:JSON.stringify({staff_id: ME.id})});
+    await loadLive();
+  }catch(e){ alert('Could not take this item: '+e.message); }
+}
+async function resolveItem(id){
+  if(DATA.example){
+    const it = EXAMPLE_QUEUE.find(x=>x.id===id); if(it) it.ref = 'resolved';
+    renderQueue(); return;
+  }
+  try{
+    await apiFetch('/api/interactions/'+id, {method:'PATCH', body:JSON.stringify({ref:'resolved'})});
+    await loadLive();
+  }catch(e){ alert('Could not resolve this item: '+e.message); }
+}
+
+/* ---------- CHAT ENGINE (Pane A) ---------- */
+let CURRENT_NODE = null;
+let ANSWERS = {};
+let TRANSCRIPT = []; // {q, a} pairs for the current branch, reset on 'welcome'
+let LAST_QUOTE = null;
+let LAST_SHIPMENT = null;
+
+function scrollBottom(){
+  const s = document.getElementById('chatScroll');
+  s.scrollTop = s.scrollHeight;
+}
+function addMsg(kind, html){
+  const s = document.getElementById('chatScroll');
+  const div = document.createElement('div');
+  div.className = 'msg ' + kind;
+  div.innerHTML = html;
+  s.appendChild(div);
+  scrollBottom();
+}
+function addChoices(options, cb){
+  const s = document.getElementById('chatScroll');
+  const row = document.createElement('div');
+  row.className = 'choice-row';
+  options.forEach(o=>{
+    const b = document.createElement('button');
+    b.className = 'choice-btn';
+    b.textContent = o.label;
+    b.onclick = ()=>{ row.remove(); cb(o.value, o.label); };
+    row.appendChild(b);
+  });
+  s.appendChild(row);
+  scrollBottom();
+}
+
+function goto(nodeId){
+  if(nodeId === 'welcome'){ ANSWERS = {}; TRANSCRIPT = []; }
+  CURRENT_NODE = nodeId;
+  if(!nodeId){ document.getElementById('chatInputRow').style.display = 'none'; return; }
+  const node = FLOW.nodes[nodeId];
+  runNode(node);
+}
+async function runNode(node){
+  if(node.type === 'choice'){
+    document.getElementById('chatInputRow').style.display = 'none';
+    if(node.prompt) addMsg('bot', esc(node.prompt));
+    addChoices(node.options, async (value, label)=>{
+      addMsg('user', esc(label));
+      if(node.field) ANSWERS[node.field] = value;
+      TRANSCRIPT.push({q:node.prompt, a:label});
+      if(node.action) await runAction(node.action, node);
+      const nxt = typeof node.next === 'object' ? node.next[value] : node.next;
+      goto(nxt);
+    });
+    return;
+  }
+  if(node.type === 'text' || node.type === 'number'){
+    if(node.prompt) addMsg('bot', esc(node.prompt));
+    document.getElementById('chatInputRow').style.display = 'flex';
+    document.getElementById('chatText').type = node.type === 'number' ? 'text' : 'text';
+    document.getElementById('chatText').setAttribute('inputmode', node.type==='number' ? 'decimal' : 'text');
+    document.getElementById('chatText').value = '';
+    document.getElementById('chatText').focus();
+    return;
+  }
+  if(node.type === 'result'){
+    document.getElementById('chatInputRow').style.display = 'none';
+    if(node.prompt) addMsg('bot', esc(node.prompt));
+    await new Promise(r=>setTimeout(r, 150));
+    goto(node.next);
+    return;
+  }
+  if(node.type === 'end'){
+    document.getElementById('chatInputRow').style.display = 'none';
+    if(node.prompt) addMsg('bot', esc(node.prompt));
+    return;
+  }
+}
+async function submitText(){
+  const node = FLOW.nodes[CURRENT_NODE];
+  const val = document.getElementById('chatText').value.trim();
+  if(!val) return;
+  addMsg('user', esc(val));
+  if(node.field) ANSWERS[node.field] = val;
+  TRANSCRIPT.push({q:node.prompt, a:val});
+  document.getElementById('chatInputRow').style.display = 'none';
+  if(node.action) await runAction(node.action, node);
+  goto(node.next);
+}
+document.getElementById('chatSendBtn').addEventListener('click', submitText);
+document.getElementById('chatText').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); submitText(); } });
+
+function restartFlow(){
+  document.getElementById('chatScroll').innerHTML = '';
+  goto(FLOW.start);
+}
+
+/* ---- actions the flow triggers ---- */
+async function runAction(action, node){
+  if(action === 'lookup_shipment') return doLookupShipment();
+  if(action === 'get_quote') return doGetQuote();
+  if(action === 'send_proposal') return doSendProposal();
+  if(action === 'create_booking') return doCreateBooking();
+  if(action === 'log_complaint') return doLogComplaint();
+}
+
+async function logBranch(subject, summaryPairs, extra){
+  const summary = summaryPairs.map(p=>'Q: '+p.q+' | A: '+p.a).join('\n');
+  if(DATA && DATA.live){
+    try{
+      let customer_id = (extra && extra.customer_id) || await resolveWalkInCustomerId();
+      if(!customer_id) return;
+      await apiFetch('/api/interactions', {method:'POST', body:JSON.stringify(Object.assign({
+        customer_id, channel:'whatsapp', direction:'in', subject, summary, at:new Date().toISOString()
+      }, extra && extra.ref ? {ref: extra.ref} : {}))});
+      loadLive();
+    }catch(e){ /* non-fatal for the chat */ }
+  } else if(DATA && DATA.example && subject === 'Complaint'){
+    EXAMPLE_QUEUE.unshift({id:'ex'+Date.now(), customer: (extra&&extra.customerName)||'Web chat caller', subject:'Complaint', summary, at:new Date().toISOString(), staff_id:null, ref:'needs_human'});
+    renderQueue();
+  }
+}
+
+async function doLookupShipment(){
+  const wb = (ANSWERS.waybill||'').trim();
+  let shipment = null;
+  if(DATA.example){
+    shipment = EXAMPLE_SHIPMENTS[wb.toUpperCase()];
+  } else {
+    try{
+      const rows = await apiFetch('/api/shipments?waybill=' + encodeURIComponent(wb));
+      shipment = rows && rows[0];
+    }catch(e){ shipment = null; }
+  }
+  LAST_SHIPMENT = shipment;
+  if(!shipment){
+    addMsg('bot', 'I could not find a parcel with waybill <b>'+esc(wb)+'</b>. Please check the number, it is on your drop off slip.');
+  } else {
+    const statusWords = {
+      booked:'Booked, waiting for collection', collected:'Collected and on its way to us',
+      in_transit:'On the road', out_for_delivery:'Out for delivery today', delivered:'Delivered',
+      exception:'There is a small hold up'
+    };
+    const lastEvent = shipment.delivered_at ? 'Delivered ' + localDT(shipment.delivered_at)
+      : shipment.collected_at ? 'Collected ' + localDT(shipment.collected_at)
+      : 'Booked, not yet collected';
+    let html = 'Here it is. Waybill <b>'+esc(shipment.waybill)+'</b> to '+esc(shipment.destination||'')+'.<br>'+
+      '<b>'+esc(statusWords[shipment.status]||shipment.status)+'.</b><br>'+
+      'Promised by: '+ (shipment.promised_at ? localDT(shipment.promised_at) : 'not set yet') +'<br>'+
+      'Last update: '+esc(lastEvent);
+    if(shipment.status === 'exception' && shipment.exception_note) html += '<br>Note: '+esc(shipment.exception_note);
+    addMsg('bot', html);
+  }
+  await logBranch('Track my parcel', TRANSCRIPT, {customer_id: shipment ? shipment.customer_id : null});
+}
+
+function estimateOffline(destination, kg, pieces){
+  // Example only pricer, roughly anchored to the Quote Engine parity points
+  // in SPRINT-OS-SPEC.md so offline demos still look plausible.
+  const zoneBase = /gaborone|city/i.test(destination) ? 60 : /francistown|maun|zone ?4/i.test(destination) ? 400 : 180;
+  const perKg = 23;
+  const base = zoneBase + Math.max(0, kg-1) * perKg;
+  const fuel = Math.round(base*0.10);
+  const lines = [
+    {label:'Base rate to ' + destination, amount_thebe: Math.round(base*100)},
+    {label:'Fuel levy (10%)', amount_thebe: fuel*100}
+  ];
+  if(pieces > 1) lines.push({label:'Extra pieces (' + (pieces-1) + ')', amount_thebe: (pieces-1)*3000});
+  const total = lines.reduce((s,l)=>s+l.amount_thebe,0);
+  return {lines, total_thebe: total, notes:['Example pricing, hub offline. Confirm at the route assessment.']};
+}
+
+async function doGetQuote(){
+  const destination = ANSWERS.destination || '';
+  const kg = parseFloat(ANSWERS.kg) || 0;
+  const pieces = parseInt(ANSWERS.pieces,10) || 1;
+  let result;
+  if(DATA.example){
+    result = estimateOffline(destination, kg, pieces);
+  } else {
+    try{
+      result = await apiFetch('/api/quotes/price?destination='+encodeURIComponent(destination)+'&kg='+kg+'&pieces='+pieces);
+    }catch(e){ result = estimateOffline(destination, kg, pieces); }
+  }
+  LAST_QUOTE = result;
+  const linesHtml = (result.lines||[]).map(l=>'<div><span>'+esc(l.label)+'</span><span>'+pula(l.amount_thebe)+'</span></div>').join('');
+  addMsg('bot', 'Here is the price to <b>'+esc(destination)+'</b>, '+kg+'kg, '+pieces+' piece(s).<div class="lines">'+linesHtml+'</div><div class="total">'+pula(result.total_thebe)+'</div>' + ((result.notes&&result.notes[0]) ? '<div style="font-size:11px;color:var(--dim);margin-top:4px;">'+esc(result.notes[0])+'</div>' : ''));
+}
+async function doSendProposal(){
+  if(ANSWERS.quote_send !== 'yes' && !LAST_QUOTE) return;
+  await logBranch('Get a quote', TRANSCRIPT, {customerName:'Web chat caller'});
+}
+
+async function doCreateBooking(){
+  const name = ANSWERS.name, phone = ANSWERS.phone, pickup = ANSWERS.pickup, destination = ANSWERS.destination, kg = parseFloat(ANSWERS.kg)||null, ready = ANSWERS.ready;
+  if(DATA.example){
+    addMsg('bot', 'Booked. Thanks '+esc(name)+', we will collect from '+esc(pickup)+' when it is ready at '+esc(ready)+'. You will get your waybill by WhatsApp.');
+    await logBranch('Book a collection', TRANSCRIPT, {customerName:name});
+    return;
+  }
+  try{
+    let customer_id = null;
+    const existing = await apiFetch('/api/customers?phone=' + encodeURIComponent(phone));
+    if(existing && existing.length){ customer_id = existing[0].id; }
+    else{
+      const created = await apiFetch('/api/customers', {method:'POST', body:JSON.stringify({name, phone, type:'individual', address: pickup})});
+      customer_id = created.id;
+    }
+    const waybill = 'SC' + Date.now().toString(36).toUpperCase();
+    const shipment = await apiFetch('/api/shipments', {method:'POST', body:JSON.stringify({
+      customer_id, waybill, origin: pickup, destination, kg, status:'booked'
+    })});
+    addMsg('bot', 'Booked. Your waybill is <b>'+esc(waybill)+'</b>. We will collect from '+esc(pickup)+' when it is ready at '+esc(ready)+'.');
+    await logBranch('Book a collection', TRANSCRIPT, {customer_id});
+  }catch(e){
+    addMsg('bot', 'I could not finish that booking online ('+esc(e.message)+'). A team member will call you to confirm.');
+  }
+}
+
+async function doLogComplaint(){
+  const wb = (ANSWERS.waybill||'').trim();
+  let customer_id = null, customerName = 'Web chat caller';
+  if(!DATA.example && wb){
+    try{
+      const rows = await apiFetch('/api/shipments?waybill=' + encodeURIComponent(wb));
+      if(rows && rows[0]) customer_id = rows[0].customer_id;
+    }catch(e){}
+  }
+  addMsg('bot', "I'm sorry about that. I have logged it and a team member will follow up shortly.");
+  await logBranch('Complaint', TRANSCRIPT, {customer_id, customerName, ref:'needs_human'});
+}
+
+/* ---------- boot ---------- */
+boot();
+goto(FLOW.start);
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+<script src="../shared/sprint-notify.js"></script>
+</body>
+</html>

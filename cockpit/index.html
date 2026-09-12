@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Manager Cockpit - Sprint Couriers</title>
+<meta name="theme-color" content="#131311">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../shared/logo-mark.png">
+<link rel="apple-touch-icon" href="../shared/logo-mark.png">
+<style>
+/* Local first brand type. It never phones home to Google, and it never
+   breaks when there is no internet or no signal on a driver phone. Drop
+   the two real font files into apps/shared/fonts/ to restore the exact
+   brand type offline; see the README there. With no files present this
+   falls back to the system font stack below. */
+@font-face{font-family:'Anton'; font-weight:400; font-display:swap;
+  src:local('Anton'), url('../shared/fonts/Anton-Regular.woff2') format('woff2'), url('../shared/fonts/Anton-Regular.ttf') format('truetype');}
+@font-face{font-family:'Inter'; font-weight:100 900; font-display:swap;
+  src:local('Inter'), url('../shared/fonts/Inter-Variable.woff2') format('woff2'), url('../shared/fonts/Inter-Variable.ttf') format('truetype');}
+:root{
+  --font-display:'Anton', Impact, 'Arial Narrow', sans-serif;
+  --font-body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ink:#131311; --panel:#1d1d19; --line:#2c2c27; --bone:#F4F4F1; --dim:#a6a69f;
+  --green:#3AAA35; --orange:#F7941D; --red:#e0483e;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--ink); color:var(--bone); font-family:var(--font-body);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  min-height:100vh; overflow-x:hidden;
+}
+h1,h2,h3,.disp{font-family:var(--font-display); text-transform:uppercase; letter-spacing:0.01em; font-weight:400;}
+::selection{background:var(--orange); color:var(--ink);}
+
+header{
+  background:var(--ink); border-bottom:1px solid var(--line); padding:8px 16px;
+  display:flex; align-items:center; gap:10px;
+}
+header img{width:26px; height:26px; object-fit:contain; flex:none;}
+header h1{font-size:15px; flex:1;}
+.sync-badge{font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line); color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;}
+.sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
+.sync-badge.offline{color:var(--orange); border-color:var(--orange);}
+.sync-badge.offline .sync-dot{background:var(--orange);}
+
+.banner-example{background:rgba(247,148,29,0.12); border-bottom:1px solid var(--orange); color:var(--orange); font-size:11px; font-weight:600; padding:5px 16px; text-align:center;}
+.banner-stale{background:var(--panel); border-bottom:1px solid var(--line); color:var(--dim); font-size:11px; padding:5px 16px; text-align:center;}
+
+.grid{
+  display:grid; gap:10px; padding:10px;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  grid-template-rows: auto auto auto auto auto;
+}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; min-width:0; display:flex; flex-direction:column;}
+.panel h2{font-size:11px; color:var(--dim); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:8px; flex:none;}
+.panel-scroll{overflow-y:auto;}
+
+/* bars */
+.bar-row{margin-bottom:7px;}
+.bar-row:last-child{margin-bottom:0;}
+.bar-top{display:flex; justify-content:space-between; font-size:11px; margin-bottom:3px;}
+.bar-top .lab{font-weight:700; letter-spacing:0.02em;}
+.bar-top .val{color:var(--dim);}
+.bar{position:relative; height:16px; background:var(--line); border-radius:3px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:3px; background:var(--green); min-width:2px;}
+.bar-fill.orange{background:var(--orange);}
+.bar-fill.red{background:var(--red);}
+.bar-fill.dim{background:#4a4a42;}
+
+.big-num{font-family:var(--font-display); font-size:clamp(30px,4vw,44px); line-height:1; letter-spacing:0.01em;}
+.big-sub{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px;}
+
+.verdict{font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.03em; padding:1px 7px; border-radius:20px; display:inline-block;}
+.verdict.green{color:var(--green); border:1px solid var(--green);}
+.verdict.orange{color:var(--orange); border:1px solid var(--orange);}
+.verdict.red{color:var(--red); border:1px solid var(--red);}
+
+.stack-bar{display:flex; height:26px; border-radius:4px; overflow:hidden; background:var(--line); margin-bottom:6px;}
+.stack-seg{height:100%;}
+.legend{display:flex; flex-wrap:wrap; gap:6px 12px; font-size:10px; color:var(--dim);}
+.legend span.dot{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; vertical-align:-1px;}
+
+.who-row{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--line); font-size:11px;}
+.who-row:last-child{border-bottom:none;}
+.who-name{font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.who-age-bar{width:60px; height:6px; background:var(--line); border-radius:3px; overflow:hidden; flex:none;}
+.who-age-fill{height:100%; background:#4a4a42;}
+.who-age-fill.red{background:var(--red);}
+.who-amt{flex:none; color:var(--dim); width:74px; text-align:right;}
+
+.item-row{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--line); font-size:11px;}
+.item-row:last-child{border-bottom:none;}
+.item-name{font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.empty-note{font-size:11px; color:var(--dim); padding:4px 0;}
+
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr; grid-template-rows:none;}
+  /* An inline grid-column written by the renderer beats this stylesheet, so at
+     phone width every panel is forced back into the one column that exists.
+     Without this the page scrolls sideways and whole panels sit off the edge. */
+  .grid > *{grid-column:1 / -1 !important; grid-row:auto !important;}
+  html,body{max-width:100%; overflow-x:hidden;}
+  body{overflow-y:auto;}
+}
+
+/* Brick 57, the score ring: docs/DESIGN-LANGUAGE.md, the one thing she reads first */
+.ring-card{grid-column:1 / -1;display:flex;gap:20px;align-items:center;flex-wrap:wrap;border-radius:22px;padding:16px 18px;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
+.ring-wrap{position:relative;width:196px;height:196px;flex:none}
+.ring-wrap svg{display:block;width:196px;height:196px}
+.ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.ring-mid .n{font-size:46px;font-weight:800;line-height:1;color:#F4F7F5;letter-spacing:-1px}
+.ring-mid .n.unknown{font-size:22px;line-height:1.2;max-width:130px}
+.ring-mid .o{font-size:10.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#A7B5AE;margin-top:5px}
+.ring-mid .v{font-size:12px;font-weight:800;margin-top:7px;max-width:132px;line-height:1.25}
+.ring-side{flex:1;min-width:240px}
+.ring-side .t{font-size:15px;font-weight:800;color:#F4F7F5}
+.ring-side .w{font-size:12.4px;color:#C9D6CF;margin-top:3px}
+.ring-rows{margin-top:11px}
+.rr{display:flex;align-items:center;gap:10px;padding:5px 0;cursor:pointer}
+.rr .rl{font-size:12.4px;font-weight:800;color:#F4F7F5;width:92px;flex:none}
+.rr .rb{flex:1;height:9px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden}
+.rr .rb i{display:block;height:100%;border-radius:6px}
+.rr .rb.unknown{background:repeating-linear-gradient(90deg,rgba(255,255,255,.16) 0 6px,transparent 6px 12px)}
+.rr .rv{font-size:11.5px;font-weight:800;color:#C9D6CF;width:66px;text-align:right;flex:none}
+.rr .rs{font-size:11.6px;color:#A7B5AE;margin-left:2px}
+.rr-say{font-size:11.8px;color:#C9D6CF;margin:0 0 4px 102px;line-height:1.3}
+.ring-act{display:inline-flex;align-items:center;gap:9px;margin-top:12px;background:#F7941D;color:#fff;border:0;border-radius:999px;font-weight:800;font-size:13px;padding:10px 17px;cursor:pointer;text-decoration:none;box-shadow:0 10px 24px -10px rgba(247,148,29,.9)}
+.ring-act svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ring-quiet{display:inline-block;margin-top:12px;font-size:12px;font-weight:800;color:#8FE08A;background:rgba(58,170,53,.16);border:1px solid rgba(58,170,53,.4);border-radius:999px;padding:8px 15px}
+.ring-foot{font-size:11.2px;color:#A7B5AE;margin-top:9px}
+@media (max-width:720px){ .ring-card{gap:14px;justify-content:center} .ring-side{min-width:100%} .rr .rl{width:78px} .rr-say{margin-left:88px} }
+
+/* Brick 61: the bell, same on every page */
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<link rel="stylesheet" href="../shared/sprint-theme.css">
+</head>
+<body>
+<header>
+  <img src="../shared/logo-mark.png" alt="Sprint Couriers">
+  <h1>Manager Cockpit</h1>
+  <span id="pulseWidget"></span>
+  <span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+  <div class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Loading</span></div>
+</header>
+<div id="bannerWrap"></div>
+<div class="grid" id="grid"><div style="grid-column:1/-1; padding:30px; color:var(--dim); font-size:13px;">Loading cockpit...</div></div>
+<div style="padding:0 10px 10px;" id="pulsePanelWrap"></div>
+
+<script src="../shared/recognition-widget.js"></script>
+<script>
+const STAGES = ['new','contacted','replied','meeting','quoted','won','lost'];
+const STAGE_LABEL = {new:'New', contacted:'Contacted', replied:'Replied', meeting:'Meeting', quoted:'Quoted', won:'Won', lost:'Lost'};
+const JOB_STATUSES = ['booked','collected','in_transit','out_for_delivery','delivered','exception'];
+const JOB_LABEL = {booked:'Booked', collected:'Collected', in_transit:'In transit', out_for_delivery:'Out for delivery', delivered:'Delivered', exception:'Exception'};
+const JOB_COLOR = {booked:'#4a4a42', collected:'#3AAA35', in_transit:'#3AAA35', out_for_delivery:'#3AAA35', delivered:'#3AAA35', exception:'#e0483e'};
+
+function pula(t){ const p=(Number(t||0)/100); const parts=p.toFixed(2).split('.'); parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,' '); return 'P'+parts.join('.'); }
+function localDT(iso){ if(!iso) return ''; try{ return new Date(iso).toLocaleString('en-GB',{timeZone:'Africa/Gaborone',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; } }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function shiftDate(days){ const d=new Date(); d.setUTCDate(d.getUTCDate()+days); return d.toISOString(); }
+
+let DATA=null, SYNCED_AT=null;
+const CACHE_KEY='sprintos_cockpit_cache_v1';
+
+const EXAMPLE = {
+  pipeline: {
+    new:{count:6, value_thebe:1180000}, contacted:{count:9, value_thebe:2140000}, replied:{count:4, value_thebe:930000},
+    meeting:{count:3, value_thebe:1780000}, quoted:{count:5, value_thebe:1620000}, won:{count:2, value_thebe:264000}, lost:{count:3, value_thebe:190000}
+  },
+  quotes: {out:14, accepted:6, expiring7d:3},
+  jobs_today: {booked:5, collected:3, in_transit:4, out_for_delivery:2, delivered:11, exception:1},
+  on_time_rate_30d: 91,
+  cash: {
+    paid_30d_thebe: 18640000, overdue_thebe: 4210000,
+    overdue_by_customer: [
+      {customer:'EXAMPLE Boteti Mining Supplies', amount_thebe:1820000, days:38},
+      {customer:'EXAMPLE Riverwalk Optometrists', amount_thebe:920000, days:21},
+      {customer:'EXAMPLE Naledi Legal Attorneys', amount_thebe:610000, days:14},
+      {customer:'EXAMPLE Tlokweng Hardware', amount_thebe:460000, days:9},
+      {customer:'EXAMPLE Palapye Fresh Produce', amount_thebe:400000, days:6},
+    ]
+  },
+  tenders: [
+    {issuer:'EXAMPLE Mining Group', title:'Site to site courier, Jwaneng and Orapa', closes_at: shiftDate(2), days_left:2},
+    {issuer:'EXAMPLE Standards Board', title:'Courier and logistics services', closes_at: shiftDate(4), days_left:4},
+    {issuer:'EXAMPLE Power Utility', title:'Weekly parts courier', closes_at: shiftDate(11), days_left:11},
+    {issuer:'EXAMPLE Health Ministry', title:'Cold chain distribution, vaccines', closes_at: shiftDate(19), days_left:19},
+  ],
+  documents_with_expiry_total: 9,
+  incidents_recorded_total: 4,
+  documents_expiring: [
+    {name:'EXAMPLE trade licence', expires_at: shiftDate(-41), days_left:-41, owner:'EXAMPLE Owner'},
+    {name:'Fleet insurance certificate', expires_at: shiftDate(18), days_left:18, owner:'Ops Desk'},
+    {name:'Tax clearance certificate', expires_at: shiftDate(45), days_left:45, owner:'Accounts'},
+    {name:'BOCRA operating licence', expires_at:'2028-08-22T00:00:00.000Z', days_left:700, owner:'Barbara'},
+  ],
+  open_incidents: [
+    {id:'inc_example_1', title:'EXAMPLE: vehicle overturned on the A1', type:'vehicle_accident', severity:4, status:'recovering', opened_at: shiftDate(0)}
+  ],
+  fleet_alerts: [
+    {kind:'fuel', reg:'EXAMPLE-B456ABC', label:'EXAMPLE-B456ABC: worth a question'},
+    {kind:'service', reg:'EXAMPLE-B456ABC', label:'EXAMPLE-B456ABC: service overdue'}
+  ]
+};
+
+// Sprint Pulse (decision #48) example fallback: two roles below the named
+// individuals headcount floor (a two person pilot must never show a ranked
+// bottom or a permanent runner up), team totals only.
+const PULSE_EXAMPLE = {
+  period: 'week',
+  since: shiftDate(-6).slice(0,10),
+  roles: [
+    { role:'driver', headcount:2, named_individuals:false, top:[], team_total_points:19,
+      note:'Fewer than 5 scored people in this role this period; showing the team total only, never an individual ranking that would produce a permanent runner up.' },
+    { role:'ops', headcount:1, named_individuals:false, top:[], team_total_points:6,
+      note:'Fewer than 5 scored people in this role this period; showing the team total only, never an individual ranking that would produce a permanent runner up.' }
+  ],
+  team_goal: { metric:'on_time_rate', threshold_pct:95, value_pct:91, met:false, judged_deliveries:22 }
+};
+
+async function apiFetch(path){
+  const res = await fetch(path, {credentials:'include'});
+  let json; try{ json = await res.json(); }catch(e){ json={ok:false, error:'Bad response'}; }
+  if(!json.ok){ throw new Error(json.error || ('HTTP '+res.status)); }
+  return json.data;
+}
+
+async function loadLive(){
+  try{
+    const cockpit = await apiFetch('/api/cockpit');
+    DATA = Object.assign({live:true}, cockpit);
+    SYNCED_AT = new Date().toISOString();
+    localStorage.setItem(CACHE_KEY, JSON.stringify({data:cockpit, at:SYNCED_AT}));
+    render();
+  }catch(e){ loadFallback(); }
+}
+function loadFallback(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if(cached){
+    try{ const parsed=JSON.parse(cached); DATA=Object.assign({live:false, cached:true}, parsed.data); SYNCED_AT=parsed.at; render(); return; }catch(e){}
+  }
+  DATA = Object.assign({example:true}, EXAMPLE);
+  SYNCED_AT = null;
+  render();
+}
+
+function updateSyncBadge(){
+  const badge=document.getElementById('syncBadge'), text=document.getElementById('syncText');
+  if(DATA.example){ badge.classList.add('offline'); text.textContent='Offline'; }
+  else if(DATA.live){ badge.classList.remove('offline'); text.textContent='Synced now'; }
+  else if(SYNCED_AT){ badge.classList.add('offline'); text.textContent='Synced '+localDT(SYNCED_AT); }
+  else { badge.classList.add('offline'); text.textContent='Offline'; }
+}
+
+function verdictFor(pct, goodAt, okAt){
+  if(pct>=goodAt) return 'green'; if(pct>=okAt) return 'orange'; return 'red';
+}
+
+
+/* ---------- Brick 57: the score ring ----------
+   Five things the MD can act on. Every one scores itself from the cockpit's own
+   live payload, and every one is allowed to say it does not know. The middle
+   number is the average of the KNOWN parts only; an unmeasured part is never
+   counted as zero, because a zero is a claim (feedback_never_print_unproven_zero). */
+function ringPolar(cx, cy, r, deg){ var a = (deg - 90) * Math.PI / 180; return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) }; }
+function ringArc(cx, cy, r, a0, a1){
+  var p0 = ringPolar(cx, cy, r, a0), p1 = ringPolar(cx, cy, r, a1);
+  return 'M ' + p0.x.toFixed(2) + ' ' + p0.y.toFixed(2) + ' A ' + r + ' ' + r + ' 0 ' + ((a1 - a0) > 180 ? 1 : 0) + ' 1 ' + p1.x.toFixed(2) + ' ' + p1.y.toFixed(2);
+}
+function ringColour(s){ return s >= 85 ? '#3AAA35' : s >= 60 ? '#F7941D' : '#FF6B61'; }
+function scoreParts(){
+  var parts = [];
+  var d = DATA || {};
+
+  // 1. The promise: deliveries that arrived by the time promised, 30 days.
+  var otr = d.on_time_rate_30d;
+  if (otr === null || otr === undefined) {
+    parts.push({ key:'ontime', label:'On time', known:false, why:'No delivery in the last 30 days carries both a promised time and a delivered time, so the promise cannot be judged.', owner:'Operations, at booking' });
+  } else {
+    parts.push({ key:'ontime', label:'On time', known:true, score:Math.max(0, Math.min(100, otr)), shown:Math.round(otr) + '%',
+      say:otr >= 95 ? 'Better than the 95 percent the team is aiming at.' : otr >= 85 ? 'Holding, but under the 95 percent target.' : 'Under target. Late parcels are the fastest way to lose a corporate account.',
+      href:'../ops/index.html' });
+  }
+
+  // 2. The money: how much of what is owed is current rather than overdue.
+  var cash = d.cash || {};
+  var paid = Number(cash.paid_30d_thebe || 0), over = Number(cash.overdue_thebe || 0);
+  if (paid + over === 0) {
+    parts.push({ key:'money', label:'Money in', known:false, why:'No invoice was paid or fell overdue in the period, so there is nothing to measure yet.', owner:'Accounts' });
+  } else {
+    var pct = paid / (paid + over) * 100;
+    var worst = (cash.overdue_by_customer || [])[0];
+    parts.push({ key:'money', label:'Money in', known:true, score:pct, shown:Math.round(pct) + '%',
+      say:over === 0 ? 'Nothing overdue.' : pula(over) + ' is overdue' + (worst ? ', the largest being ' + worst.customer + '.' : '.'),
+      href:'../accounts/index.html' });
+  }
+
+  // 3. Today's run: jobs booked today that have not gone wrong.
+  var jt = d.jobs_today || {};
+  var total = JOB_STATUSES.reduce(function(a, s){ return a + (jt[s] || 0); }, 0);
+  if (total === 0) {
+    parts.push({ key:'today', label:'Today', known:false, why:'Nothing has been booked today yet, so there is no run to judge.', owner:'Operations' });
+  } else {
+    var bad = jt.exception || 0;
+    var s3 = (total - bad) / total * 100;
+    parts.push({ key:'today', label:'Today', known:true, score:s3, shown:(jt.delivered || 0) + ' of ' + total,
+      say:bad ? bad + (bad === 1 ? ' job has' : ' jobs have') + ' gone to exception today.' : 'Every job booked today is still running clean.',
+      href:'../ops/index.html' });
+  }
+
+  // 4. The paperwork. An empty list only means "all current" if the hub has
+  //    documents with expiry dates at all; otherwise nothing is being watched.
+  var docs = d.documents_expiring || [];
+  var watched = d.documents_with_expiry_total;
+  if (watched === 0 || (watched === undefined && docs.length === 0)) {
+    parts.push({ key:'papers', label:'Paperwork', known:false, why:'No company document has an expiry date recorded, so nothing is being watched. An expired operating licence would not show here.', owner:'Barbara' });
+  } else {
+    var expired = docs.filter(function(x){ return x.days_left < 0; });
+    var soon = docs.filter(function(x){ return x.days_left >= 0 && x.days_left <= 60; });
+    var s4 = expired.length ? Math.max(0, 40 - expired.length * 15) : soon.length ? Math.max(60, 100 - soon.length * 12) : 100;
+    var lead = expired[0] || soon[0];
+    parts.push({ key:'papers', label:'Paperwork', known:true, score:s4,
+      shown:expired.length ? expired.length + ' expired' : soon.length ? soon.length + ' near' : 'all current',
+      say:expired.length ? lead.name + ' ran out ' + Math.abs(lead.days_left) + ' days ago. Owner ' + (lead.owner || 'not named') + '.'
+        : soon.length ? lead.name + ' runs out in ' + lead.days_left + ' days. Owner ' + (lead.owner || 'not named') + '.'
+        : 'Nothing on the wall runs out inside 60 days.' });
+  }
+
+  // 5. Incidents still open, weighted by how bad each one is.
+  var inc = d.open_incidents || [];
+  var everRecorded = d.incidents_recorded_total;
+  if (!inc.length && everRecorded === 0) {
+    // An empty desk is not a safe fleet. Nobody has ever reported anything, so
+    // silence here means the reporting is not running, not that nothing went wrong.
+    parts.push({ key:'incidents', label:'Incidents', known:false, why:'No incident has ever been recorded on the desk, so silence here means nothing is being reported rather than nothing going wrong.', owner:'Operations' });
+  } else if (!inc.length) {
+    parts.push({ key:'incidents', label:'Incidents', known:true, score:100, shown:'none open', say:'Nothing open on the Incident Desk.', href:'../incidents/index.html' });
+  } else {
+    var cost = inc.reduce(function(a, i){ return a + (Number(i.severity) || 1) * 12; }, 0);
+    var top = inc.slice().sort(function(a, b){ return (b.severity || 0) - (a.severity || 0); })[0];
+    parts.push({ key:'incidents', label:'Incidents', known:true, score:Math.max(0, 100 - cost), shown:inc.length + ' open',
+      say:String(top.title || 'An incident').replace(/^EXAMPLE:\s*/, 'EXAMPLE ') + ', severity ' + top.severity + ', ' + top.status + '.',
+      href:'../incidents/index.html' });
+  }
+  return parts;
+}
+function ringHtml(){
+  var parts = scoreParts();
+  var known = parts.filter(function(p){ return p.known; });
+  // A score needs a quorum. With fewer than three of the five parts sourced,
+  // an average says more about what is missing than about the business, and a
+  // high number built on one part is the most dangerous thing on this screen.
+  var QUORUM = 3;
+  var avg = known.length >= QUORUM ? Math.round(known.reduce(function(a, p){ return a + p.score; }, 0) / known.length) : null;
+  var worst = known.slice().sort(function(a, b){ return a.score - b.score; })[0];
+  var reds = known.filter(function(p){ return p.score < 60; }).length;
+  var ambers = known.filter(function(p){ return p.score >= 60 && p.score < 85; }).length;
+
+  var cx = 98, cy = 98, r = 80, seg = 360 / parts.length, gap = 5;
+  var svg = ['<svg viewBox="0 0 196 196" xmlns="http://www.w3.org/2000/svg" aria-label="Score ring, ' + (avg === null ? 'nothing measured' : avg + ' out of 100') + '">'];
+  parts.forEach(function(p, i){
+    var a0 = i * seg + gap / 2, a1 = (i + 1) * seg - gap / 2;
+    svg.push('<path d="' + ringArc(cx, cy, r, a0, a1) + '" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="15" stroke-linecap="round"' + (p.known ? '' : ' stroke-dasharray="3 7"') + '/>');
+    if (p.known && p.score > 0) {
+      var fill = a0 + (a1 - a0) * Math.max(0.02, Math.min(1, p.score / 100));
+      svg.push('<path d="' + ringArc(cx, cy, r, a0, fill) + '" fill="none" stroke="' + ringColour(p.score) + '" stroke-width="15" stroke-linecap="round"/>');
+    }
+  });
+  svg.push('</svg>');
+
+  var verdict = avg === null ? (known.length ? 'Only ' + known.length + ' of ' + parts.length + ' parts have a source, which is too little to score.' : 'Nothing here has a source yet.')
+    : reds ? (reds === 1 ? 'One thing needs you today.' : reds + ' things need you today.')
+    : ambers ? (ambers === 1 ? 'One thing is slipping.' : ambers + ' things are slipping.')
+    : 'Everything measured is on target.';
+  var vcol = avg === null ? '#A7B5AE' : reds ? '#FFB3AD' : ambers ? '#FDBE74' : '#8FE08A';
+
+  var rows = parts.map(function(p){
+    if (!p.known) {
+      return '<div class="rr" title="' + esc(p.why) + '"><span class="rl">' + esc(p.label) + '</span><span class="rb unknown"></span><span class="rv">not measured</span></div>' +
+        '<div class="rr-say">' + esc(p.why) + ' Owner: ' + esc(p.owner || 'not named') + '.</div>';
+    }
+    var open = p.href ? ' onclick="location.href=\'' + p.href + '\'"' : '';
+    return '<div class="rr"' + open + '><span class="rl">' + esc(p.label) + '</span><span class="rb"><i style="width:' + Math.max(3, Math.round(p.score)) + '%;background:' + ringColour(p.score) + '"></i></span><span class="rv">' + esc(p.shown) + '</span></div>' +
+      '<div class="rr-say">' + esc(p.say) + '</div>';
+  }).join('');
+
+  var act = avg !== null && worst && worst.score < 85
+    ? '<a class="ring-act"' + (worst.href ? ' href="' + worst.href + '"' : ' href="#" onclick="return false"') + '><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/></svg>' + esc(worst.label === 'Money in' ? 'Chase the money' : worst.label === 'Paperwork' ? 'Fix the paperwork' : worst.label === 'Incidents' ? 'Open the Incident Desk' : worst.label === 'On time' ? 'See what ran late' : 'See today\u2019s run') + '</a>'
+    : avg === null ? '<span class="ring-quiet" style="color:#FDBE74;background:rgba(247,148,29,.16);border-color:rgba(247,148,29,.45)">Get these connected before month end</span>'
+    : '<span class="ring-quiet">Nothing needs you right now</span>';
+
+  return '<div class="ring-card"><div class="ring-wrap">' + svg.join('') +
+    '<div class="ring-mid">' + (avg === null ? '<div class="n unknown">Not enough<br>measured</div>' : '<div class="n">' + avg + '</div><div class="o">out of 100</div>') +
+    '<div class="v" style="color:' + vcol + '">' + esc(verdict) + '</div></div></div>' +
+    '<div class="ring-side"><div class="t">How Sprint is doing right now</div>' +
+    '<div class="w">Five things you can do something about. The ring is the average of the ones that have a source.</div>' +
+    '<div class="ring-rows">' + rows + '</div>' + act +
+    '<div class="ring-foot">' + known.length + ' of ' + parts.length + ' measured' + (known.length < parts.length ? '. A part with no source is left grey and out of the average, never counted as zero' + (avg === null ? ', and below three sourced parts no score is shown at all' : '') + '.' : '.') + '</div></div></div>';
+}
+
+function render(){
+  updateSyncBadge();
+  const bw = document.getElementById('bannerWrap');
+  if(DATA.example) bw.innerHTML = '<div class="banner-example">EXAMPLE DATA. Every company, tender, parcel and number on this screen is invented to show how the screen works.</div>';
+  else if(!DATA.live) bw.innerHTML = '<div class="banner-stale">Showing last synced data from '+localDT(SYNCED_AT)+'. Hub unreachable now.</div>';
+  else bw.innerHTML = '';
+
+  const g=[];
+
+  // Brick 57: the score ring leads the cockpit
+  g.push(ringHtml());
+
+  // Pipeline
+  g.push('<div class="panel" style="grid-column:1; grid-row:1 / span 2;"><h2>Pipeline by stage</h2><div class="panel-scroll">');
+  const pipeline = DATA.pipeline||{};
+  const maxP = Math.max(1, ...STAGES.map(s=> (pipeline[s]&&pipeline[s].count)||0));
+  STAGES.forEach(s=>{
+    const d = pipeline[s]||{count:0,value_thebe:0};
+    const pct = Math.max(d.count?4:0, Math.round((d.count/maxP)*100));
+    const cls = s==='lost' ? 'red' : (s==='won' ? '' : '');
+    g.push('<div class="bar-row"><div class="bar-top"><span class="lab">'+STAGE_LABEL[s]+'</span><span class="val">'+d.count+' &middot; '+pula(d.value_thebe)+'</span></div>'+
+      '<div class="bar"><div class="bar-fill '+cls+'" style="width:'+pct+'%"></div></div></div>');
+  });
+  g.push('</div></div>');
+
+  // Jobs today stacked + on time
+  g.push('<div class="panel" style="grid-column:2;"><h2>Jobs today</h2>');
+  const jt = DATA.jobs_today||{};
+  const totalJobs = JOB_STATUSES.reduce((a,s)=>a+(jt[s]||0),0) || 1;
+  g.push('<div class="stack-bar">');
+  JOB_STATUSES.forEach(s=>{
+    const c = jt[s]||0; const pct = (c/totalJobs)*100;
+    if(pct>0) g.push('<div class="stack-seg" style="width:'+pct+'%; background:'+JOB_COLOR[s]+';"></div>');
+  });
+  g.push('</div>');
+  g.push('<div class="legend">' + JOB_STATUSES.map(s=>'<span><span class="dot" style="background:'+JOB_COLOR[s]+';"></span>'+JOB_LABEL[s]+' '+(jt[s]||0)+'</span>').join('') + '</div>');
+  g.push('</div>');
+
+  // The hub sends null when nothing was delivered in 30 days. A zero here would
+  // be a claim nobody can support, so the panel says what is missing instead
+  // (feedback_never_print_unproven_zero).
+  const otrRaw = DATA.on_time_rate_30d;
+  if(otrRaw===null || otrRaw===undefined){
+    g.push('<div class="panel" style="grid-column:3;"><h2>On time rate, 30 days</h2>'+
+      '<div class="big-num" style="color:var(--dim); font-size:26px; line-height:1.2;">Not measured</div>'+
+      '<div class="big-sub">No delivery in the last 30 days carries both a promised time and a delivered time. Owner: Operations, at booking.</div>'+
+    '</div>');
+  } else {
+    const otr = otrRaw;
+    const otrCls = otr>=85 ? 'green' : 'red';
+    g.push('<div class="panel" style="grid-column:3;"><h2>On time rate, 30 days</h2>'+
+      '<div class="big-num" style="color:var(--'+otrCls+');">'+otr+'%</div>'+
+      '<div class="bar" style="margin-top:6px;"><div class="bar-fill '+(otrCls==='green'?'':otrCls)+'" style="width:'+Math.max(4,otr)+'%"></div></div>'+
+      '<div class="big-sub">'+(otrCls==='green'?'On target':'Below target')+'</div>'+
+    '</div>');
+  }
+
+  // Quotes
+  g.push('<div class="panel" style="grid-column:2;"><h2>Quotes</h2>');
+  const q = DATA.quotes||{out:0,accepted:0,expiring7d:0};
+  const maxQ = Math.max(1,q.out,q.accepted,q.expiring7d);
+  [['Out',q.out,''],['Accepted',q.accepted,''],['Expiring in 7 days',q.expiring7d,(q.expiring7d>0?'orange':'')]].forEach(([lab,val,cls])=>{
+    const pct = Math.max(val?4:0, Math.round((val/maxQ)*100));
+    g.push('<div class="bar-row"><div class="bar-top"><span class="lab">'+lab+'</span><span class="val">'+val+'</span></div>'+
+      '<div class="bar"><div class="bar-fill '+cls+'" style="width:'+pct+'%"></div></div></div>');
+  });
+  g.push('</div>');
+
+  // Cash
+  g.push('<div class="panel" style="grid-column:3; grid-row:2 / span 2;"><h2>Cash</h2>');
+  const cash = DATA.cash || {paid_30d_thebe:0, overdue_thebe:0, overdue_by_customer:[]};
+  const maxCash = Math.max(1, cash.paid_30d_thebe, cash.overdue_thebe);
+  g.push('<div class="bar-row"><div class="bar-top"><span class="lab">Paid, 30 days</span><span class="val">'+pula(cash.paid_30d_thebe)+'</span></div>'+
+    '<div class="bar"><div class="bar-fill" style="width:'+Math.max(4,Math.round((cash.paid_30d_thebe/maxCash)*100))+'%"></div></div></div>');
+  g.push('<div class="bar-row"><div class="bar-top"><span class="lab">Overdue</span><span class="val">'+pula(cash.overdue_thebe)+'</span></div>'+
+    '<div class="bar"><div class="bar-fill red" style="width:'+Math.max(4,Math.round((cash.overdue_thebe/maxCash)*100))+'%"></div></div></div>');
+  g.push('<div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin:10px 0 4px;">Overdue by customer</div>');
+  g.push('<div class="panel-scroll" style="max-height:120px;">');
+  const obc = cash.overdue_by_customer||[];
+  if(obc.length===0) g.push('<div class="empty-note">Nothing overdue.</div>');
+  const maxDays = Math.max(1, ...obc.map(o=>o.days));
+  obc.forEach(o=>{
+    const pct = Math.max(6, Math.round((o.days/maxDays)*100));
+    g.push('<div class="who-row"><span class="who-name">'+esc(o.customer)+'</span>'+
+      '<span class="who-age-bar"><span class="who-age-fill '+(o.days>30?'red':'')+'" style="width:'+pct+'%"></span></span>'+
+      '<span class="who-amt">'+pula(o.amount_thebe)+'</span></div>');
+  });
+  g.push('</div></div>');
+
+  // Tenders
+  g.push('<div class="panel" style="grid-column:1;"><h2>Tender countdowns</h2>');
+  const tenders = DATA.tenders||[];
+  if(tenders.length===0) g.push('<div class="empty-note">Nothing on watch.</div>');
+  tenders.slice(0,6).forEach(t=>{
+    const cls = t.days_left<3?'red':'green';
+    g.push('<div class="item-row"><span class="item-name">'+esc(t.issuer)+' &middot; '+esc(t.title)+'</span><span class="verdict '+cls+'">'+t.days_left+'d</span></div>');
+  });
+  g.push('</div>');
+
+  // Documents expiring
+  g.push('<div class="panel" style="grid-column:2 / span 2;"><h2>Documents expiring</h2><div style="display:grid; grid-template-columns:1fr 1fr; gap:0 16px;">');
+  const docs = DATA.documents_expiring||[];
+  if(docs.length===0) g.push('<div class="empty-note">All documents current.</div>');
+  docs.forEach(d=>{
+    const cls = d.days_left<0 ? 'red' : 'green';
+    const label = d.days_left<0 ? ('expired '+Math.abs(d.days_left)+'d ago') : (d.days_left+'d left');
+    g.push('<div class="item-row"><span class="item-name">'+esc(d.name)+' &middot; '+esc(d.owner)+'</span><span class="verdict '+cls+'">'+label+'</span></div>');
+  });
+  g.push('</div></div>');
+
+  // Open incidents (Incident Desk tile, INCIDENT-DESK-SPEC.md)
+  g.push('<a class="panel" href="../incidents/index.html" style="grid-column:1 / -1; text-decoration:none; color:inherit; cursor:pointer;"><h2>Open incidents</h2>');
+  const openIncidents = DATA.open_incidents||[];
+  if(openIncidents.length===0) g.push('<div class="empty-note">Nothing open. That is a good sign.</div>');
+  openIncidents.forEach(i=>{
+    const cls = i.status==='recovering' ? 'green' : 'red';
+    g.push('<div class="item-row"><span class="item-name">'+esc(i.title)+' &middot; severity '+i.severity+'</span><span class="verdict '+cls+'">'+i.status+'</span></div>');
+  });
+  g.push('</a>');
+
+  // Fleet and fuel (fleet and fuel brief, deliverable 3's cockpit tile): a
+  // fuel question or an overdue service, worded exactly the way the fleet
+  // screen itself words it, never an accusation.
+  g.push('<a class="panel" href="../fleet/index.html" style="grid-column:1 / -1; text-decoration:none; color:inherit; cursor:pointer;"><h2>Fleet and fuel</h2>');
+  const fleetAlerts = DATA.fleet_alerts||[];
+  if(fleetAlerts.length===0) g.push('<div class="empty-note">Nothing to flag on fuel or service right now.</div>');
+  fleetAlerts.forEach(f=>{
+    const cls = f.kind==='fuel' ? 'orange' : 'red';
+    g.push('<div class="item-row"><span class="item-name">'+esc(f.label)+'</span><span class="verdict '+cls+'">'+(f.kind==='fuel'?'question':'overdue')+'</span></div>');
+  });
+  g.push('</a>');
+
+  document.getElementById('grid').innerHTML = g.join('');
+}
+
+// --- Sprint Pulse panel (decision #48, /api/recognition/leaderboard) --------
+// A separate fetch on purpose: recognition is its own contracted endpoint,
+// not folded into /api/cockpit's payload. Renders outside the main JS
+// driven grid (#pulsePanelWrap, not #grid) so the 60 second cockpit refresh
+// never has to know about it.
+let PULSE_DATA = null;
+const PULSE_ROLE_LABEL = {driver:'Drivers', ops:'Ops', accounts:'Accounts', staff:'Staff', manager:'Managers', admin:'Admin'};
+
+async function loadPulse(){
+  try{
+    const data = await apiFetch('/api/recognition/leaderboard?period=week');
+    PULSE_DATA = Object.assign({live:true}, data);
+  }catch(e){
+    PULSE_DATA = Object.assign({example:true}, PULSE_EXAMPLE);
+  }
+  renderPulse();
+  SprintPulseWidget.mount('pulseWidget');
+}
+
+function renderPulse(){
+  const wrap = document.getElementById('pulsePanelWrap');
+  if(!PULSE_DATA){ wrap.innerHTML=''; return; }
+  const p = [];
+  p.push('<div class="panel"><h2>Sprint Pulse, this week</h2>');
+  if(PULSE_DATA.example) p.push('<div class="empty-note" style="margin-bottom:6px;">EXAMPLE DATA. Every company, tender, parcel and number on this screen is invented to show how the screen works.</div>');
+
+  const tg = PULSE_DATA.team_goal || {value_pct:null, threshold_pct:95, met:false, judged_deliveries:0};
+  const pct = tg.value_pct==null ? 0 : tg.value_pct;
+  const cls = tg.met ? 'green' : 'red';
+  p.push('<div class="bar-row"><div class="bar-top"><span class="lab">Team on time rate vs 95% goal</span>'+
+    '<span class="val">'+(tg.value_pct==null?'No judged deliveries yet':tg.value_pct+'%')+'</span></div>'+
+    '<div class="bar"><div class="bar-fill '+(tg.value_pct==null?'dim':cls)+'" style="width:'+Math.max(2,pct)+'%"></div></div></div>');
+  p.push('<div style="margin:4px 0 10px;"><span class="verdict '+(tg.value_pct==null?'':cls)+'">'+(tg.met?'Team goal met':'Not yet')+'</span></div>');
+
+  p.push('<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px;">');
+  const roles = PULSE_DATA.roles || [];
+  if(roles.length===0) p.push('<div class="empty-note">No scored activity yet this week.</div>');
+  roles.forEach(r=>{
+    const label = PULSE_ROLE_LABEL[r.role] || esc(r.role);
+    p.push('<div><div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">'+label+'</div>');
+    if(r.named_individuals){
+      (r.top||[]).forEach((person,i)=>{
+        p.push('<div class="who-row"><span class="who-name">'+(i+1)+'. '+esc(person.name)+'</span><span class="who-amt">'+person.points+' pts</span></div>');
+      });
+      if((r.top||[]).length===0) p.push('<div class="empty-note">Nothing scored yet.</div>');
+    } else {
+      p.push('<div class="item-row"><span class="item-name">Team total ('+r.headcount+' scored)</span><span class="who-amt">'+r.team_total_points+' pts</span></div>');
+    }
+    p.push('</div>');
+  });
+  p.push('</div></div>');
+  wrap.innerHTML = p.join('');
+}
+
+loadLive();
+loadPulse();
+setInterval(loadLive, 60000);
+setInterval(loadPulse, 60000);
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+<script src="../shared/sprint-notify.js"></script>
+</body>
+</html>
