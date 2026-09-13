@@ -45,19 +45,23 @@
        on one row, so folding to a single line was never possible; what is
        possible is making both rows tight. Measured: 129 px becomes 68 px, which
        is half the header and eight per cent of the screen handed back. */
-    '.sp-small.topbar{min-height:48px !important}' +
-    '.sp-small.topbar img{height:36px !important}' +
+    '.sp-small.topbar{min-height:52px !important}' +
+    '.sp-small.topbar img{height:46px !important}' +
     '.sp-small.topbar .pills .pill{font-size:10px;padding:5px 9px}' +
-    'header.sp-small{min-height:0 !important}' +
-    'header.sp-small img{height:32px !important}' +
-    'header.sp-small .titles, header.sp-small > h1{margin:4px 0 5px;padding-left:12px}' +
-    'header.sp-small .titles h1, header.sp-small > h1{font-size:13.5px !important}' +
-    'header.sp-small .titles .who{display:none}' +        /* the signed in name is not needed while scrolling */
-    'header.sp-small .hdr-bell{width:30px !important;height:30px !important;margin:3px 0}' +
-    'header.sp-small .hdr-bell svg{width:15px;height:15px}' +
-    'header.sp-small .sync-badge{font-size:9.5px;padding:3px 8px;margin:3px 0;min-height:0}' +
-    'header.sp-small #pulseWidget{margin:3px 0}' +
-    /* a shrunk bar earns a shadow, so it reads as floating above the list */
+    /* the small header folds to ONE row: at 46 px the wordmark is 155 px wide,
+       so the title, the bell and the badge all still fit a 375 px screen. The
+       logo fills the bar rather than floating in the middle of it, which is what
+       made the first attempt look awkward. */
+    'header.sp-small{min-height:0 !important;flex-wrap:nowrap !important}' +
+    'header.sp-small::after{display:none !important}' +
+    'header.sp-small img{height:46px !important;align-self:center !important}' +
+    'header.sp-small .titles, header.sp-small > h1{margin:0 !important;padding-left:10px !important;min-width:0}' +
+    'header.sp-small .titles h1, header.sp-small > h1{font-size:13.5px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    'header.sp-small .titles .who{display:none !important}' +
+    'header.sp-small .hdr-bell{width:32px !important;height:32px !important;margin:0 !important}' +
+    'header.sp-small .hdr-bell svg{width:16px;height:16px}' +
+    'header.sp-small .sync-badge{font-size:9.5px;padding:4px 8px;margin:0 !important;min-height:0;white-space:nowrap}' +
+    'header.sp-small #pulseWidget{margin:0 !important}' +
     '.sp-small{box-shadow:0 14px 30px -18px rgba(0,0,0,.85)}' +
     '@media (prefers-reduced-motion: reduce){' +
       'header, .topbar, header img, .topbar img, header .titles, header > h1{transition:none}' +
