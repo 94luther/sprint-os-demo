@@ -612,7 +612,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
 <script src="../shared/sprint-chrome.js?v=955d59ff"></script>
 
 <script>
-/* ---------- Brick 84: the triage lanes and the red alert ----------
+/* ---------- Brick 86: the triage lanes and the red alert ----------
    Three levels, drawn above the incident list. Level 3 is a full screen alert
    that only a manager or admin can dismiss, and it stays until they do. */
 (function(){
@@ -631,7 +631,11 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
           title:'RED ALERT: tender documents for the EXAMPLE Standards Board have 42 minutes and the vehicle is standing',
           payload:{ minutes_left:42, due_at: iso(42), priority:'tender', waybill:'EXAMPLE/WB/3107', destination:'EXAMPLE Standards Board, Gaborone',
                     vehicle:{ reg:'B 100 EXA', state:'standing', standing_minutes:23 }, pin:{ lat:-23.1042, lng:26.8321, recorded_at: iso(-2) },
-                    nearest:{ reg:'B 200 EXA', km:11.4, state:'moving', driver:'EXAMPLE driver Kabo' }, why:'42 minutes left and the vehicle is standing on the A1 south of Mahalapye' } },
+                    nearest:{ reg:'B 200 EXA', km:11.4, state:'moving', driver:'EXAMPLE driver Kabo' }, why:'42 minutes left and the vehicle is standing on the A1 south of Mahalapye' },
+          ladder:{ ok:true, acknowledged:false, minutes_open:6, index:0, at_bottom:false,
+                   current:{ name:'EXAMPLE Ops Desk', phone:'+267 71 000 001', after_minutes:0 },
+                   next:{ name:'EXAMPLE Ops Manager', after_minutes:10 }, minutes_until_next:4, passed:[],
+                   say:'6 minutes unacknowledged. It is with EXAMPLE Ops Desk on +267 71 000 001. If nobody acknowledges it, it goes to EXAMPLE Ops Manager in 4 minutes.' } },
         { id:'inc_ex_l3_2', level:3, kind:'sla_breach', status:'open', opened_at: iso(-31), acknowledged_at: iso(-28), acknowledged_by:'stf_manager',
           title:'RED ALERT: court bundle for EXAMPLE Naledi Legal Attorneys had 55 minutes and the vehicle was standing',
           payload:{ minutes_left:55, due_at: iso(24), priority:'legal', waybill:'EXAMPLE/WB/3099', destination:'High Court, Gaborone',
@@ -726,8 +730,25 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
       '<div class="line">Vehicle <b>' + esc2(p.vehicle ? p.vehicle.reg : 'unknown') + '</b> ' + esc2(p.vehicle ? p.vehicle.state : '') + (p.vehicle && p.vehicle.standing_minutes ? ' for ' + p.vehicle.standing_minutes + ' minutes' : '') + '. ' + esc2(p.why || '') + '</div>' +
       (p.pin ? '<div class="line">Last fix <span class="pin">' + p.pin.lat.toFixed(4) + ', ' + p.pin.lng.toFixed(4) + '</span> ' + ago(p.pin.recorded_at) + '</div>' : '<div class="line">No position for the vehicle.</div>') +
       '<div class="line">' + (p.nearest ? 'Nearest active vehicle for a cargo swap: <b>' + esc2(p.nearest.reg) + '</b>, ' + p.nearest.km + ' km away, ' + esc2(p.nearest.state) + (p.nearest.driver ? ', ' + esc2(p.nearest.driver) : '') + '.' : 'No other active vehicle has a position right now, so a swap cannot be offered from here.') + '</div>' +
+      /* Brick 90: an alert is never just open, it is with somebody, by name, with
+         a number. Ten minutes unanswered and it is with the next person. */
+      (function(){ var L = i.ladder; if (!L) return ''; if (!L.ok) return '<div class="line" style="background:rgba(255,255,255,.12);padding:10px;border-radius:8px"><b>' + esc2(L.why) + '</b></div>';
+        if (L.acknowledged) return '';
+        var c = L.current || {};
+        return '<div class="line" style="background:rgba(255,255,255,.12);padding:10px;border-radius:8px">' +
+          '<b>' + esc2(L.say) + '</b>' +
+          (c.phone ? '<div style="margin-top:8px"><a href="tel:' + esc2(String(c.phone).replace(/[^+\d]/g, '')) + '" style="display:inline-block;min-height:44px;line-height:44px;padding:0 18px;border-radius:10px;background:#fff;color:#7a0a06;font-weight:900;text-decoration:none">Call ' + esc2(c.name) + ' on ' + esc2(c.phone) + '</a></div>' : '') +
+          (L.passed && L.passed.length ? '<div style="margin-top:6px;font-size:12.5px">Already passed: ' + L.passed.map(function(x){ return esc2(x.name || x.staff_id) + (x.phone ? ' ' + esc2(x.phone) : ''); }).join(', ') + '</div>' : '') +
+          '</div>'; })() +
+      /* Brick 92: a person who may not acknowledge is never left with a dead
+         end. Three things they CAN do, all of them real. */
       (can ? '<button class="ack" onclick="triAck(\'' + i.id + '\')">I have seen this. Acknowledge.</button>'
-           : '<button class="ack" disabled>Only the Ops Manager can acknowledge</button><div class="who">Call the Ops Manager now. This stays on every screen until they acknowledge it.</div>') +
+           : '<div class="who" style="margin-top:14px">Only the Ops Manager acknowledges this one. You can still do these three things now:</div>' +
+             '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">' +
+             '<button class="ack" style="margin:0" onclick="triAssist(\'' + i.id + '\',\'ping\')">Ping whoever it is with, and show me their number</button>' +
+             (p.pin ? '<a class="ack" style="margin:0;display:block;text-align:center;line-height:58px;text-decoration:none" href="../fleet/index.html">See where the vehicle was last</a>' : '') +
+             '<button class="ack" style="margin:0" onclick="triAssist(\'' + i.id + '\',\'note\')">Write down what I know</button>' +
+             '</div>') +
       (open.length > 1 ? '<div class="who">' + (open.length - 1) + ' more red alert' + (open.length > 2 ? 's' : '') + ' behind this one.</div>' : '') +
       '</div></div>';
   }
@@ -752,6 +773,16 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
     try { await apiFetch('/api/incidents/' + id + '/decide', { method: 'POST', body: JSON.stringify({ decision: decision }) }); } catch (e) { alert(e.message); }
     load(true);
   };
+  window.triAssist = async function(id, kind){
+    var note = null;
+    if (kind === 'note') { note = window.prompt('What do you know about this? It goes on the incident for whoever picks it up.'); if (!note) return; }
+    if (TRIAGE === EXAMPLE_TRIAGE) { alert(kind === 'ping'
+      ? 'EXAMPLE. Recorded. On the real system this would show the number to call and put your name on the incident. Nothing is ever dialled for you.'
+      : 'EXAMPLE. Written on the incident.'); return; }
+    try { var r = await apiFetch('/api/incidents/' + id + '/assist', { method: 'POST', body: JSON.stringify({ kind: kind, note: note }) });
+          alert(r.say); } catch (e) { alert(e.message); }
+    load(true);
+  };
   window.triAck = async function(id){
     if (TRIAGE === EXAMPLE_TRIAGE) { var i = TRIAGE.level3.filter(function(x){ return x.id === id; })[0]; if (i) { i.acknowledged_at = new Date().toISOString(); i.acknowledged_by = 'you (example)'; } return mount(); }
     try { await apiFetch('/api/incidents/' + id + '/acknowledge', { method: 'POST', body: '{}' }); } catch (e) { alert(e.message); }
@@ -763,5 +794,6 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
   setInterval(function(){ load(true); }, 60000);
 })();
 </script>
+<script src="../shared/sprint-horizon.js?v=b027116a"></script>
 </body>
 </html>

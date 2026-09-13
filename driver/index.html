@@ -1121,7 +1121,7 @@ async function advanceStop(id) {
   if (!next) return;
   await postStopStatus(s, { status: next });
 }
-/* Brick 84: the tape measure, and the gate code request the system writes. */
+/* Brick 87: the tape measure, and the gate code request the system writes. */
 async function measureStop(id) {
   const s = findStop(id);
   if (!s || !window.SprintEPOD) return;
@@ -1176,7 +1176,7 @@ async function deliverStop(id) {
       // simply stays unknown until a delivery that does have one.
       var fix = drepLastFix();
       var body = { status: 'delivered', pod_name: value };
-      // Brick 84, level 2: a cash on delivery job needs the receipt photographed
+      // Brick 85, level 2: a cash on delivery job needs the receipt photographed
       // and the amount collected before it can close. Cancel means not closed.
       if (s.cod_amount_thebe > 0 && window.SprintEPOD) {
         const cod = await SprintEPOD.receipt({ amountThebe: s.cod_amount_thebe, title: 'Cash on delivery, ' + (s.destination || s.waybill) });
