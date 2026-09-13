@@ -1,4 +1,4 @@
-/* Sprint OS: the bar shrinks as you scroll. Brick 75.
+/* Sprint OS: the bar shrinks as you scroll. Brick 76.
 
    Luther, 13 Sep 2026: "make the bar shrink as you scroll."
 
@@ -116,7 +116,7 @@
     else if (small && y < GROW_AT) apply(false);
   }
 
-  // --- Brick 76: the backdrop follows the day --------------------------------
+  // --- Brick 77: the backdrop follows the day --------------------------------
   // Luther, 13 Sep 2026: "I want the tones to change according to the time of
   // day." Five parts, read from the phone's own clock: the person holding it is
   // in Gaborone and Botswana has no daylight saving. The stylesheet carries one

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sprint OS - Sprint Couriers</title>
 <meta name="theme-color" content="#0E2F22">
-<link rel="icon" href="shared/logo-mark.png">
-<link rel="apple-touch-icon" href="shared/logo-mark.png">
-<link rel="manifest" href="manifest.webmanifest?v=e9ec51d5">
+<link rel="icon" href="shared/app-icon-192.png">
+<link rel="apple-touch-icon" href="shared/app-icon-180.png">
+<link rel="manifest" href="manifest.webmanifest?v=436b5e7c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Sprint">
@@ -145,7 +145,7 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:120px;point
 .hello .avatar{display:none}
 .hello .t b{font-size:15px}
 
-/* ---------- Brick 76: the wordmark sits IN the glass, and the backdrop follows the day ----------
+/* ---------- Brick 77: the wordmark sits IN the glass, and the backdrop follows the day ----------
    Luther, 13 Sep 2026, with a screenshot: "It looks very awkward. I wanted it to merge
    seamlessly into the back." The file on the phone had the white baked in; the disk file is
    transparent. The band's tail now feathers into the bar and the bar's own curve clips the
@@ -168,14 +168,14 @@ html[data-daypart="night"] .topbar{background:linear-gradient(135deg,rgba(12,44,
   </div>
   <div class="hello">
     <div class="avatar"><img src="shared/logo-mark.png" alt=""></div>
-    <div class="t"><small id="greet">Good morning</small><b>Sprint Couriers</b></div>
+    <div class="t" id="hello" role="button" title="Tap to tell the app your name"><small id="greet">Good morning</small><b id="today">Sprint Couriers</b></div>
     <div class="pills under"><span class="pill when" id="topWhen">example</span><span class="pill mode" id="topMode">EXAMPLE</span></div>
     <div class="bell" id="bell" role="button" title="What needs you"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><i></i></div>
   </div>
 
   <a class="hero" href="insights/index.html">
-    <div class="eyebrow">This morning</div>
-    <h1>What the system saw while you slept</h1>
+    <div class="eyebrow" id="heroWhen">This morning</div>
+    <h1 id="heroTitle">What the system saw while you slept</h1>
     <p>Five things to know, the money as it stands, and who to call with the question already written.</p>
     <span class="cta"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg></span>Open Insights<span class="arr">&rsaquo;&rsaquo;&rsaquo;</span></span>
   </a>
@@ -238,7 +238,40 @@ html[data-daypart="night"] .topbar{background:linear-gradient(135deg,rgba(12,44,
 <script>
 (function(){
   var h = new Date().getHours();
-  document.getElementById('greet').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  (function () {
+    // Brick 78: the front door greets a person, on her day, at her hour
+    var q = location.search || '', hs = location.hash || '';
+    var dp = /[?&]daypart=([a-z]+)/.exec(q);
+    var part = dp ? dp[1] : (h >= 20 || h < 5) ? 'night' : h >= 17 ? 'evening' : h >= 12 ? 'afternoon' : h >= 8 ? 'morning' : 'dawn';
+    var KEY = 'sprintos_name_v1', name = '';
+    function clean(s) { s = String(s || '').replace(/[^A-Za-z' ]/g, '').trim().split(' ')[0]; return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; }
+    try {
+      var hn = /name=([^&]+)/.exec(hs);
+      if (hn) { localStorage.setItem(KEY, clean(decodeURIComponent(hn[1].replace(/\+/g, ' ')))); history.replaceState(null, '', location.pathname + q); }
+      name = clean(localStorage.getItem(KEY));
+    } catch (e) {}
+    var word = part === 'afternoon' ? 'Good afternoon' : (part === 'evening' || part === 'night') ? 'Good evening' : 'Good morning';
+    document.getElementById('greet').textContent = word + (name ? ', ' + name : '');
+    var d = new Date();
+    document.getElementById('today').textContent =
+      ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()] + ' ' + d.getDate() + ' ' +
+      ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][d.getMonth()];
+    var copy = { dawn: ['This morning', 'What the system saw while you slept'], morning: ['This morning', 'What the system saw while you slept'],
+                 afternoon: ['This afternoon', 'Where the day stands right now'], evening: ['This evening', 'How the day closed'],
+                 night: ['Tonight', 'What the system saw today'] }[part] || ['This morning', 'What the system saw while you slept'];
+    var ew = document.getElementById('heroWhen'), et = document.getElementById('heroTitle');
+    if (ew) ew.textContent = copy[0];
+    if (et) et.textContent = copy[1];
+    // tap the greeting to set or change the name; it stays on this phone
+    var hello = document.getElementById('hello');
+    if (hello) hello.addEventListener('click', function () {
+      var v = window.prompt('What should the app call you?', name || '');
+      if (v === null) return;
+      v = clean(v);
+      try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {}
+      name = v; document.getElementById('greet').textContent = word + (name ? ', ' + name : '');
+    });
+  })();
 })();
 </script>
 <script src="shared/sprint-notify.js?v=d32ea2ac"></script>
@@ -267,6 +300,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   }).catch(function(){});
 })();
 </script>
-<script src="shared/sprint-chrome.js?v=b402b268"></script>
+<script src="shared/sprint-chrome.js?v=955d59ff"></script>
 </body>
 </html>
