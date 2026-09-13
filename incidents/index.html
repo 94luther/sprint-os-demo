@@ -633,9 +633,12 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
                     vehicle:{ reg:'B 100 EXA', state:'standing', standing_minutes:23 }, pin:{ lat:-23.1042, lng:26.8321, recorded_at: iso(-2) },
                     nearest:{ reg:'B 200 EXA', km:11.4, state:'moving', driver:'EXAMPLE driver Kabo' }, why:'42 minutes left and the vehicle is standing on the A1 south of Mahalapye' },
           ladder:{ ok:true, acknowledged:false, minutes_open:6, index:0, at_bottom:false,
-                   current:{ name:'EXAMPLE Ops Desk', phone:'+267 71 000 001', after_minutes:0 },
+                   current:{ name:'EXAMPLE Ops Desk', phone:null, after_minutes:0 },
                    next:{ name:'EXAMPLE Ops Manager', after_minutes:10 }, minutes_until_next:4, passed:[],
-                   say:'6 minutes unacknowledged. It is with EXAMPLE Ops Desk on +267 71 000 001. If nobody acknowledges it, it goes to EXAMPLE Ops Manager in 4 minutes.' } },
+                   /* No number here on purpose. This copy is published, and a published page shows
+                      nothing shaped like a telephone number. On the office system the number comes
+                      off the staff record and a Call button appears in its place. */
+                   say:'6 minutes unacknowledged. It is with EXAMPLE Ops Desk, whose number appears here on the office system. If nobody acknowledges it, it goes to EXAMPLE Ops Manager in 4 minutes.' } },
         { id:'inc_ex_l3_2', level:3, kind:'sla_breach', status:'open', opened_at: iso(-31), acknowledged_at: iso(-28), acknowledged_by:'stf_manager',
           title:'RED ALERT: court bundle for EXAMPLE Naledi Legal Attorneys had 55 minutes and the vehicle was standing',
           payload:{ minutes_left:55, due_at: iso(24), priority:'legal', waybill:'EXAMPLE/WB/3099', destination:'High Court, Gaborone',
