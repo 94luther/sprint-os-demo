@@ -338,6 +338,10 @@ html[data-glare="on"] .glare-toggle svg{stroke:#FFA733}
     <span class="cta"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg></span>Open Insights<span class="arr">&rsaquo;&rsaquo;&rsaquo;</span></span>
   </a>
 
+  <!-- Brick 93: the rail, the filters and the feed land here. The box carries its
+       own height so nothing below it moves when they do. -->
+  <div id="front" aria-live="polite"></div>
+
   <div class="sec" data-sec="departments"><h2>Departments</h2><span>tap to open</span></div>
   <div class="tiles" data-tiles="departments">
     <a class="tile g" data-tile="cockpit" href="cockpit/index.html"><span class="pill live">Live</span>
@@ -481,5 +485,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 })();
 </script>
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
+<script src="shared/sprint-front.js?v=ffe3e9f7"></script>
 </body>
 </html>
