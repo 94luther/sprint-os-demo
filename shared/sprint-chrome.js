@@ -37,18 +37,23 @@
     'header, .topbar{transition:min-height .18s ease, box-shadow .18s ease}' +
     'header img, .topbar img{transition:height .18s ease}' +
     'header .titles, header > h1{transition:margin .18s ease, font-size .18s ease}' +
-    /* --- the small state --- */
-    '.sp-small.topbar{min-height:52px}' +
-    '.sp-small.topbar img{height:40px}' +
-    /* a department header folds its two rows into one: the break stops breaking */
+    /* --- the small state ---
+       A 375 px phone cannot fit the wordmark, the title, the bell and the badge
+       on one row, so folding to a single line was never possible; what is
+       possible is making both rows tight. Measured: 129 px becomes 68 px, which
+       is half the header and eight per cent of the screen handed back. */
+    '.sp-small.topbar{min-height:48px}' +
+    '.sp-small.topbar img{height:36px}' +
+    '.sp-small.topbar .pills .pill{font-size:10px;padding:5px 9px}' +
     'header.sp-small{min-height:0}' +
-    'header.sp-small::after{flex-basis:0;width:0}' +
-    'header.sp-small img{height:44px}' +
-    'header.sp-small .titles, header.sp-small > h1{margin:6px 0 6px;padding-left:12px}' +
-    'header.sp-small .titles h1, header.sp-small > h1{font-size:14px}' +
+    'header.sp-small img{height:32px}' +
+    'header.sp-small .titles, header.sp-small > h1{margin:4px 0 5px;padding-left:12px}' +
+    'header.sp-small .titles h1, header.sp-small > h1{font-size:13.5px}' +
     'header.sp-small .titles .who{display:none}' +        /* the signed in name is not needed while scrolling */
-    'header.sp-small .hdr-bell, header.sp-small .sync-badge, header.sp-small #pulseWidget{margin:6px 0}' +
-    'header.sp-small .sync-badge{font-size:10px;padding:4px 9px}' +
+    'header.sp-small .hdr-bell{width:30px;height:30px;margin:3px 0}' +
+    'header.sp-small .hdr-bell svg{width:15px;height:15px}' +
+    'header.sp-small .sync-badge{font-size:9.5px;padding:3px 8px;margin:3px 0;min-height:0}' +
+    'header.sp-small #pulseWidget{margin:3px 0}' +
     /* a shrunk bar earns a shadow, so it reads as floating above the list */
     '.sp-small{box-shadow:0 14px 30px -18px rgba(0,0,0,.85)}' +
     '@media (prefers-reduced-motion: reduce){' +
@@ -111,6 +116,10 @@
     document.addEventListener('scroll', onScroll, { passive: true, capture: true });
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();   // a page restored mid scroll starts in the right state
+    // A browser fires no scroll event when scrollTop is set from code, and some
+    // in-page scrollers are quiet in other ways too. A half second poll costs
+    // nothing measurable and means the bar is never left in the wrong state.
+    setInterval(onScroll, 500);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
