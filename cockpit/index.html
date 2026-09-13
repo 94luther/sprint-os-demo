@@ -136,7 +136,7 @@ header h1{font-size:15px; flex:1;}
 .hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
 .hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style>
-<link rel="stylesheet" href="../shared/sprint-theme.css">
+<link rel="stylesheet" href="../shared/sprint-theme.css?v=52f634b7">
 </head>
 <body>
 <header>
@@ -150,7 +150,7 @@ header h1{font-size:15px; flex:1;}
 <div class="grid" id="grid"><div style="grid-column:1/-1; padding:30px; color:var(--dim); font-size:13px;">Loading cockpit...</div></div>
 <div style="padding:0 10px 10px;" id="pulsePanelWrap"></div>
 
-<script src="../shared/recognition-widget.js"></script>
+<script src="../shared/recognition-widget.js?v=34671ad6"></script>
 <script>
 const STAGES = ['new','contacted','replied','meeting','quoted','won','lost'];
 const STAGE_LABEL = {new:'New', contacted:'Contacted', replied:'Replied', meeting:'Meeting', quoted:'Quoted', won:'Won', lost:'Lost'};
@@ -595,9 +595,9 @@ loadLive();
 loadPulse();
 setInterval(loadLive, 60000);
 setInterval(loadPulse, 60000);
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=97002683').catch(()=>{}); }
 </script>
-<script src="../shared/sprint-notify.js"></script>
-<script src="../shared/sprint-chrome.js"></script>
+<script src="../shared/sprint-notify.js?v=d32ea2ac"></script>
+<script src="../shared/sprint-chrome.js?v=89b0488f"></script>
 </body>
 </html>

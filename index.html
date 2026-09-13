@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0E2F22">
 <link rel="icon" href="shared/logo-mark.png">
 <link rel="apple-touch-icon" href="shared/logo-mark.png">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest?v=e9ec51d5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Sprint">
@@ -226,14 +226,14 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:120px;point
   document.getElementById('greet').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
 })();
 </script>
-<script src="shared/sprint-notify.js"></script>
-<script src="shared/sprint-report.js"></script>
+<script src="shared/sprint-notify.js?v=d32ea2ac"></script>
+<script src="shared/sprint-report.js?v=0b602730"></script>
 <script>
 // Brick 70: the app can be added to the home screen and opened with no signal.
 // Registered from here so the worker owns the whole bundle. It never subscribes
 // to a push service: that is the owner's decision, docs/PUSH-DECISION.md.
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch(function () { /* a browser that will not is fine */ });
+  navigator.serviceWorker.register('sw.js?v=97002683').catch(function () { /* a browser that will not is fine */ });
 }
 </script>
 <script>
@@ -252,6 +252,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   }).catch(function(){});
 })();
 </script>
-<script src="shared/sprint-chrome.js"></script>
+<script src="shared/sprint-chrome.js?v=89b0488f"></script>
 </body>
 </html>
