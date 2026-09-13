@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ambient-ok="yes">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
+<script src="../shared/sprint-motion.js?v=9677b8ce" defer></script>
 <title>Ops Board - Sprint Couriers</title>
 <meta name="theme-color" content="#131311">
 <link rel="manifest" href="manifest.json">
@@ -325,6 +326,46 @@ function todayOnTimeRate(){
   return {rate: Math.round((onTime.length/delivered.length)*100), total: delivered.length, onTime: onTime.length};
 }
 
+/* Brick 98: the board at rest.
+
+   A screen on the office wall with nobody in front of it should stop showing
+   small print and show the three things somebody walking past needs to know. It
+   only ever MIRRORS what the board already computed, so it cannot invent a
+   figure: if the data has not loaded, it says so in words rather than printing a
+   zero that somebody believes from across the room.
+
+   The exceptions row is marked loud, which means it keeps its colour and its
+   size when everything else fades. A wall screen that hides a problem to look
+   calm is the siren in an empty room that brick 90 exists to prevent. */
+function ambientRows(){
+  var ships = (typeof DATA !== 'undefined' && DATA && DATA.shipments) ? DATA.shipments : null;
+  var vehs  = (typeof DATA !== 'undefined' && DATA && DATA.vehicles)  ? DATA.vehicles  : null;
+  var now = Date.now();
+  var late = ships ? ships.filter(function(s){
+    return s.promised_at && s.status !== 'delivered' && s.status !== 'cancelled' &&
+           new Date(s.promised_at).getTime() < now;
+  }).length : null;
+  var exc = ships ? ships.filter(function(s){ return s.status === 'exception'; }).length : null;
+  /* Measured 13 Sep 2026: the vehicle rows on THIS board carry id, reg, type and
+     cold_chain, and no state at all. The first version of this filter returned 0
+     and the wall screen printed "Vehicles out: 0" as a fact, with three vehicles
+     on the list. A zero nobody can prove is worse than a blank wall, because
+     somebody reads it from across the room and believes it. So: count only if
+     the field is actually there, and otherwise say plainly that this board does
+     not carry it. The fleet page does; the ops board does not. */
+  var withState = vehs ? vehs.filter(function(v){ return v.state !== undefined && v.state !== null && v.state !== ''; }) : [];
+  var onRoad = (vehs && withState.length) ? withState.filter(function(v){ return v.state !== 'standing' && v.state !== 'off'; }).length : null;
+  return [
+    { label: 'Vehicles out', value: onRoad,
+      absent: vehs ? (vehs.length + ' vehicles, no movement state on this board') : 'no vehicle list loaded' },
+    { label: 'Exceptions open', value: exc, absent: 'not counted', loud: (exc || 0) > 0 },
+    { label: 'Past the promised time', value: late, absent: 'not counted', loud: (late || 0) > 0 }
+  ];
+}
+window.addEventListener('load', function(){
+  if (window.SprintMotion) window.SprintMotion.ambient(ambientRows, 5);
+});
+
 function render(){
   updateSyncBadge();
   const shipments = DATA.shipments||[];
@@ -346,6 +387,9 @@ function render(){
   html.push('</div>');
 
   html.push('<section><div class="section-head"><h2>Jobs board</h2></div>');
+  // Brick 72: search as you type, over the rows already drawn below. A status row stays open
+  // while its jobs are filtered so the match is visible.
+  html.push('<div id="spSearchMount"></div>');
   const counts={}; STATUSES.forEach(s=>counts[s]=0);
   shipments.forEach(s=>{ counts[s.status]=(counts[s.status]||0)+1; });
   const maxC = Math.max(1, ...STATUSES.map(s=>counts[s]));
@@ -364,13 +408,21 @@ function render(){
   html.push('</section>');
 
   document.getElementById('app').innerHTML = html.join('');
+  if(window.SprintPatterns){
+    SprintPatterns.searchField(document.getElementById('spSearchMount'), {
+      scope:'#app', rows:'.job-item',
+      onQuery:(q)=>{ if(q) document.querySelectorAll('.jobs-list').forEach(l=>{ l.classList.add('open'); l.style.display='block'; }); }
+    });
+  }
 }
 
 function jobRow(s){
   const clock = jobClock(s);
   const who = DATA.example ? s.customer : customerName(s.customer_id);
+  // Brick 72: the four step line under every job, each step giving its time when touched.
+  const prog = window.SprintPatterns ? SprintPatterns.progressLine(s) : '';
   return '<div class="job-item" onclick="openJob(\''+s.id+'\')">'+
-    '<div><div class="job-who">'+esc(who)+'</div><div class="job-route">'+esc(s.origin)+' &rarr; '+esc(s.destination)+' &middot; '+esc(s.waybill||'')+'</div></div>'+
+    '<div style="min-width:0;flex:1;"><div class="job-who">'+esc(who)+'</div><div class="job-route">'+esc(s.origin)+' &rarr; '+esc(s.destination)+' &middot; '+esc(s.waybill||'')+'</div>'+prog+'</div>'+
     '<div class="job-clock '+clock.cls+'">'+clock.text+'</div>'+
   '</div>';
 }
@@ -399,6 +451,14 @@ function openJob(id){
   html.push('<h2>'+esc(who)+'</h2>');
   html.push('<div class="sub">'+esc(s.waybill||'')+' &middot; '+esc(s.origin)+' to '+esc(s.destination)+' &middot; '+esc((s.service||'').replace('_',' '))+'</div>');
   html.push('<span class="verdict '+(clock.cls==='late'?'red':'green')+'">'+STATUS_LABEL[s.status]+(clock.text?' &middot; '+clock.text:'')+'</span>');
+
+  // Brick 72: the delivery partner row. Call is a plain tel link; the message button opens a
+  // warm draft to copy into WhatsApp. Nothing sends itself and no number leaves this system.
+  if(window.SprintPatterns){
+    html.push(SprintPatterns.progressLine(s));
+    const key = SprintPatterns.registerDraft('job-'+s.id, drv, s, who);
+    html.push(SprintPatterns.driverRow(drv, s, who).replace('class="sp-driver"', 'class="sp-driver" data-sp-key="'+key+'"'));
+  }
 
   if(s.status==='exception'){
     html.push('<div class="field-label">Exception</div>');
@@ -622,7 +682,11 @@ function renderMap(payload, isLive){
     if (v.position && typeof v.position.lat === 'number') { at = mapXY(v.position.lat, v.position.lng); }
     else { at = { x: depot.x + 22 + parked * 20, y: depot.y + 18 }; parked++; }
     if (state === 'moving') moving++;
-    var g = mapEl('g', { class: 'mapdot' });
+    // Same as the fleet map: the dot stays small so the map reads, a clear r 40 circle behind
+    // it is the real 44 px target, and role=button lets the touch target guard measure it.
+    var g = mapEl('g', { class: 'mapdot', role: 'button', tabindex: '0',
+                         'aria-label': (v.reg || 'vehicle').replace('EXAMPLE-', 'EX ') + ', ' + (state || '') });
+    g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 40, fill: 'rgba(0,0,0,0.001)' }));
     if (state === 'moving') g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 14, fill: 'rgba(58,170,53,.25)' }));
     g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 8, fill: col, stroke: 'rgba(8,28,20,.8)', 'stroke-width': 2 }));
     g.appendChild(mapEl('text', { x: at.x, y: at.y + 20, 'text-anchor': 'middle' }, (v.reg || '').replace('EXAMPLE-', 'EX ')));
@@ -664,6 +728,7 @@ function showMapDetail(v){
 
 </script>
 <script src="../shared/sprint-notify.js?v=c8c7be6b"></script>
+<script src="../shared/sprint-patterns.js"></script>
 <script src="../shared/sprint-chrome.js?v=955d59ff"></script>
 <script src="../shared/sprint-horizon.js?v=b027116a"></script>
 </body>

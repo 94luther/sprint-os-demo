@@ -128,8 +128,22 @@
       draw('<div class="fnd-note">Could not reach the office system just now, so nothing can be looked up. What is on this screen already is still here.</div>');
     }
   }
-  function open(){ build(); wrap.classList.add('show'); setTimeout(function(){ input.focus(); }, 60); }
-  function close(){ if (!wrap) return; wrap.classList.remove('show'); input.value=''; draw(''); }
+  /* Brick 98: layers, not pages. On the way out the veil fades and the sheet
+     scales down a breath, revealing the board underneath exactly where it was
+     left. Nothing on the board moves, which is the whole point: the reader keeps
+     their place. The field is cleared only AFTER the sheet has gone, so the last
+     frame a person sees is their own query, not an empty box. */
+  function open(){
+    build(); wrap.classList.add('show');
+    if (window.SprintMotion) window.SprintMotion.veilOpen(wrap, wrap.firstElementChild);
+    setTimeout(function(){ input.focus(); }, 60);
+  }
+  function close(){
+    if (!wrap) return;
+    var after = function(){ wrap.classList.remove('show'); input.value=''; draw(''); };
+    if (window.SprintMotion) { window.SprintMotion.veilClose(wrap, wrap.firstElementChild, after); return; }
+    after();
+  }
 
   root.SprintFind = { open: open, close: close, run: run };
   document.addEventListener('keydown', function(e){

@@ -3,8 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+/* phone copy: seed the offline cache with an example trip once, so the page has
+   stops to show without the office hub. Never overwrites a real cache. */
+(function(){ try { if (!localStorage.getItem('sprintos_driver_stops_cache_v1')) {
+  localStorage.setItem('sprintos_driver_stops_cache_v1', "{\"trip\":{\"id\":\"trp_example_2\",\"date\":\"2026-09-12\",\"driver_id\":\"drv_example_2\",\"vehicle_id\":\"veh_example_3\",\"status\":\"departed\",\"departed_at\":\"2026-09-11T20:24:54.798Z\",\"closed_at\":null,\"odometer_start\":5000,\"odometer_end\":null,\"route_label\":\"EXAMPLE Gaborone to Francistown run\",\"notes\":\"EXAMPLE: currently on the road, carrying 3 EXAMPLE shipments.\",\"created_at\":\"2026-09-12T20:24:54.797Z\",\"updated_at\":\"2026-09-12T20:24:54.797Z\",\"deleted_at\":null,\"version\":1},\"stops\":[{\"id\":\"shp_mtyu3e9dd3cd98f0\",\"quote_id\":null,\"customer_id\":\"cus_mtyu3e7b0bc4a664\",\"waybill\":\"EX-0001\",\"origin\":\"Gaborone\",\"destination\":\"Gaborone\",\"service\":\"sprint\",\"pieces\":1,\"kg\":2,\"status\":\"booked\",\"driver_id\":\"drv_example_1\",\"vehicle_id\":\"veh_example_1\",\"promised_at\":\"2026-09-12T20:24:54.769Z\",\"collected_at\":null,\"delivered_at\":null,\"pod_name\":null,\"pod_signature_path\":null,\"pod_photo_path\":null,\"exception_code\":null,\"exception_note\":null,\"temp_min\":null,\"temp_max\":null,\"created_at\":\"2026-09-12T20:24:54.765Z\",\"deleted_at\":null,\"version\":1,\"pod_signature_sha256\":null,\"pod_photo_sha256\":null,\"pod_captured_at\":null,\"trip_id\":\"trp_example_2\",\"temp_breach_at\":null,\"declared_value_thebe\":null,\"insurance_option\":\"none\",\"insurance_fee_thebe\":null,\"exception_photo_path\":null,\"exception_photo_sha256\":null,\"exception_closure_note\":null},{\"id\":\"shp_mtyu3e9dbab07704\",\"quote_id\":null,\"customer_id\":\"cus_mtyu3e7b1f0cb721\",\"waybill\":\"EX-0002\",\"origin\":\"Gaborone\",\"destination\":\"Gaborone\",\"service\":\"sprint\",\"pieces\":1,\"kg\":2,\"status\":\"booked\",\"driver_id\":\"drv_example_2\",\"vehicle_id\":\"veh_example_2\",\"promised_at\":\"2026-09-12T20:24:54.769Z\",\"collected_at\":null,\"delivered_at\":null,\"pod_name\":null,\"pod_signature_path\":null,\"pod_photo_path\":null,\"exception_code\":null,\"exception_note\":null,\"temp_min\":null,\"temp_max\":null,\"created_at\":\"2026-09-12T20:24:54.765Z\",\"deleted_at\":null,\"version\":1,\"pod_signature_sha256\":null,\"pod_photo_sha256\":null,\"pod_captured_at\":null,\"trip_id\":\"trp_example_2\",\"temp_breach_at\":null,\"declared_value_thebe\":null,\"insurance_option\":\"none\",\"insurance_fee_thebe\":null,\"exception_photo_path\":null,\"exception_photo_sha256\":null,\"exception_closure_note\":null},{\"id\":\"shp_mtyu3e9d9d879b8b\",\"quote_id\":null,\"customer_id\":\"cus_mtyu3e7cc89a616c\",\"waybill\":\"EX-0003\",\"origin\":\"Gaborone\",\"destination\":\"Gaborone\",\"service\":\"sprint\",\"pieces\":1,\"kg\":2,\"status\":\"collected\",\"driver_id\":\"drv_example_1\",\"vehicle_id\":\"veh_example_3\",\"promised_at\":\"2026-09-12T20:24:54.769Z\",\"collected_at\":\"2026-09-12T20:24:54.769Z\",\"delivered_at\":null,\"pod_name\":null,\"pod_signature_path\":null,\"pod_photo_path\":null,\"exception_code\":null,\"exception_note\":null,\"temp_min\":null,\"temp_max\":null,\"created_at\":\"2026-09-12T20:24:54.765Z\",\"deleted_at\":null,\"version\":1,\"pod_signature_sha256\":null,\"pod_photo_sha256\":null,\"pod_captured_at\":null,\"trip_id\":\"trp_example_2\",\"temp_breach_at\":null,\"declared_value_thebe\":null,\"insurance_option\":\"none\",\"insurance_fee_thebe\":null,\"exception_photo_path\":null,\"exception_photo_sha256\":null,\"exception_closure_note\":null}],\"at\":\"2026-09-12T20:24:59.801Z\"}");
+} } catch (e) {} })();
+</script>
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
+<script src="../shared/sprint-motion.js?v=9677b8ce" defer></script>
 <title>Driver | Sprint Couriers</title>
 <meta name="theme-color" content="#131311">
 <link rel="icon" href="../shared/app-icon-192.png">
@@ -286,7 +294,8 @@ main{max-width:640px; margin:0 auto; padding:12px 14px 20px;}
       <button class="btn primary" type="submit" style="width:100%;">Sign in</button>
       <div class="err" id="loginErr">Could not sign in. Check the staff ID and PIN.</div>
     </form>
-    <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>
+    <div class="login-hint">
+      Signing in works on the office computer. On a phone, tap View example data instead.<br>
       This app talks to the hub over the local network. A phone away from the
       office WiFi needs the hub started with LAN mode on (the SPRINT_BIND
       setting) and the phone joined to that same network.
@@ -401,13 +410,6 @@ main{max-width:640px; margin:0 auto; padding:12px 14px 20px;}
      no matter what actually happened. This is the one file the emergency
      screen below and the exception picker (delivery-exception brief) both
      read, and the exact file hub/server.js validates a report against. -->
-<script>
-/* phone copy: seed the offline cache with an example trip once, so the page has
-   stops to show without the office hub. Never overwrites a real cache. */
-(function(){ try { if (!localStorage.getItem('sprintos_driver_stops_cache_v1')) {
-  localStorage.setItem('sprintos_driver_stops_cache_v1', "{\"trip\":{\"id\":\"trp_example_2\",\"date\":\"2026-09-12\",\"driver_id\":\"drv_example_2\",\"vehicle_id\":\"veh_example_3\",\"status\":\"departed\",\"departed_at\":\"2026-09-11T20:24:54.798Z\",\"closed_at\":null,\"odometer_start\":5000,\"odometer_end\":null,\"route_label\":\"EXAMPLE Gaborone to Francistown run\",\"notes\":\"EXAMPLE: currently on the road, carrying 3 EXAMPLE shipments.\",\"created_at\":\"2026-09-12T20:24:54.797Z\",\"updated_at\":\"2026-09-12T20:24:54.797Z\",\"deleted_at\":null,\"version\":1},\"stops\":[{\"id\":\"shp_mtyu3e9dd3cd98f0\",\"quote_id\":null,\"customer_id\":\"cus_mtyu3e7b0bc4a664\",\"waybill\":\"EX-0001\",\"origin\":\"Gaborone\",\"destination\":\"Gaborone\",\"service\":\"sprint\",\"pieces\":1,\"kg\":2,\"status\":\"booked\",\"driver_id\":\"drv_example_1\",\"vehicle_id\":\"veh_example_1\",\"promised_at\":\"2026-09-12T20:24:54.769Z\",\"collected_at\":null,\"delivered_at\":null,\"pod_name\":null,\"pod_signature_path\":null,\"pod_photo_path\":null,\"exception_code\":null,\"exception_note\":null,\"temp_min\":null,\"temp_max\":null,\"created_at\":\"2026-09-12T20:24:54.765Z\",\"deleted_at\":null,\"version\":1,\"pod_signature_sha256\":null,\"pod_photo_sha256\":null,\"pod_captured_at\":null,\"trip_id\":\"trp_example_2\",\"temp_breach_at\":null,\"declared_value_thebe\":null,\"insurance_option\":\"none\",\"insurance_fee_thebe\":null,\"exception_photo_path\":null,\"exception_photo_sha256\":null,\"exception_closure_note\":null},{\"id\":\"shp_mtyu3e9dbab07704\",\"quote_id\":null,\"customer_id\":\"cus_mtyu3e7b1f0cb721\",\"waybill\":\"EX-0002\",\"origin\":\"Gaborone\",\"destination\":\"Gaborone\",\"service\":\"sprint\",\"pieces\":1,\"kg\":2,\"status\":\"booked\",\"driver_id\":\"drv_example_2\",\"vehicle_id\":\"veh_example_2\",\"promised_at\":\"2026-09-12T20:24:54.769Z\",\"collected_at\":null,\"delivered_at\":null,\"pod_name\":null,\"pod_signature_path\":null,\"pod_photo_path\":null,\"exception_code\":null,\"exception_note\":null,\"temp_min\":null,\"temp_max\":null,\"created_at\":\"2026-09-12T20:24:54.765Z\",\"deleted_at\":null,\"version\":1,\"pod_signature_sha256\":null,\"pod_photo_sha256\":null,\"pod_captured_at\":null,\"trip_id\":\"trp_example_2\",\"temp_breach_at\":null,\"declared_value_thebe\":null,\"insurance_option\":\"none\",\"insurance_fee_thebe\":null,\"exception_photo_path\":null,\"exception_photo_sha256\":null,\"exception_closure_note\":null},{\"id\":\"shp_mtyu3e9d9d879b8b\",\"quote_id\":null,\"customer_id\":\"cus_mtyu3e7cc89a616c\",\"waybill\":\"EX-0003\",\"origin\":\"Gaborone\",\"destination\":\"Gaborone\",\"service\":\"sprint\",\"pieces\":1,\"kg\":2,\"status\":\"collected\",\"driver_id\":\"drv_example_1\",\"vehicle_id\":\"veh_example_3\",\"promised_at\":\"2026-09-12T20:24:54.769Z\",\"collected_at\":\"2026-09-12T20:24:54.769Z\",\"delivered_at\":null,\"pod_name\":null,\"pod_signature_path\":null,\"pod_photo_path\":null,\"exception_code\":null,\"exception_note\":null,\"temp_min\":null,\"temp_max\":null,\"created_at\":\"2026-09-12T20:24:54.765Z\",\"deleted_at\":null,\"version\":1,\"pod_signature_sha256\":null,\"pod_photo_sha256\":null,\"pod_captured_at\":null,\"trip_id\":\"trp_example_2\",\"temp_breach_at\":null,\"declared_value_thebe\":null,\"insurance_option\":\"none\",\"insurance_fee_thebe\":null,\"exception_photo_path\":null,\"exception_photo_sha256\":null,\"exception_closure_note\":null}],\"at\":\"2026-09-12T20:24:59.801Z\"}");
-} } catch (e) {} })();
-</script>
 <script src="../shared/emergency-types.js?v=b0950991"></script>
 <script src="../shared/recognition-widget.js?v=34671ad6"></script>
 <script>
@@ -885,6 +887,16 @@ function renderStops() {
   const allDone = STOPS.every((s) => s.status === 'delivered' || s.status === 'exception');
   list.innerHTML = sorted.map((s, i) => stopCardHtml(s, i + 1)).join('') + (allDone && TRIP.status === 'departed' ? closeGateHtml() : '');
   attachAllSwipes();
+  /* Brick 98: open the freshly drawn list to the morph. The first stop opens
+     itself, because a driver holding a phone at a gate wants the next thing to
+     do already showing, not one tap away. Everything after it stays collapsed
+     so the list reads as a list. */
+  if (window.SprintMotion) {
+    list.removeAttribute('data-sp-wired');
+    SprintMotion.morphList(list, '.swipe-wrap');
+    const first = list.querySelector('.swipe-wrap:not(.done)');
+    if (first) { first.classList.add('is-open'); first.setAttribute('aria-expanded', 'true'); }
+  }
 }
 
 /* the progress line: which of the four steps this parcel has reached */
@@ -1074,7 +1086,7 @@ function stopCardHtml(s, n) {
   let actions = '';
   if (!done) {
     if (NEXT_STATUS[s.status]) {
-      actions += '<button class="btn" onclick="advanceStop(\'' + s.id + '\')">' + esc(NEXT_LABEL[s.status]) + '</button>';
+      actions += '<button class="btn" onclick="advanceStop(\'' + s.id + '\', this)">' + esc(NEXT_LABEL[s.status]) + '</button>';
     }
     if (s.status === 'out_for_delivery') {
       actions += '<button class="btn primary" onclick="deliverStop(\'' + s.id + '\')">Deliver</button>';
@@ -1101,11 +1113,17 @@ function stopCardHtml(s, n) {
     '<div class="stop-body">' +
     '<div class="stop-dest">' + esc(s.destination || s.waybill) + '</div>' +
     '<div class="stop-line">' + esc(s.waybill) + ', ' + esc(s.pieces || 0) + ' piece(s), ' + esc(s.kg || 0) + ' kg, ' + esc(statusWord(s.status)) + '</div>' +
+    /* Brick 98: everything below is the detail half. Collapsed, a driver reads
+       the list; tapped, the stop opens in place and the buttons arrive under the
+       thumb. Nothing navigates, so the list never loses its scroll position and
+       a driver never has to find their place again. */
+    '<div class="sp-detail">' +
     progressHtml(s) +
     (cold ? '<span class="tag cold">Cold chain</span>' : '') +
     (s.status === 'exception' ? '<span class="tag exception">Exception: ' + esc(s.exception_note || s.exception_code || 'noted') + '</span>' : '') +
     (s.queued ? '<span class="tag queued">Queued</span>' : '') +
     '<div class="stop-actions">' + actions + '</div>' +
+    '</div>' +
     '</div></div></div></div>'
   );
 }
@@ -1116,12 +1134,31 @@ function markLocal(id, patch) {
   renderStops();
 }
 
-async function advanceStop(id) {
+/* Brick 98: the button answers before the network does, and can take it back.
+
+   The ORDER matters and is not cosmetic. postStopStatus is called first and the
+   animation wraps the promise it returns, so none of this adds a millisecond to
+   the actual work. The brief asked for zero latency; an animation that runs
+   before the call would have added latency rather than hidden it.
+
+   If the write is only queued the tick stays and says so in words. If it is
+   refused outright the button turns red, says it did not save, and becomes
+   tappable again. A green tick that cannot become a problem is a lie told to a
+   driver standing at somebody's gate, and they will believe it. */
+async function advanceStop(id, btn) {
   const s = findStop(id);
   if (!s) return;
   const next = NEXT_STATUS[s.status];
   if (!next) return;
-  await postStopStatus(s, { status: next });
+  const work = () => postStopStatus(s, { status: next });
+  if (btn && window.SprintMotion) {
+    return SprintMotion.optimistic(btn, work, {
+      success: NEXT_LABEL[s.status] + ' recorded',
+      queued: 'Saved, sending when there is signal',
+      failed: 'Did not save, tap to try again'
+    }).catch(function () {});
+  }
+  await work();
 }
 /* Brick 87: the tape measure, and the gate code request the system writes. */
 async function measureStop(id) {

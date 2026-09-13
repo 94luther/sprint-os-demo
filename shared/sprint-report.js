@@ -109,13 +109,28 @@
     return html.join('');
   }
 
+  /* Brick 98: the sheet grows out of the control that opened it, so the eye
+     never loses the thread between the tap and the thing that appeared. The
+     origin is read from the button's real position at the moment of the tap,
+     because a floating button moves with the scroll and a hard coded corner is
+     wrong the moment it does. Falls back to the old instant open if the motion
+     file is not on the page. */
   function open() {
-    document.getElementById('sr-sheet').classList.add('open');
-    document.getElementById('sr-bg').classList.add('open');
+    var sheet = document.getElementById('sr-sheet'), bg = document.getElementById('sr-bg');
+    sheet.classList.add('open'); bg.classList.add('open');
+    if (window.SprintMotion) {
+      window.SprintMotion.veilOpen(bg, null);
+      window.SprintMotion.originFrom(sheet, document.getElementById('report'));
+    }
   }
   function close() {
-    document.getElementById('sr-sheet').classList.remove('open');
-    document.getElementById('sr-bg').classList.remove('open');
+    var sheet = document.getElementById('sr-sheet'), bg = document.getElementById('sr-bg');
+    if (window.SprintMotion) {
+      window.SprintMotion.veilClose(bg, null, function () { bg.classList.remove('open'); });
+      window.SprintMotion.originClose(sheet, function () { sheet.classList.remove('open'); });
+      return;
+    }
+    sheet.classList.remove('open'); bg.classList.remove('open');
   }
 
   function boot() {
