@@ -37,20 +37,23 @@
     'header, .topbar{transition:min-height .18s ease, box-shadow .18s ease}' +
     'header img, .topbar img{transition:height .18s ease}' +
     'header .titles, header > h1{transition:margin .18s ease, font-size .18s ease}' +
+    /* --- the small state, stated with !important because the theme sets the
+       header image height in three separate bricks and the small state must win
+       outright rather than depend on which of them loaded last --- */
     /* --- the small state ---
        A 375 px phone cannot fit the wordmark, the title, the bell and the badge
        on one row, so folding to a single line was never possible; what is
        possible is making both rows tight. Measured: 129 px becomes 68 px, which
        is half the header and eight per cent of the screen handed back. */
-    '.sp-small.topbar{min-height:48px}' +
-    '.sp-small.topbar img{height:36px}' +
+    '.sp-small.topbar{min-height:48px !important}' +
+    '.sp-small.topbar img{height:36px !important}' +
     '.sp-small.topbar .pills .pill{font-size:10px;padding:5px 9px}' +
-    'header.sp-small{min-height:0}' +
-    'header.sp-small img{height:32px}' +
+    'header.sp-small{min-height:0 !important}' +
+    'header.sp-small img{height:32px !important}' +
     'header.sp-small .titles, header.sp-small > h1{margin:4px 0 5px;padding-left:12px}' +
-    'header.sp-small .titles h1, header.sp-small > h1{font-size:13.5px}' +
+    'header.sp-small .titles h1, header.sp-small > h1{font-size:13.5px !important}' +
     'header.sp-small .titles .who{display:none}' +        /* the signed in name is not needed while scrolling */
-    'header.sp-small .hdr-bell{width:30px;height:30px;margin:3px 0}' +
+    'header.sp-small .hdr-bell{width:30px !important;height:30px !important;margin:3px 0}' +
     'header.sp-small .hdr-bell svg{width:15px;height:15px}' +
     'header.sp-small .sync-badge{font-size:9.5px;padding:3px 8px;margin:3px 0;min-height:0}' +
     'header.sp-small #pulseWidget{margin:3px 0}' +
