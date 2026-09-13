@@ -159,7 +159,164 @@ html[data-daypart="night"] body{background-image:radial-gradient(520px 440px at 
 html[data-daypart="evening"] body::after{background:linear-gradient(to bottom,rgba(7,44,31,0),rgba(7,44,31,.6))}
 html[data-daypart="night"] body::after{background:linear-gradient(to bottom,rgba(4,22,16,0),rgba(4,22,16,.7))}
 html[data-daypart="night"] .topbar{background:linear-gradient(135deg,rgba(12,44,30,.68),rgba(20,80,40,.50))}
+
+/* ---------- Brick 81: role driven tiles (pillar 2, presentation only) ----------
+   The real gate is the hub, hub/services/auth.js, requireRoleGroups: see
+   apps/shared/sprint-roles.js's opening comment for the full reasoning.
+   All this does is decide, before the very first frame this page paints,
+   which of the tiles below are drawn and in what order, off data-role on
+   <html>. Because that attribute is set at script parse time in <head>,
+   the browser never has anything to reflow: the tiles below are simply
+   correct from the first frame, or not drawn at all, which is why this
+   never has to touch grid-template-columns, min-height, or anything else
+   that would make the grid itself resize under a finger already reading
+   it. Every rule here only sets display or order.
+
+   Driver: the hub already refuses a driver session almost everything
+   else (hub/tests/driver-role.test.js proves 403 on customers, invoices
+   and cockpit), so showing those tiles would only ever hand a driver a
+   dead end standing in the sun. The three tiles a driver's own login can
+   actually use stay; the rest, including the Preview island (which needs
+   the same accounts and customers routes a driver cannot reach), do not
+   mount at all.
+
+   A commercial or sales role: nothing on this phone is actually closed to
+   this login (ops, accounts, manager, staff and admin all carry '*' in
+   hub/services/auth.js's ROLE_GROUPS, identical to admin), so nothing is
+   hidden, only reordered. Sprint has no separate seeded "sales" role yet
+   (hub/db/seed.js seeds admin, ops, accounts, manager and driver only);
+   until that changes, "staff", the one login the hub already treats as a
+   generic desk with no ops, accounts or manager specialisation of its
+   own, carries this view. That gap, a real one, is written into
+   docs/proof/roles_and_glare.txt rather than solved by inventing a role
+   name the hub has never issued.
+
+   manager and admin, and any role this map does not otherwise name
+   (ops, accounts, and "unknown" for a phone with no role cached yet):
+   the safe default named in sprint-roles.js, the full department list,
+   unchanged, in the order it already shipped in. */
+.tiles .tile{order:0}
+
+html[data-role="driver"] .tiles .tile{display:none}
+html[data-role="driver"] .tiles .tile[data-tile="ops"],
+html[data-role="driver"] .tiles .tile[data-tile="driver"],
+html[data-role="driver"] .tiles .tile[data-tile="fleet"]{display:flex}
+html[data-role="driver"] [data-tiles="preview"],
+html[data-role="driver"] [data-sec="preview"]{display:none}
+
+html[data-role="staff"] .tiles .tile[data-tile="quote"]{order:-3}
+html[data-role="staff"] .tiles .tile[data-tile="sales"]{order:-2}
+html[data-role="staff"] .tiles .tile[data-tile="tenders"]{order:-1}
+
+/* ---------- Brick 82: glare mode, on the front door itself ----------
+   Pillar 4a. The department pages carry this same contract for free from
+   apps/shared/sprint-theme.css, which every one of them already loads;
+   the home page keeps its own styles instead of that file (linking it
+   here would hand this page's background and cards straight to the
+   department look, which is not what Luther approved for the front
+   door), so the same solid, no blur, heavier rules are repeated here
+   under the same html[data-glare="on"] attribute and the same
+   prefers-contrast rule. See docs/proof/roles_and_glare.txt for what is
+   proven and what is not: this page and the shared stylesheet both honour
+   the flag the instant it is present, but only this page can set it
+   today, because sprint-chrome.js and the department pages themselves
+   were both out of scope for this brick. */
+html[data-glare="on"] body{background:#0A2417;background-attachment:scroll}
+html[data-glare="on"] body::after{display:none}
+html[data-glare="on"] .topbar,
+html[data-glare="on"] .hero,
+html[data-glare="on"] .tile,
+html[data-glare="on"] .bar .in,
+html[data-glare="on"] .avatar,
+html[data-glare="on"] .bell,
+html[data-glare="on"] .glare-toggle{
+  background:#123723;backdrop-filter:none;-webkit-backdrop-filter:none;border-color:rgba(255,255,255,.6);
+}
+html[data-glare="on"] .topbar::before,
+html[data-glare="on"] .hero::before,
+html[data-glare="on"] .hero::after{display:none}
+html[data-glare="on"] .hello .t b,
+html[data-glare="on"] .hero h1,
+html[data-glare="on"] .tile .n{color:#FFFFFF;font-weight:900}
+html[data-glare="on"] .hello .t small,
+html[data-glare="on"] .tile .l,
+html[data-glare="on"] .hero p,
+html[data-glare="on"] .note,
+html[data-glare="on"] .pills.under .pill.when{color:#EAF3EE;font-weight:700}
+html[data-glare="on"] .pill.when{background:#123723;border:1px solid rgba(255,255,255,.6)}
+html[data-glare="on"] .pill.live{background:#2FD124;color:#04140C;font-weight:800}
+html[data-glare="on"] .pill.hot{background:#FFA733;color:#0A2417;font-weight:800}
+html[data-glare="on"] .hero .cta{background:#FFFFFF;color:#0A2417;font-weight:900}
+html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
+
+@media (prefers-contrast: more){
+  html:not([data-glare="off"]) body{background:#0A2417;background-attachment:scroll}
+  html:not([data-glare="off"]) body::after{display:none}
+  html:not([data-glare="off"]) .topbar,
+  html:not([data-glare="off"]) .hero,
+  html:not([data-glare="off"]) .tile,
+  html:not([data-glare="off"]) .bar .in,
+  html:not([data-glare="off"]) .avatar,
+  html:not([data-glare="off"]) .bell,
+  html:not([data-glare="off"]) .glare-toggle{
+    background:#123723;backdrop-filter:none;-webkit-backdrop-filter:none;border-color:rgba(255,255,255,.6);
+  }
+  html:not([data-glare="off"]) .hello .t b,
+  html:not([data-glare="off"]) .hero h1,
+  html:not([data-glare="off"]) .tile .n{color:#FFFFFF;font-weight:900}
+  html:not([data-glare="off"]) .hello .t small,
+  html:not([data-glare="off"]) .tile .l,
+  html:not([data-glare="off"]) .hero p,
+  html:not([data-glare="off"]) .note{color:#EAF3EE;font-weight:700}
+}
+
+/* the one tap control, a plain icon button, never smaller than the 44 px
+   floor hub/tests/touch-targets.test.js holds every other page to */
+.glare-toggle{
+  width:44px;height:44px;border-radius:50%;padding:0;color:inherit;flex:none;
+  background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);
+  backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+  box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
+}
+.glare-toggle svg{width:20px;height:20px}
+html[data-glare="on"] .glare-toggle svg{stroke:#FFA733}
 </style>
+<!-- Brick 81: loaded here, blocking, before <body> exists, so data-role is
+     already correct on <html> before the tiles below are ever parsed. See
+     apps/shared/sprint-roles.js for what this does and, just as
+     importantly, what it deliberately does not do. -->
+<script src="shared/sprint-roles.js?v=daf3ad52"></script>
+<script>
+// Brick 82: the glare mode flag itself, read and applied the same way and
+// for the same reason as the role above, so a phone that chose high
+// contrast last time never shows one frame of the smoky glass look before
+// switching. The CSS this drives lives in this page's own <style> above
+// (data-glare="on") and, for every department page, in
+// apps/shared/sprint-theme.css.
+(function () {
+  'use strict';
+  var KEY = 'sprintos_glare_v1';
+  function read() { try { return window.localStorage.getItem(KEY); } catch (e) { return null; } }
+  function write(v) { try { window.localStorage.setItem(KEY, v); } catch (e) {} }
+  function paramGlare() {
+    var m = /[?&]glare=(on|off)/.exec(location.search || '');
+    return m ? m[1] : null;
+  }
+  var initial = paramGlare() || read();
+  if (initial === 'on' || initial === 'off') {
+    document.documentElement.setAttribute('data-glare', initial);
+  }
+  window.SprintGlare = {
+    get: function () { return document.documentElement.getAttribute('data-glare'); },
+    set: function (v) { document.documentElement.setAttribute('data-glare', v); write(v); },
+    toggle: function () {
+      var next = this.get() === 'on' ? 'off' : 'on';
+      this.set(next);
+      return next;
+    }
+  };
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -171,6 +328,7 @@ html[data-daypart="night"] .topbar{background:linear-gradient(135deg,rgba(12,44,
     <div class="t" id="hello" role="button" title="Tap to tell the app your name"><small id="greet">Good morning</small><b id="today">Sprint Couriers</b></div>
     <div class="pills under"><span class="pill when" id="topWhen">example</span><span class="pill mode" id="topMode">EXAMPLE</span></div>
     <div class="bell" id="bell" role="button" title="What needs you"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><i></i></div>
+    <button type="button" class="glare-toggle" id="glareToggle" aria-pressed="false" title="Switch to high contrast for bright sun"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v3M12 18.5v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2.5 12h3M18.5 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
   </div>
 
   <a class="hero" href="insights/index.html">
@@ -180,40 +338,40 @@ html[data-daypart="night"] .topbar{background:linear-gradient(135deg,rgba(12,44,
     <span class="cta"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg></span>Open Insights<span class="arr">&rsaquo;&rsaquo;&rsaquo;</span></span>
   </a>
 
-  <div class="sec"><h2>Departments</h2><span>tap to open</span></div>
-  <div class="tiles">
-    <a class="tile g" href="cockpit/index.html"><span class="pill live">Live</span>
+  <div class="sec" data-sec="departments"><h2>Departments</h2><span>tap to open</span></div>
+  <div class="tiles" data-tiles="departments">
+    <a class="tile g" data-tile="cockpit" href="cockpit/index.html"><span class="pill live">Live</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a8 8 0 1 1 16 0"/><path d="M12 14l4-4"/><path d="M2 20h20"/></svg></div>
       <div class="n">Manager Cockpit</div><div class="l">Pipeline, cash, jobs and tenders on one screen</div></a>
-    <a class="tile o" href="incidents/index.html"><span class="pill live">Live</span>
+    <a class="tile o" data-tile="incidents" href="incidents/index.html"><span class="pill live">Live</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17.5v.5"/></svg></div>
       <div class="n">Incident Desk</div><div class="l">Who is affected, what to tell them, the MD summary</div></a>
-    <a class="tile g" href="fleet/index.html"><span class="pill live">Live</span>
+    <a class="tile g" data-tile="fleet" href="fleet/index.html"><span class="pill live">Live</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>
       <div class="n">Fleet and Fuel</div><div class="l">Where every vehicle is right now, kilometres per litre, the fuel question</div></a>
-    <a class="tile o" href="ops/index.html"><span class="pill live">Live</span>
+    <a class="tile o" data-tile="ops" href="ops/index.html"><span class="pill live">Live</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></div>
       <div class="n">Ops Board</div><div class="l">Jobs, dispatch, exceptions, proof of delivery</div></a>
-    <a class="tile g" href="sales/index.html"><span class="pill live">Live</span>
+    <a class="tile g" data-tile="sales" href="sales/index.html"><span class="pill live">Live</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
       <div class="n">Sales Desk</div><div class="l">Pipeline, follow ups, quote a lead</div></a>
-    <a class="tile o" href="tenders/index.html"><span class="pill live">Live</span>
+    <a class="tile o" data-tile="tenders" href="tenders/index.html"><span class="pill live">Live</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h6M9 16h6"/></svg></div>
       <div class="n">Tender Desk</div><div class="l">Deadlines, bid or no bid, the document wall</div></a>
-    <a class="tile g" href="driver/index.html"><span class="pill live">Live</span>
+    <a class="tile g" data-tile="driver" href="driver/index.html"><span class="pill live">Live</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>
       <div class="n">Driver</div><div class="l">My stops today, arrive, deliver, report</div></a>
-    <a class="tile o" href="quote-desk.html"><span class="pill hot">Rates</span>
+    <a class="tile o" data-tile="quote" href="quote-desk.html"><span class="pill hot">Rates</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h4M8 16h6"/></svg></div>
       <div class="n">Quote Desk</div><div class="l">Price any job from the rate card</div></a>
-    <a class="tile wide g" href="demo/roles.html">
+    <a class="tile wide g" data-tile="roledemo" href="demo/roles.html">
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15 20a5 5 0 0 1 7 0"/></svg></div>
       <div class="body"><div class="n">Role Demo</div><div class="l">See the system through one person's day at a time</div></div>
       <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></a>
   </div>
 
-  <div class="sec"><h2>Preview</h2><span>example data</span></div>
-  <div class="tiles">
+  <div class="sec" data-sec="preview"><h2>Preview</h2><span>example data</span></div>
+  <div class="tiles" data-tiles="preview">
     <a class="tile g muted" href="care/index.html"><span class="pill soon">Preview</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg></div>
       <div class="n">Customer Care</div><div class="l">Track, quote and complaint intake</div></a>
@@ -274,6 +432,28 @@ html[data-daypart="night"] .topbar{background:linear-gradient(135deg,rgba(12,44,
   })();
 })();
 </script>
+<script>
+// Brick 81/82: the one tap control, and asking the hub what this phone's
+// real role is now that the page has painted. Both wrapped in their own
+// try, so a phone that never gets a hub answer, or has no bell to find,
+// still gets everything else on this page.
+(function () {
+  'use strict';
+  try {
+    var btn = document.getElementById('glareToggle');
+    if (btn && window.SprintGlare) {
+      btn.setAttribute('aria-pressed', window.SprintGlare.get() === 'on' ? 'true' : 'false');
+      btn.addEventListener('click', function () {
+        var next = window.SprintGlare.toggle();
+        btn.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
+      });
+    }
+  } catch (e) {}
+  try {
+    if (window.SprintRoles) window.SprintRoles.refreshFromHub();
+  } catch (e) {}
+})();
+</script>
 <script src="shared/sprint-notify.js?v=d32ea2ac"></script>
 <script src="shared/sprint-report.js?v=0b602730"></script>
 <script>
@@ -281,7 +461,7 @@ html[data-daypart="night"] .topbar{background:linear-gradient(135deg,rgba(12,44,
 // Registered from here so the worker owns the whole bundle. It never subscribes
 // to a push service: that is the owner's decision, docs/PUSH-DECISION.md.
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js?v=97002683').catch(function () { /* a browser that will not is fine */ });
+  navigator.serviceWorker.register('sw.js?v=de928c0d').catch(function () { /* a browser that will not is fine */ });
 }
 </script>
 <script>

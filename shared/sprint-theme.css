@@ -58,7 +58,11 @@ header a{color:#fff}
 .section-head span,.section-head small,.section-head a{color:#FDBE74;font-weight:700}
 
 /* buttons: white pill for the main act, green primary, glass ghost, orange only as the one accent */
-.btn{background:#fff;color:#0E2F22;border:0;border-radius:999px;font-weight:800;text-transform:none;letter-spacing:0;padding:10px 16px}
+/* 44 px is the floor for anything a finger has to hit, and .btn is the most tapped thing
+   in the building, including Copy all on the MD's Do this now card. Padding alone left it
+   at 33. hub/tests/touch-targets.test.js measures this and will not let it shrink again. */
+.btn{background:#fff;color:#0E2F22;border:0;border-radius:999px;font-weight:800;text-transform:none;letter-spacing:0;
+  min-height:44px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .btn.primary,.btn[data-primary]{background:#3AAA35;color:#fff;border-color:#3AAA35}
 .btn.ghost{background:rgba(255,255,255,.08);color:#F4F7F5;border:1px solid var(--sp-edge)}
 .btn.danger{background:#D6453D;color:#fff}
@@ -189,6 +193,11 @@ header .hdr-bell,header .sync-badge,header #pulseWidget{margin:8px 0 10px;align-
   header .sync-badge{font-size:10.5px;padding:5px 10px}
 }
 
+/* Form fields are touch targets too. The guard (hub/tests/touch-targets.test.js) found the
+   customer picker on accounts at 39 px and the campaign picker on marketing at 37. One rule
+   here lifts every select and single line input on every department page to the 44 px floor. */
+select, input[type=text], input[type=number], input[type=search], input[type=date], input[type=tel], input[type=email]{min-height:44px}
+
 /* ---------- Brick 77: the wordmark sits IN the glass, and the backdrop follows the day ----------
    Luther, 13 Sep 2026, with a screenshot: "It looks very awkward. I wanted it to merge
    seamlessly into the back." The file on the phone had the white baked in; the disk file is
@@ -203,3 +212,104 @@ html[data-daypart="night"] body{background-image:radial-gradient(520px 440px at 
 html[data-daypart="evening"] body::after{background:linear-gradient(to bottom,rgba(7,44,31,0),rgba(7,44,31,.6))}
 html[data-daypart="night"] body::after{background:linear-gradient(to bottom,rgba(4,22,16,0),rgba(4,22,16,.7))}
 html[data-daypart="night"] header{background:linear-gradient(135deg,rgba(12,44,30,.68),rgba(20,80,40,.50))}
+
+/* ---------- Brick 82: glare mode, for a driver standing in the sun ----------
+   Luther's pillar 4a, 13 Sep 2026: kill the glass, raise contrast, make the
+   words heavier, keep it one tap away, and remember it per phone. Nothing
+   below removes the smoky glass look above for anyone who has not asked
+   for this; every rule here is scoped under html[data-glare="on"], or
+   under the phone's own prefers-contrast setting, and wins only because it
+   is more specific and comes later in this same file, never because of
+   !important.
+
+   PROOF NOTE, docs/proof/roles_and_glare.txt: this file is loaded by every
+   department page (ops, care, cockpit, fleet, incidents, driver, insights,
+   accounts, sales, tenders, marketing all carry the link tag), so the
+   attribute contract below is real on every one of them the instant
+   html[data-glare="on"] is present, measured directly on a temporary copy
+   of one of those pages. What is NOT proven: nothing on any of those pages
+   sets that attribute today, because every one of them, and
+   apps/shared/sprint-chrome.js which they all already load, was out of
+   scope for this brick. apps/index.html, the one page this brick was
+   allowed to touch, both sets it (a one tap control, remembered per phone
+   in localStorage under sprintos_glare_v1) and carries the matching rules
+   in its own stylesheet, since it does not load this file. The next brick
+   that touches sprint-chrome.js only needs a few lines reading that same
+   key; no new CSS, the rules already work.
+
+   The prefers-contrast rule needs no wiring at all: a phone whose own
+   accessibility setting already asks for more contrast gets this the
+   moment it opens any department page, with nothing to remember and
+   nothing to tap. */
+:root{
+  --glare-bg:#0A2417;      /* solid, no glass. Measured contrast against white text is in docs/proof/roles_and_glare.txt */
+  --glare-panel:#123723;   /* a shade lighter, still solid and still well past 7 to 1 against white text */
+  --glare-panel-2:#16422B; /* the rare panel nested inside a panel */
+  --glare-line:rgba(255,255,255,.6);
+  --glare-text:#FFFFFF;
+  --glare-dim:#EAF3EE;     /* secondary text, still solidly clear of 7 to 1 on the solid panel */
+  --glare-orange:#FFA733;  /* brighter and more saturated, so the one accent colour still reads in full sun */
+}
+
+html[data-glare="on"]{background:var(--glare-bg)}
+html[data-glare="on"] body{
+  background:var(--glare-bg);background-attachment:scroll;color:var(--glare-text);
+}
+html[data-glare="on"] body::after{display:none}                 /* the feather is a blur; glare mode has none */
+html[data-glare="on"] h1,html[data-glare="on"] h2,html[data-glare="on"] h3,html[data-glare="on"] .disp{
+  color:var(--glare-text);font-weight:900;
+}
+html[data-glare="on"] header{
+  background:var(--glare-panel);backdrop-filter:none;-webkit-backdrop-filter:none;
+  border-bottom:1px solid var(--glare-line);
+}
+html[data-glare="on"] header::before{display:none}
+html[data-glare="on"] .panel,html[data-glare="on"] .card,html[data-glare="on"] .question-card,
+html[data-glare="on"] .login-wrap,html[data-glare="on"] .drawer,html[data-glare="on"] .item-row,
+html[data-glare="on"] .bar-row,html[data-glare="on"] .cash-row{
+  background:var(--glare-panel);border:1px solid var(--glare-line);
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+html[data-glare="on"] .panel .panel,html[data-glare="on"] .card .card{background:var(--glare-panel-2)}
+html[data-glare="on"] .section-head span,html[data-glare="on"] .section-head small,html[data-glare="on"] .section-head a{
+  color:var(--glare-orange);font-weight:800;
+}
+html[data-glare="on"] .btn{font-weight:900}
+html[data-glare="on"] .btn.ghost{background:var(--glare-panel-2);color:var(--glare-text);border:1px solid var(--glare-line)}
+html[data-glare="on"] .btn.orange,html[data-glare="on"] .btn.accent{background:var(--glare-orange);color:#0A2417}
+html[data-glare="on"] .sync-badge{background:var(--glare-panel-2);border:1px solid var(--glare-line);color:var(--glare-text);font-weight:900}
+html[data-glare="on"] .sync-badge.offline{color:#0A2417;background:var(--glare-orange);border-color:var(--glare-orange)}
+html[data-glare="on"] .sync-badge.live,html[data-glare="on"] .sync-badge.online{background:#2FD124;color:#04140C;border-color:#2FD124}
+html[data-glare="on"] .banner-example,html[data-glare="on"] .banner-stale{
+  background:var(--glare-panel-2);border:1px solid var(--glare-orange);color:var(--glare-orange);font-weight:700;
+}
+html[data-glare="on"] .hint,html[data-glare="on"] .empty-note,html[data-glare="on"] .field-label{color:var(--glare-dim);font-weight:600}
+html[data-glare="on"] .err{background:#3A0E0B;color:#FFD9D4;border:1px solid #FF6B61}
+html[data-glare="on"] .bar{background:var(--glare-panel-2);border:1px solid var(--glare-line)}
+html[data-glare="on"] .bar-fill.warn{background:var(--glare-orange)}
+html[data-glare="on"] input,html[data-glare="on"] select,html[data-glare="on"] textarea{
+  background:var(--glare-panel-2);color:var(--glare-text);border:1px solid var(--glare-line);
+}
+html[data-glare="on"] input::placeholder,html[data-glare="on"] textarea::placeholder{color:var(--glare-dim)}
+html[data-glare="on"] select option{background:var(--glare-panel);color:var(--glare-text)}
+html[data-glare="on"] .drawer-bg{background:rgba(2,8,5,.86)}
+html[data-glare="on"] .drawer-close{background:var(--glare-panel-2);color:var(--glare-text);border:1px solid var(--glare-line)}
+
+@media (prefers-contrast: more){
+  html:not([data-glare="off"]){background:var(--glare-bg)}
+  html:not([data-glare="off"]) body{background:var(--glare-bg);background-attachment:scroll;color:var(--glare-text)}
+  html:not([data-glare="off"]) body::after{display:none}
+  html:not([data-glare="off"]) h1,html:not([data-glare="off"]) h2,html:not([data-glare="off"]) h3,html:not([data-glare="off"]) .disp{
+    color:var(--glare-text);font-weight:900;
+  }
+  html:not([data-glare="off"]) header{background:var(--glare-panel);backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid var(--glare-line)}
+  html:not([data-glare="off"]) header::before{display:none}
+  html:not([data-glare="off"]) .panel,html:not([data-glare="off"]) .card,html:not([data-glare="off"]) .question-card,
+  html:not([data-glare="off"]) .login-wrap,html:not([data-glare="off"]) .drawer,html:not([data-glare="off"]) .item-row,
+  html:not([data-glare="off"]) .bar-row,html:not([data-glare="off"]) .cash-row{
+    background:var(--glare-panel);border:1px solid var(--glare-line);backdrop-filter:none;-webkit-backdrop-filter:none;
+  }
+  html:not([data-glare="off"]) input,html:not([data-glare="off"]) select,html:not([data-glare="off"]) textarea{
+    background:var(--glare-panel-2);color:var(--glare-text);border:1px solid var(--glare-line);
+  }
+}

@@ -90,6 +90,7 @@ main{max-width:640px; margin:0 auto; padding:12px 14px 20px;}
 .tag.exception{border-color:var(--red); color:var(--red);}
 .tag.queued{border-color:var(--orange); color:var(--orange);}
 .stop-actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+.stop.found{outline:2px solid var(--orange);outline-offset:3px}
 .btn{
   border:1px solid var(--line); background:var(--ink); color:var(--bone); border-radius:8px;
   padding:9px 12px; font-size:12.5px; font-weight:700; cursor:pointer; flex:1; min-width:100px;
@@ -256,9 +257,11 @@ main{max-width:640px; margin:0 auto; padding:12px 14px 20px;}
 .undo-bar .ring .bg{stroke:rgba(255,255,255,.18)}
 .undo-bar .ring .fg{stroke:#F7941D;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .95s linear}
 </style>
-<link rel="stylesheet" href="../shared/sprint-theme.css?v=50615d42">
+<link rel="stylesheet" href="../shared/sprint-theme.css?v=d22384bc">
 </head>
 <body>
+<script src="../shared/sprint-db.js?v=1fed664f"></script>
+<script src="../shared/sprint-epod.js?v=ec56025d"></script>
 
 <header>
   <img src="../shared/logo-mark.png" alt="Sprint Couriers">
@@ -300,6 +303,7 @@ main{max-width:640px; margin:0 auto; padding:12px 14px 20px;}
       <div class="section-label" style="margin:0;">Today's stops</div>
       <button class="btn ghost" style="flex:none; width:auto; padding:6px 10px; font-size:11px;" onclick="openFuelSheet()">Log fuel</button>
     </div>
+    <button type="button" class="btn ghost" id="scanBtn" onclick="scanWaybill()" style="min-height:48px;width:100%;margin-bottom:12px">Scan a waybill</button>
     <div id="stopsList"></div>
   </div>
 </main>
@@ -443,6 +447,7 @@ async function apiFetch(url, opts) {
 
 /* ---------- queue: everything that has not reached the office yet ---------- */
 function loadQueue() {
+  if (window.SprintDB) return SprintDB.pendingSync();
   try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch (e) { return []; }
 }
 function saveQueue(q) { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
@@ -473,10 +478,17 @@ function updateSyncBadge(pendingCount) {
   badge.className = 'sync-badge'; text.textContent = 'All sent';
 }
 
+function clientHeaders(item) {
+  // Brick 79: the hub remembers this id, so a write whose reply was lost on the
+  // way back is answered from memory the second time, never applied twice
+  return { 'Content-Type': 'application/json', 'X-Sprint-Client-Id': item.id };
+}
 async function queueOrSend(item) {
+  if (!item.id) item.id = uid();
+  if (!item.created_at) item.created_at = new Date().toISOString();
   if (navigator.onLine) {
     try {
-      await apiFetch(item.url, { method: item.method, body: JSON.stringify(item.body) });
+      await apiFetch(item.url, { method: item.method, headers: clientHeaders(item), body: JSON.stringify(item.body) });
       return { sent: true };
     } catch (e) {
       if (e.auth) throw e;
@@ -485,15 +497,37 @@ async function queueOrSend(item) {
       if (e.status && e.status < 500 && e.status !== 0) throw e;
     }
   }
-  const q = loadQueue();
-  q.push(item);
-  saveQueue(q);
+  if (window.SprintDB) {
+    await SprintDB.queue(item);
+    SprintDB.requestSync();
+  } else {
+    const q = loadQueue();
+    q.push(item);
+    saveQueue(q);
+  }
   renderQueueStrip();
   return { sent: false };
 }
 
 async function flushQueue() {
   if (!navigator.onLine) return;
+  if (!window.SprintDB) return flushQueueLegacy();
+  if (!SprintDB.pendingSync().length) return;
+  const r = await SprintDB.replay((item) =>
+    apiFetch(item.url, { method: item.method, headers: clientHeaders(item), body: JSON.stringify(item.body) }));
+  renderQueueStrip();
+  if (r.rejected.length) showQueueRefusals(r.rejected);
+  if (r.sent.length || r.dropped.length || r.rejected.length) await loadStops();
+}
+function showQueueRefusals(items) {
+  // a write the hub will never accept is dropped, and the driver is told in words
+  const note = document.getElementById('positionNote');
+  if (!note) return;
+  note.style.display = 'block';
+  note.textContent = (items.length === 1 ? 'One update was refused by the office system and has been dropped: ' : items.length + ' updates were refused by the office system and have been dropped: ') +
+    items.map((it) => queueLabel(it) + ' (' + (it.last_error || 'refused') + ')').join('; ') + '. Tell dispatch if that looks wrong.';
+}
+async function flushQueueLegacy() {
   let q = loadQueue();
   if (!q.length) return;
   const remaining = [];
@@ -513,6 +547,15 @@ async function flushQueue() {
   if (remaining.length < q.length) await loadStops();
 }
 window.addEventListener('online', () => { updateSyncBadge(); flushQueue(); });
+if (window.SprintDB) {
+  SprintDB.migrateLegacy(QUEUE_KEY).then((n) => { if (n) renderQueueStrip(); });
+  SprintDB.onChange(() => renderQueueStrip());
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      if (e.data && (e.data.type === 'replayed' || e.data.type === 'replay-failed')) { renderQueueStrip(); if (e.data.sent) loadStops(); }
+    });
+  }
+}
 window.addEventListener('offline', () => updateSyncBadge());
 setInterval(flushQueue, 20000);
 
@@ -1102,6 +1145,22 @@ async function deliverStop(id) {
         body.delivered_accuracy_m = 100;
       }
       await postStopStatus(s, body);
+      // Brick 80: sign on glass. The status is already recorded above, so a
+      // driver who cannot get a signature (a gate, a rush, a refusal to sign)
+      // still has a delivery on the record, and the signature is an addition to
+      // it rather than a gate in front of it. A pad left blank records nothing
+      // rather than an empty picture.
+      if (window.SprintEPOD) {
+        try {
+          const png = await SprintEPOD.sign({ title: 'Signature for ' + (s.destination || s.waybill),
+                                              hint: 'Ask ' + value + ' to sign with a finger.' });
+          if (png) {
+            await queueOrSend({ id: uid(), kind: 'pod', url: '/api/shipments/' + s.id + '/pod', method: 'POST',
+                                body: { pod_name: value, signature_png_base64: png } });
+            renderQueueStrip();
+          }
+        } catch (e) { /* a refused signature must never undo a recorded delivery */ }
+      }
     }
   });
 }
@@ -1123,6 +1182,27 @@ const EXCEPTION_CODES = EMERGENCY_TYPES.concat(EXTRA_EXCEPTION_CODES);
 async function exceptionStop(id) {
   const s = findStop(id);
   if (!s) return;
+  // Brick 80: a photograph is required before an exception can be closed. An
+  // exception with no picture is one person's word weeks later, which is
+  // exactly what a claim turns on. The old sheet is the fallback for a browser
+  // with no camera at all.
+  if (window.SprintEPOD) {
+    const out = await SprintEPOD.exception({
+      title: 'What happened at ' + (s.destination || s.waybill) + '?',
+      reasons: EXCEPTION_CODES.map((c) => ({ type: c.type, label: c.label })),
+      pieces: typeof s.pieces === 'number' ? s.pieces : null
+    });
+    if (!out) return;
+    const body = { status: 'exception', exception_code: out.code, exception_note: out.note || null };
+    if (out.photo) body.exception_photo_base64 = out.photo;
+    if (out.accepted !== null && out.accepted !== undefined) {
+      body.exception_pieces_accepted = out.accepted;
+      body.exception_note = (out.note ? out.note + '. ' : '') + out.accepted + ' of ' +
+        (out.pieces === null || out.pieces === undefined ? 'the' : out.pieces) + ' pieces accepted';
+    }
+    await postStopStatus(s, body);
+    return;
+  }
   openSheet({
     title: 'Exception at ' + (s.destination || s.waybill),
     hint: 'Pick the closest match. Add a note only if it helps.',
@@ -1134,6 +1214,22 @@ async function exceptionStop(id) {
       await postStopStatus(s, { status: 'exception', exception_code: value.code, exception_note: value.note || null });
     }
   });
+}
+/* Brick 80: scan a waybill off the label instead of reading it out. Finds the
+   stop it belongs to and opens it. Where the browser cannot read a barcode
+   (every iPhone today) the same sheet takes the number typed in. */
+async function scanWaybill() {
+  if (!window.SprintEPOD) return;
+  const code = await SprintEPOD.scan({ hint: 'Point the camera at the barcode on the label.' });
+  if (!code) return;
+  const hit = STOPS.find((x) => String(x.waybill || '').toUpperCase() === code);
+  if (!hit) {
+    const note = document.getElementById('positionNote');
+    if (note) { note.style.display = 'block'; note.textContent = 'Waybill ' + code + ' is not on your run today. Check the number or call dispatch.'; }
+    return;
+  }
+  const card = document.getElementById('stop-' + hit.id);
+  if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('found'); setTimeout(() => card.classList.remove('found'), 2000); }
 }
 function temperatureStop(id) {
   const s = findStop(id);
