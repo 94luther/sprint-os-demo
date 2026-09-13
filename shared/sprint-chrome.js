@@ -115,6 +115,29 @@
     });
   }
 
+  // --- Brick 76: the backdrop follows the day --------------------------------
+  // Luther, 13 Sep 2026: "I want the tones to change according to the time of
+  // day." Five parts, read from the phone's own clock: the person holding it is
+  // in Gaborone and Botswana has no daylight saving. The stylesheet carries one
+  // backdrop per part; this only says which. Add ?daypart=night to the address
+  // to force one, for checking and for showing someone.
+  // The hours are a judgement, not a fact: 5, 8, 12, 17 and 20 are a first guess
+  // at when the light changes in Gaborone. Move them if the evening comes too early.
+  var PARTS = [[5, 'dawn'], [8, 'morning'], [12, 'afternoon'], [17, 'evening'], [20, 'night']];
+  function daypartFor(h) {
+    var name = 'night';
+    for (var i = 0; i < PARTS.length; i++) if (h >= PARTS[i][0]) name = PARTS[i][1];
+    return name;
+  }
+  function setDaypart(force) {
+    var m = /[?&]daypart=([a-z]+)/.exec(location.search || '');
+    var name = force || (m && m[1]) || daypartFor(new Date().getHours());
+    document.documentElement.setAttribute('data-daypart', name);
+    return name;
+  }
+  setDaypart();
+  setInterval(function () { setDaypart(); }, 5 * 60 * 1000);   // a page left open crosses over
+
   function boot() {
     bars = [].slice.call(document.querySelectorAll('header, .topbar'))
       .filter(function (el) { return el.querySelector('img'); });
@@ -141,5 +164,5 @@
   else boot();
 
   window.SprintChrome = { shrink: function () { apply(true); }, expand: function () { apply(false); },
-                          isSmall: function () { return small; } };
+                          isSmall: function () { return small; }, daypart: setDaypart };
 })();
