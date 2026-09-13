@@ -80,7 +80,7 @@
     '.sr-d{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.3px;color:#8FE08A;background:rgba(58,170,53,.16);border:1px solid rgba(58,170,53,.36);border-radius:999px;padding:3px 9px;margin-top:8px}' +
     '.sr-item.accent .sr-d{color:#FDBE74;background:rgba(247,148,29,.18);border-color:rgba(247,148,29,.45)}' +
     '.sr-foot{font-size:11.4px;color:#93A29B;padding:16px 18px 0;line-height:1.45}' +
-    '.sr-cancel{display:block;margin:14px auto 0;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);color:#D2DCD7;border-radius:999px;font-weight:800;font-size:13px;padding:10px 26px;cursor:pointer;width:auto}';
+    '.sr-cancel{display:block;margin:14px auto 0;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);color:#D2DCD7;border-radius:999px;font-weight:800;font-size:13px;padding:10px 26px;min-height:44px;cursor:pointer;width:auto}';
 
   function injectCss() {
     if (document.getElementById('sr-css')) return;
