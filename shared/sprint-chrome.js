@@ -87,11 +87,19 @@
   // the window left the bar frozen at full height on exactly the long pages this
   // was built for, which is how it was caught.
   function currentY() {
-    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
-    if (y) return y;
-    if (document.body && document.body.scrollTop) return document.body.scrollTop;
-    if (scroller && scroller.scrollTop) return scroller.scrollTop;
-    return 0;
+    // Different pages in this bundle scroll different elements: some the window,
+    // some the document element, some the body, and the answer changes with the
+    // width of the screen. Rather than pick one and be wrong on a page nobody
+    // checked, take whichever has actually moved.
+    var vals = [
+      window.pageYOffset || 0,
+      document.documentElement ? document.documentElement.scrollTop || 0 : 0,
+      document.body ? document.body.scrollTop || 0 : 0,
+      scroller ? scroller.scrollTop || 0 : 0
+    ];
+    var y = 0;
+    for (var i = 0; i < vals.length; i++) if (vals[i] > y) y = vals[i];
+    return y;
   }
 
   function onScroll() {
