@@ -28,6 +28,7 @@
   var SHRINK_AT = 46;    // px scrolled before the bar collapses
   var GROW_AT = 14;      // and back below this, so the two never fight
   var bars = [];
+  var scroller = null;
   var small = false;
   var ticking = false;
 
@@ -68,12 +69,25 @@
     for (var i = 0; i < bars.length; i++) bars[i].classList.toggle('sp-small', small);
   }
 
+  // Which thing is actually scrolling. Most pages scroll the window, but several
+  // department pages give html and body a fixed height with overflow auto, so the
+  // BODY scrolls and window.pageYOffset never moves off zero. Listening only to
+  // the window left the bar frozen at full height on exactly the long pages this
+  // was built for, which is how it was caught.
+  function currentY() {
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if (y) return y;
+    if (document.body && document.body.scrollTop) return document.body.scrollTop;
+    if (scroller && scroller.scrollTop) return scroller.scrollTop;
+    return 0;
+  }
+
   function onScroll() {
     if (ticking) return;
     ticking = true;
     requestAnimationFrame(function () {
       ticking = false;
-      var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var y = currentY();
       // a dead zone between the two thresholds: a thumb resting mid scroll
       // must never make the bar flicker between sizes
       if (!small && y > SHRINK_AT) apply(true);
@@ -86,6 +100,15 @@
       .filter(function (el) { return el.querySelector('img'); });
     if (!bars.length) return;
     injectCss();
+    // the nearest ancestor of the bar that actually scrolls, if any
+    var el = bars[0].parentNode;
+    while (el && el !== document) {
+      var ov = getComputedStyle(el).overflowY;
+      if ((ov === 'auto' || ov === 'scroll') && el.scrollHeight > el.clientHeight + 20) { scroller = el; break; }
+      el = el.parentNode;
+    }
+    // capture catches a scroll from any element, since scroll does not bubble
+    document.addEventListener('scroll', onScroll, { passive: true, capture: true });
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();   // a page restored mid scroll starts in the right state
   }
