@@ -64,7 +64,19 @@
     '.feed{display:flex;flex-direction:column;gap:10px}' +
     '.fi{display:flex;gap:12px;align-items:flex-start;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.22);border-radius:22px;padding:12px 14px;' +
       'backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65);min-height:64px}' +
-    '.fi.urgent{border-color:rgba(255,107,97,.6);box-shadow:0 0 0 1px rgba(255,107,97,.35),0 22px 54px -24px rgba(0,0,0,.65)}' +
+    /* Brick 95: an urgent row must not depend on colour. Red washes out in
+       Botswana sun and on a screen dimmed to save battery. So it also gets
+       air around it, a filled triangle, and a thicker edge: three signals,
+       any one of which survives on its own. */
+    '.fi.urgent{border-color:#FF6B61;border-width:2px;margin:20px 0;box-shadow:0 0 0 1px rgba(255,107,97,.35),0 22px 54px -24px rgba(0,0,0,.65)}' +
+    '.fi.urgent .av{background:#FF6B61;border-color:#fff;color:#2A0603}' +
+    '.fi.urgent .av svg{width:22px;height:22px;display:block}' +
+    '.fi.urgent .w{font-weight:900}' +
+    '.fi .acts{display:none;gap:8px;margin-top:10px;flex-wrap:wrap}' +
+    '.fi.open .acts{display:flex}' +
+    '.fi .acts a,.fi .acts button{min-height:48px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.3);' +
+      'background:rgba(255,255,255,.14);color:#fff;font:inherit;font-weight:800;font-size:13.5px;display:inline-flex;align-items:center;text-decoration:none}' +
+    '.fi .acts a.go,.fi .acts button.go{background:#fff;color:#0E2F22;border-color:#fff}' +
     '.fi .av{flex:none;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff}' +
     '.fi .av.sys{background:rgba(58,170,53,.25);color:#8FE08A}' +
     '.fi .b{flex:1;min-width:0}' +
@@ -197,10 +209,22 @@
     if (!items.length) h.push('<div class="empty">' + (STATE.filter ? 'Nothing under this filter right now.' : 'Nothing recorded yet today. That is what the hub has, not a guess.') + '</div>');
     items.forEach(function (i) {
       var sys = !i.name;
-      h.push('<div class="fi' + (i.urgent ? ' urgent' : '') + '"><div class="av' + (sys ? ' sys' : '') + '" title="' + esc(sys ? 'the system' : i.name) + '">' + (sys ? '&#9679;' : esc(initial(i.name))) + '</div>' +
+      // Brick 95: a filled triangle on an urgent row, so the meaning survives
+      // sunlight, a dimmed screen and a person who cannot tell red from grey.
+      var face = i.urgent
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5 23 21H1z"/><path fill="#FF6B61" d="M11 9h2v6h-2zM11 16.5h2V19h-2z"/></svg>'
+        : (sys ? '&#9679;' : esc(initial(i.name)));
+      h.push('<div class="fi' + (i.urgent ? ' urgent' : '') + '"' + (i.urgent ? ' tabindex="0" role="button" data-urgent="1"' : '') + '><div class="av' + (sys && !i.urgent ? ' sys' : '') + '" title="' + esc(i.urgent ? 'urgent' : sys ? 'the system' : i.name) + '">' + face + '</div>' +
         '<div class="b"><div class="w">' + esc(i.text) + '</div><div class="m">' +
         (i.kind ? '<span class="tag' + (i.urgent ? ' urg' : '') + '">' + esc(FILTERS.filter(function (f) { return f.key === i.kind; }).map(function (f) { return f.label; })[0] || i.kind) + '</span>' : '') +
-        '<span>' + esc(i.name ? i.name : (i.who || '')) + '</span><span>' + esc(ago(i.at)) + '</span></div></div></div>');
+        '<span>' + esc(i.name ? i.name : (i.who || '')) + '</span><span>' + esc(ago(i.at)) + '</span></div>' +
+        // Brick 95: tapping an urgent row does not open a page to read. It puts the
+        // two things a person actually does next under the thumb, at once.
+        (i.urgent ? '<div class="acts">' +
+          '<a class="go" href="incidents/index.html">Open it and acknowledge</a>' +
+          '<button type="button" class="drafted">Draft what to tell the customer</button>' +
+          '</div>' : '') +
+        '</div></div>');
     });
     h.push('</div>');
     return h.join('');
@@ -210,6 +234,25 @@
     var host = document.getElementById('front'); if (!host) return;
     var driver = role() === 'driver';
     host.innerHTML = (driver ? '' : railHtml()) + filtersHtml() + feedHtml();
+    // an urgent row opens its two actions in place, and closes again
+    var urg = host.querySelectorAll('.fi[data-urgent]');
+    for (var u = 0; u < urg.length; u++) {
+      urg[u].addEventListener('click', function (e) {
+        if (e.target.closest('.acts')) return;      // a tap ON an action is the action
+        this.classList.toggle('open');
+      });
+      urg[u].addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.classList.toggle('open'); } });
+    }
+    var drafts = host.querySelectorAll('.fi .drafted');
+    for (var dft = 0; dft < drafts.length; dft++) drafts[dft].addEventListener('click', function (e) {
+      e.stopPropagation();
+      var row = this.closest('.fi');
+      var what = (row.querySelector('.w') || {}).textContent || 'this';
+      // Nothing sends. The words are written for a person to read, change and send.
+      this.textContent = 'Draft written, open Incidents to send it';
+      this.disabled = true;
+      try { localStorage.setItem('sprintos_draft_v1', JSON.stringify({ at: new Date().toISOString(), about: what })); } catch (x) {}
+    });
     var fs = host.querySelectorAll('#frFilters button');
     for (var i = 0; i < fs.length; i++) fs[i].addEventListener('click', function () {
       var k = this.getAttribute('data-f');

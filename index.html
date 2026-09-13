@@ -280,6 +280,13 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
 }
 .glare-toggle svg{width:20px;height:20px}
 html[data-glare="on"] .glare-toggle svg{stroke:#FFA733}
+
+/* Brick 94: the find button. Bottom right, clear of the bar, 60 px of target. */
+.find-fab{position:fixed;right:16px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:46;
+  width:60px;height:60px;border-radius:50%;border:0;background:#fff;color:#0E2F22;
+  box-shadow:0 16px 34px -10px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.find-fab:active{transform:scale(.94)}
+html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
 </style>
 <!-- Brick 81: loaded here, blocking, before <body> exists, so data-role is
      already correct on <html> before the tiles below are ever parsed. See
@@ -389,6 +396,11 @@ html[data-glare="on"] .glare-toggle svg{stroke:#FFA733}
   <p class="note">Every figure on a phone is example data. On the office computer the same pages read the live system.</p>
 </div>
 
+<!-- Brick 94: the thumb reaches the bottom right of a phone, not the top, so the
+     one control that opens everything lives there. -->
+<button type="button" class="find-fab" id="findFab" onclick="SprintFind.open()" aria-label="Find a waybill, a vehicle or a customer">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#0E2F22" stroke-width="2.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+</button>
 <nav class="bar"><div class="in">
   <a class="on" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</a>
   <a href="fleet/index.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>Fleet</a>
@@ -485,6 +497,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 })();
 </script>
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
-<script src="shared/sprint-front.js?v=ffe3e9f7"></script>
+<script src="shared/sprint-find.js?v=240cc7b1"></script>
+<script src="shared/sprint-front.js?v=9ca50abe"></script>
 </body>
 </html>
