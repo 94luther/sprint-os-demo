@@ -72,6 +72,7 @@
     '.fi.urgent .av{background:#FF6B61;border-color:#fff;color:#2A0603}' +
     '.fi.urgent .av svg{width:22px;height:22px;display:block}' +
     '.fi.urgent .w{font-weight:900}' +
+    '.acts .unwired{opacity:.55;font-style:italic}' +
     '.fi .acts{display:none;gap:8px;margin-top:10px;flex-wrap:wrap}' +
     '.fi.open .acts{display:flex}' +
     '.fi .acts a,.fi .acts button{min-height:48px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.3);' +
@@ -107,14 +108,71 @@
     { key: 'urgent', label: 'Urgent' }, { key: 'stops', label: 'My stops' }, { key: 'quotes', label: 'Pending quotes' },
     { key: 'exceptions', label: 'Exceptions' }, { key: 'tenders', label: 'Tenders' }
   ];
+  // Brick 97: how bad a thing is, is a fact the source knows. Reading it out of
+  // the wording was the fault: "Route deviation: Truck stalled in Gaborone North"
+  // carries none of the words below, so a stalled truck drew as an ordinary line.
+  // A source that declares a severity is believed. The words remain only for the
+  // sources that do not declare one yet, and they can only ever raise an item,
+  // never talk one down.
+  var LOUD = { critical: true, high: true, red: true, level3: true };
+  function severe(item) {
+    var s = (item.severity || '').toLowerCase();
+    return !!(LOUD[s] || item.level === 3 || item.urgent === true);
+  }
   function classify(item) {
     var t = (item.text || '').toLowerCase(), e = (item.entity || '').toLowerCase();
-    if (item.level === 3 || /red alert|hijack|accident|emergency/.test(t)) return 'urgent';
+    if (severe(item) || /red alert|hijack|accident|emergency/.test(t)) return 'urgent';
     if (/exception|incident|missing proof|not delivered|refused|damaged/.test(t) || e === 'incidents') return 'exceptions';
     if (/quote/.test(t) || e === 'quotes') return 'quotes';
     if (/tender/.test(t) || e === 'tenders') return 'tenders';
     if (/stop|deliver|collected|trip|waybill|parcel|shipment|position/.test(t) || e === 'shipments' || e === 'trips') return 'stops';
     return null;
+  }
+
+  /* Brick 97: what a person can actually do about this row, named by the source.
+
+     Every action here either OPENS a page or WRITES words. Not one of them
+     acts on its own: "Send Backup Unit" opens the Ops board with the incident
+     showing so a human dispatches it, because nothing on this system sends
+     itself and a truck must never be moved by a button nobody watched.
+
+     A name this list does not know is still drawn, with its label, plainly
+     marked as not wired. Silently dropping something the hub asked for is how
+     a person comes to believe an alert had no answer. */
+  var ACTIONS = {
+    call_driver:       { href: 'incidents/index.html', hint: 'the number is on the incident' },
+    dispatch_recovery: { href: 'ops/index.html',       hint: 'opens the board, a person dispatches' },
+    send_backup_unit:  { href: 'ops/index.html',       hint: 'opens the board, a person dispatches' },
+    open_incident:     { href: 'incidents/index.html', hint: '' },
+    flag_exception:    { href: 'incidents/index.html', hint: '' },
+    draft_customer:    { draft: true, hint: 'writes the words, sends nothing' }
+  };
+
+  // A payload may not tell this phone to send Sprint's data to an outside
+  // model. The field is dropped here, at the door, and the reason is kept on
+  // the item so it shows up rather than disappearing quietly.
+  function refuseRouting(item) {
+    if (!item || !item.routing) return item;
+    item.routing_refused = 'a routing field named ' + String(item.routing) +
+      '. Company data does not leave this building, so it was dropped.';
+    delete item.routing;
+    return item;
+  }
+
+  function actionsHtml(i) {
+    var paths = Array.isArray(i.actions) && i.actions.length ? i.actions : null;
+    if (!paths) {
+      // the two that fit any exception, which is what shipped in brick 95
+      return '<a class="go" href="incidents/index.html">Open it and acknowledge</a>' +
+             '<button type="button" class="drafted">Draft what to tell the customer</button>';
+    }
+    return paths.map(function (p) {
+      var known = ACTIONS[p.action];
+      var label = esc(p.label || p.action || 'Open it');
+      if (!known) return '<button type="button" class="go unwired" disabled>' + label + ' (not wired yet)</button>';
+      if (known.draft) return '<button type="button" class="drafted">' + label + '</button>';
+      return '<a class="go" href="' + known.href + '">' + label + '</a>';
+    }).join('');
   }
 
   function example() {
@@ -155,12 +213,24 @@
     try { var c = await get('/api/campaigns?limit=5'); STATE.campaigns = Array.isArray(c) ? c : (c && c.items) || null; } catch (e) { STATE.campaigns = null; }
     try {
       var a = await get('/api/activity');
-      STATE.feed = (a.did || []).map(function (x) { return { at: x.at, text: x.text, who: x.who, name: x.staff_name || null, kind: classify(x) }; });
+      STATE.feed = (a.did || []).map(function (x) {
+        refuseRouting(x);
+        // severity, and the ways out of it, are carried straight through
+        return { at: x.at, text: x.text, who: x.who, name: x.staff_name || null,
+                 kind: classify(x), severity: x.severity || null, urgent: severe(x),
+                 actions: x.resolution_paths || x.actions || null,
+                 routing_refused: x.routing_refused || null };
+      });
     } catch (e) { STATE.feed = []; }
     try {
       var tr = await get('/api/incidents/triage');
       STATE.alerts = (tr.level3 || []).filter(function (i) { return !i.acknowledged_at; })
-        .map(function (i) { return { at: i.opened_at, text: i.title, who: 'the system', name: null, kind: 'urgent', urgent: true, level: 3 }; });
+        .map(function (i) {
+          refuseRouting(i);
+          return { at: i.opened_at, text: i.title, who: 'the system', name: null, kind: 'urgent',
+                   urgent: true, level: 3, severity: i.severity || 'critical',
+                   actions: i.resolution_paths || null, routing_refused: i.routing_refused || null };
+        });
     } catch (e) { STATE.alerts = []; }
   }
 
@@ -220,10 +290,7 @@
         '<span>' + esc(i.name ? i.name : (i.who || '')) + '</span><span>' + esc(ago(i.at)) + '</span></div>' +
         // Brick 95: tapping an urgent row does not open a page to read. It puts the
         // two things a person actually does next under the thumb, at once.
-        (i.urgent ? '<div class="acts">' +
-          '<a class="go" href="incidents/index.html">Open it and acknowledge</a>' +
-          '<button type="button" class="drafted">Draft what to tell the customer</button>' +
-          '</div>' : '') +
+        (i.urgent ? '<div class="acts">' + actionsHtml(i) + '</div>' : '') +
         '</div></div>');
     });
     h.push('</div>');
@@ -269,7 +336,21 @@
     var L = left(el.getAttribute('data-closes')); if (L) el.textContent = L.text;
   }
 
-  root.SprintFront = { draw: draw, example: function () { example(); draw(); }, state: function () { return STATE; }, filter: function (k) { STATE.filter = k; draw(); } };
+  /* One export, and only one. A second `SprintFront = {...}` earlier in this
+     file was silently replaced by this line, which is the quiet kind of bug:
+     no error, the object simply is not what you think it is.
+
+     Brick 97 adds the decisions themselves, read only, so they can be measured
+     against a real payload and so another page can ask the same question
+     without copying the answer. None of them draw, fetch or change state. */
+  root.SprintFront = {
+    draw: draw,
+    example: function () { example(); draw(); },
+    state: function () { return STATE; },
+    filter: function (k) { STATE.filter = k; draw(); },
+    severe: severe, classify: classify, actionsHtml: actionsHtml,
+    refuseRouting: refuseRouting, knownActions: Object.keys(ACTIONS)
+  };
   document.addEventListener('DOMContentLoaded', function () {
     if (role() === 'driver') STATE.filter = 'stops';
     load().then(draw, draw);
