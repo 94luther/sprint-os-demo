@@ -30,7 +30,6 @@
   var bars = [];
   var scroller = null;
   var small = false;
-  var ticking = false;
 
   var CSS = '' +
     /* the animation, on the bar and the things inside it */
@@ -102,17 +101,19 @@
     return y;
   }
 
-  function onScroll() {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(function () {
-      ticking = false;
-      var y = currentY();
-      // a dead zone between the two thresholds: a thumb resting mid scroll
-      // must never make the bar flicker between sizes
-      if (!small && y > SHRINK_AT) apply(true);
-      else if (small && y < GROW_AT) apply(false);
-    });
+  function onScroll(e) {
+    // whichever element actually scrolled announces itself; the Cockpit's
+    // scroller is a sibling of the bar, not an ancestor, so no walk up from the
+    // bar could ever have found it
+    if (e && e.target && e.target !== document && e.target !== window && typeof e.target.scrollTop === 'number') scroller = e.target;
+    // Reading scrollTop and flipping one class is cheaper than the frame
+    // callback that used to wrap it, and a frame callback never fires on a
+    // page that is not painting, which is how a proof found it missing.
+    var y = currentY();
+    // a dead zone between the two thresholds: a thumb resting mid scroll
+    // must never make the bar flicker between sizes
+    if (!small && y > SHRINK_AT) apply(true);
+    else if (small && y < GROW_AT) apply(false);
   }
 
   // --- Brick 76: the backdrop follows the day --------------------------------
@@ -143,12 +144,12 @@
       .filter(function (el) { return el.querySelector('img'); });
     if (!bars.length) return;
     injectCss();
-    // the nearest ancestor of the bar that actually scrolls, if any
-    var el = bars[0].parentNode;
-    while (el && el !== document) {
-      var ov = getComputedStyle(el).overflowY;
-      if ((ov === 'auto' || ov === 'scroll') && el.scrollHeight > el.clientHeight + 20) { scroller = el; break; }
-      el = el.parentNode;
+    // the tallest thing on the page that scrolls, wherever it sits: an ancestor
+    // of the bar on most pages, a sibling of it on the Cockpit
+    var all = document.querySelectorAll('body, body *'), best = 0;
+    for (var k = 0; k < all.length; k++) {
+      var ov = getComputedStyle(all[k]).overflowY;
+      if ((ov === 'auto' || ov === 'scroll') && all[k].scrollHeight > all[k].clientHeight + 20 && all[k].scrollHeight > best) { best = all[k].scrollHeight; scroller = all[k]; }
     }
     // capture catches a scroll from any element, since scroll does not bubble
     document.addEventListener('scroll', onScroll, { passive: true, capture: true });
