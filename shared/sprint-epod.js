@@ -365,5 +365,58 @@
     return s.promise;
   }
 
-  root.SprintEPOD = { sign: sign, scan: scan, exception: exception, EXTRA_REASONS: EXTRA };
+  /* ---------------- 4. cash on delivery: the receipt that is not optional ---------------- */
+  function receipt(opts) {
+    opts = opts || {};
+    var owed = Number(opts.amountThebe) || 0;
+    var s = sheet(opts.title || 'Cash on delivery', 'P' + pula(owed) + ' is owed on this parcel. Enter what was collected and photograph the cash or the EFT receipt. The job cannot close without the photo.');
+    var amt = el('input', 'field'); amt.type = 'number'; amt.step = '0.01'; amt.min = '0'; amt.setAttribute('inputmode', 'decimal'); amt.placeholder = 'Collected, in Pula'; amt.value = (owed / 100).toFixed(2);
+    s.body.appendChild(amt);
+    var photoRow = el('div', 'photo'); var label = el('label', '', 'Photograph the receipt');
+    var input = el('input'); input.type = 'file'; input.accept = 'image/*'; input.setAttribute('capture', 'environment'); label.appendChild(input);
+    var thumb = el('img', 'thumb'); thumb.alt = ''; photoRow.appendChild(label); photoRow.appendChild(thumb); s.body.appendChild(photoRow);
+    var why = el('div', 'why', ''); s.body.appendChild(why);
+    var photo = null;
+    function setPhoto(d) { photo = d || null; thumb.src = photo || ''; thumb.className = 'thumb' + (photo ? ' show' : ''); label.textContent = photo ? 'Retake the photo' : 'Photograph the receipt'; label.appendChild(input); state(); }
+    input.addEventListener('change', function () { var f = input.files && input.files[0]; if (!f) return; shrink(f).then(setPhoto, function (e) { s.error(e.message); setPhoto(null); }); });
+    var row = el('div', 'row');
+    var cancel = button('Cancel', '', function () { s.close(null); });
+    var done = button('Done', 'go', function () {
+      var m = missing(); if (m) { s.error(m); return; }
+      var collected = Math.round(parseFloat(amt.value) * 100);
+      s.close({ collectedThebe: collected, photo: photo, owedThebe: owed, shortThebe: Math.max(0, owed - collected) });
+    });
+    row.appendChild(cancel); row.appendChild(done); s.body.appendChild(row);
+    function missing() {
+      var v = parseFloat(amt.value);
+      if (isNaN(v) || v < 0) return 'Say how much was collected.';
+      if (!photo) return 'Photograph the cash or the receipt first.';
+      var c = Math.round(v * 100);
+      if (c < owed) return null;
+      return null;
+    }
+    function state() { var m = missing(); done.disabled = !!m; var c = Math.round(parseFloat(amt.value || '0') * 100); why.textContent = m || (c < owed ? 'Short by P' + pula(owed - c) + '. Dispatch will be asked to approve it.' : ''); s.error(''); }
+    amt.addEventListener('input', state); state();
+    if (opts._test) opts._test({ setPhoto: setPhoto, done: done, amt: amt });
+    return s.promise;
+  }
+  function pula(thebe) { var n = Math.round(Number(thebe) || 0); return (n / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+  /* ---------------- 5. the tape measure: length, width, height in centimetres ---------------- */
+  function dims(opts) {
+    opts = opts || {};
+    var s = sheet(opts.title || 'Measure the parcel', 'Length, width and height in centimetres. A parcel bigger than it is heavy is charged on its size.');
+    var f = ['Length cm', 'Width cm', 'Height cm'].map(function (ph) { var i = el('input', 'field'); i.type = 'number'; i.min = '1'; i.setAttribute('inputmode', 'numeric'); i.placeholder = ph; s.body.appendChild(i); i.addEventListener('input', state); return i; });
+    var why = el('div', 'why', ''); s.body.appendChild(why);
+    var row = el('div', 'row');
+    var cancel = button('Cancel', '', function () { s.close(null); });
+    var done = button('Done', 'go', function () { var m = missing(); if (m) { s.error(m); return; } s.close({ lengthCm: +f[0].value, widthCm: +f[1].value, heightCm: +f[2].value }); });
+    row.appendChild(cancel); row.appendChild(done); s.body.appendChild(row);
+    function missing() { for (var i = 0; i < 3; i++) { var v = parseFloat(f[i].value); if (isNaN(v) || v <= 0) return 'All three sides are needed.'; } return null; }
+    function state() { var m = missing(); done.disabled = !!m; why.textContent = m || ('By volume: ' + (Math.round(f[0].value * f[1].value * f[2].value / 50) / 100) + ' kg'); s.error(''); }
+    state();
+    return s.promise;
+  }
+
+  root.SprintEPOD = { sign: sign, scan: scan, exception: exception, receipt: receipt, dims: dims, EXTRA_REASONS: EXTRA };
 })(typeof window !== 'undefined' ? window : this);

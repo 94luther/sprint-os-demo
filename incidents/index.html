@@ -610,5 +610,158 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
 </script>
 <script src="../shared/sprint-notify.js?v=d32ea2ac"></script>
 <script src="../shared/sprint-chrome.js?v=955d59ff"></script>
+
+<script>
+/* ---------- Brick 84: the triage lanes and the red alert ----------
+   Three levels, drawn above the incident list. Level 3 is a full screen alert
+   that only a manager or admin can dismiss, and it stays until they do. */
+(function(){
+  var TRIAGE = null, TRIAGE_AT = 0, TICK = null;
+  var STAFF_ROLE = null;
+  function role(){ try { return (typeof ME !== 'undefined' && ME && ME.role) || STAFF_ROLE || 'unknown'; } catch (e) { return 'unknown'; } }
+  function pula(t){ var n = Math.round(Number(t) || 0); return (n / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function ago(iso){ var m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : Math.round(m / 60) + ' h ago'; }
+  function left(iso){ var m = Math.round((Date.parse(iso) - Date.now()) / 60000); return m; }
+  var EXAMPLE_TRIAGE = (function(){
+    var now = Date.now();
+    var iso = function(min){ return new Date(now + min * 60000).toISOString(); };
+    return {
+      level3: [
+        { id:'inc_ex_l3_1', level:3, kind:'sla_breach', status:'open', opened_at: iso(-6), acknowledged_at:null,
+          title:'RED ALERT: tender documents for the EXAMPLE Standards Board have 42 minutes and the vehicle is standing',
+          payload:{ minutes_left:42, due_at: iso(42), priority:'tender', waybill:'EXAMPLE/WB/3107', destination:'EXAMPLE Standards Board, Gaborone',
+                    vehicle:{ reg:'B 100 EXA', state:'standing', standing_minutes:23 }, pin:{ lat:-23.1042, lng:26.8321, recorded_at: iso(-2) },
+                    nearest:{ reg:'B 200 EXA', km:11.4, state:'moving', driver:'EXAMPLE driver Kabo' }, why:'42 minutes left and the vehicle is standing on the A1 south of Mahalapye' } },
+        { id:'inc_ex_l3_2', level:3, kind:'sla_breach', status:'open', opened_at: iso(-31), acknowledged_at: iso(-28), acknowledged_by:'stf_manager',
+          title:'RED ALERT: court bundle for EXAMPLE Naledi Legal Attorneys had 55 minutes and the vehicle was standing',
+          payload:{ minutes_left:55, due_at: iso(24), priority:'legal', waybill:'EXAMPLE/WB/3099', destination:'High Court, Gaborone',
+                    vehicle:{ reg:'B 300 EXA', state:'standing', standing_minutes:18 }, pin:{ lat:-24.6541, lng:25.9087, recorded_at: iso(-30) },
+                    nearest:null, why:'55 minutes left and the vehicle is standing at the Tlokweng border post' } }
+      ],
+      level2: [
+        { id:'inc_ex_l2_1', level:2, kind:'cod_shortfall', status:'open', opened_at: iso(-14), decision:null,
+          title:'Cash on delivery short by P250.00 on EXAMPLE/WB/3111',
+          payload:{ waybill:'EXAMPLE/WB/3111', owed_thebe:150000, collected_thebe:125000, shortfall_thebe:25000, pod_name:'EXAMPLE consignee', driver:'EXAMPLE driver Kabo' } },
+        { id:'inc_ex_l2_2', level:2, kind:'volumetric_mismatch', status:'open', opened_at: iso(-40), decision:null,
+          title:'Volumetric mismatch on EXAMPLE/WB/3115: 12.8 kg by volume against 8 kg on the scale',
+          payload:{ waybill:'EXAMPLE/WB/3115', actual_kg:8, volumetric_kg:12.8, chargeable_kg:12.8, difference_kg:4.8, dims_cm:{ length:40, width:40, height:40 }, measured_by:'EXAMPLE driver Neo' } }
+      ],
+      level1: [
+        { id:'inc_ex_l1_1', level:1, kind:'phantom_consignee', status:'closed', opened_at: iso(-52), closed_reason:'gate code request sent by the driver from the phone, one tap',
+          title:'Gate code request written for EXAMPLE/WB/3120 near EXAMPLE Estate, Phakalane',
+          payload:{ estate:'EXAMPLE Estate, Phakalane', km:3.2, waybill:'EXAMPLE/WB/3120', prepared:true, resolved_by_system:true } },
+        { id:'inc_ex_l1_2', level:1, kind:'phantom_consignee', status:'contained', opened_at: iso(-9),
+          title:'Gate code request written for EXAMPLE/WB/3124 near EXAMPLE Estate, Phakalane',
+          payload:{ estate:'EXAMPLE Estate, Phakalane', km:4.6, waybill:'EXAMPLE/WB/3124', prepared:true, resolved_by_system:true } }
+      ]
+    };
+  })();
+  var CSS = '' +
+    '.tri{margin:12px 0 18px}.tri h2{font-family:var(--font-display);font-size:22px;letter-spacing:.02em;margin:0 0 8px}' +
+    '.tri .lane{margin-bottom:14px}.tri .lane-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}' +
+    '.tri .lane-h .lvl{font-size:11px;font-weight:900;letter-spacing:.08em;padding:4px 10px;border-radius:20px;border:1px solid var(--line)}' +
+    '.tri .lvl.l3{background:var(--red);color:#fff;border-color:var(--red)}.tri .lvl.l2{background:var(--orange);color:var(--ink);border-color:var(--orange)}.tri .lvl.l1{background:rgba(58,170,53,.18);color:var(--green);border-color:var(--green)}' +
+    '.tri .lane-h .sub{font-size:12px;color:var(--dim)}' +
+    '.tri .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px}' +
+    '.tri .card.l3{border-color:var(--red);box-shadow:0 0 0 1px var(--red), 0 0 24px rgba(224,72,62,.35)}' +
+    '.tri .card .t{font-weight:800;font-size:14px;line-height:1.3}.tri .card .m{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.45}' +
+    '.tri .card .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.tri .card .row .btn{width:auto;min-height:44px}' +
+    '.tri .btn.reject{background:transparent;border:1px solid var(--red);color:var(--red)}' +
+    '.tri .done{font-size:12px;color:var(--green);font-weight:700}.tri .empty{font-size:12px;color:var(--dim);padding:8px 0}' +
+    '.tri .num{font-family:var(--font-display);font-size:30px;line-height:1;color:var(--red)}' +
+    '#redAlert{position:fixed;inset:0;z-index:1000;background:rgba(120,10,6,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:18px}' +
+    '#redAlert .box{width:100%;max-width:560px;background:#1a0705;border:3px solid #fff;border-radius:18px;padding:22px 20px;color:#fff;box-shadow:0 30px 80px rgba(0,0,0,.7);animation:tri-pulse 1.2s ease-in-out infinite}' +
+    '@keyframes tri-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}50%{box-shadow:0 0 0 14px rgba(255,255,255,0)}}' +
+    '@media (prefers-reduced-motion: reduce){#redAlert .box{animation:none}}' +
+    '#redAlert .eyebrow{font-size:12px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}' +
+    '#redAlert h1{font-family:var(--font-display);font-size:34px;line-height:1.05;margin:8px 0 12px}' +
+    '#redAlert .clock{font-family:var(--font-display);font-size:64px;line-height:1;margin:6px 0}' +
+    '#redAlert .line{font-size:14px;line-height:1.5;margin:6px 0}#redAlert .line b{color:#FFD9D6}' +
+    '#redAlert .pin{font-family:monospace;font-size:15px;background:rgba(255,255,255,.12);padding:8px 10px;border-radius:8px;display:inline-block;margin-top:6px}' +
+    '#redAlert .ack{display:block;width:100%;min-height:58px;margin-top:16px;border:0;border-radius:12px;background:#fff;color:#7a0a06;font-weight:900;font-size:17px;font-family:inherit}' +
+    '#redAlert .ack:disabled{opacity:.6}#redAlert .who{font-size:13px;margin-top:10px;color:#FFD9D6}';
+  function css(){ if (document.getElementById('tri-css')) return; var s = document.createElement('style'); s.id = 'tri-css'; s.textContent = CSS; document.head.appendChild(s); }
+  function esc2(s){ return String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function laneHtml(){
+    var T = TRIAGE || { level1:[], level2:[], level3:[] };
+    var h = ['<section class="tri"><h2>Triage</h2>'];
+    h.push('<div class="lane"><div class="lane-h"><span class="lvl l3">LEVEL 3</span><span class="sub">Red alert. The Ops Manager acknowledges, nobody else can.</span></div>');
+    if (!T.level3.length) h.push('<div class="empty">No red alert open.</div>');
+    T.level3.forEach(function(i){ var p = i.payload || {}; var m = p.due_at ? left(p.due_at) : null;
+      h.push('<div class="card l3"><div class="t">' + esc2(i.title) + '</div>' +
+        '<div class="m">' + (m === null ? 'no promised time' : (m < 0 ? 'promised time passed ' + (-m) + ' min ago' : '<span class="num">' + m + '</span> minutes left')) +
+        ' &middot; vehicle ' + esc2(p.vehicle ? p.vehicle.reg + ' ' + p.vehicle.state : 'unknown') +
+        ' &middot; ' + (p.nearest ? 'nearest active vehicle ' + esc2(p.nearest.reg) + ', ' + p.nearest.km + ' km' : 'no other active vehicle with a position') + '</div>' +
+        '<div class="m">' + (i.acknowledged_at ? '<span class="done">Acknowledged by ' + esc2(i.acknowledged_by) + ' ' + ago(i.acknowledged_at) + '</span>' : 'NOT ACKNOWLEDGED, opened ' + ago(i.opened_at)) + '</div></div>'); });
+    h.push('</div>');
+    h.push('<div class="lane"><div class="lane-h"><span class="lvl l2">LEVEL 2</span><span class="sub">A dispatcher decides. Money and weight, approve or reject.</span></div>');
+    if (!T.level2.length) h.push('<div class="empty">Nothing waiting for a decision.</div>');
+    T.level2.forEach(function(i){ var p = i.payload || {};
+      var detail = i.kind === 'cod_shortfall'
+        ? 'Owed P' + pula(p.owed_thebe) + ', collected P' + pula(p.collected_thebe) + ', short <b>P' + pula(p.shortfall_thebe) + '</b>. Signed for by ' + esc2(p.pod_name || 'unknown') + '.'
+        : 'On the scale ' + p.actual_kg + ' kg, by volume ' + p.volumetric_kg + ' kg (' + (p.dims_cm ? p.dims_cm.length + ' by ' + p.dims_cm.width + ' by ' + p.dims_cm.height + ' cm' : 'no sides recorded') + '). Approving bills <b>' + p.chargeable_kg + ' kg</b>.';
+      h.push('<div class="card"><div class="t">' + esc2(i.title) + '</div><div class="m">' + detail + ' Opened ' + ago(i.opened_at) + '.</div>' +
+        (i.decision ? '<div class="m done">' + esc2(i.decision) + ' by ' + esc2(i.decided_by) + '</div>'
+                    : '<div class="row"><button class="btn" onclick="triDecide(\'' + i.id + '\',\'approved\')">Approve</button><button class="btn reject" onclick="triDecide(\'' + i.id + '\',\'rejected\')">Reject</button></div>') + '</div>'); });
+    h.push('</div>');
+    h.push('<div class="lane"><div class="lane-h"><span class="lvl l1">LEVEL 1</span><span class="sub">Written by the system, sent by the driver with one tap. Off your plate.</span></div>');
+    if (!T.level1.length) h.push('<div class="empty">No gate code requests today.</div>');
+    T.level1.forEach(function(i){ var p = i.payload || {};
+      h.push('<div class="card"><div class="t">' + esc2(i.title) + '</div><div class="m">' + (p.prepared ? 'Message written for the driver, ' + p.km + ' km from ' + esc2(p.estate) + '. ' : esc2(p.why || '') + ' ') +
+        (i.status === 'closed' ? '<span class="done">Sent by the driver.</span>' : 'Waiting for the driver to tap send.') + ' ' + ago(i.opened_at) + '</div></div>'); });
+    h.push('</div></section>');
+    return h.join('');
+  }
+  function redAlertHtml(){
+    var T = TRIAGE; if (!T) return '';
+    var open = T.level3.filter(function(i){ return !i.acknowledged_at; });
+    if (!open.length) return '';
+    var i = open[0], p = i.payload || {}; var m = p.due_at ? left(p.due_at) : null;
+    var can = role() === 'manager' || role() === 'admin';
+    return '<div id="redAlert" role="alertdialog" aria-modal="true" aria-label="Red alert"><div class="box">' +
+      '<div class="eyebrow">Red alert &middot; level 3 &middot; ' + esc2(p.priority || '') + ' consignment</div>' +
+      '<h1>' + esc2(p.waybill || i.title) + '</h1>' +
+      '<div class="clock" id="triClock">' + (m === null ? 'no time' : (m < 0 ? 'LATE' : m + ' min')) + '</div>' +
+      '<div class="line">to <b>' + esc2(p.destination || 'the promised place') + '</b>' + (p.due_at ? ', promised ' + new Date(p.due_at).toLocaleTimeString('en-GB', { timeZone: 'Africa/Gaborone', hour: '2-digit', minute: '2-digit' }) : '') + '</div>' +
+      '<div class="line">Vehicle <b>' + esc2(p.vehicle ? p.vehicle.reg : 'unknown') + '</b> ' + esc2(p.vehicle ? p.vehicle.state : '') + (p.vehicle && p.vehicle.standing_minutes ? ' for ' + p.vehicle.standing_minutes + ' minutes' : '') + '. ' + esc2(p.why || '') + '</div>' +
+      (p.pin ? '<div class="line">Last fix <span class="pin">' + p.pin.lat.toFixed(4) + ', ' + p.pin.lng.toFixed(4) + '</span> ' + ago(p.pin.recorded_at) + '</div>' : '<div class="line">No position for the vehicle.</div>') +
+      '<div class="line">' + (p.nearest ? 'Nearest active vehicle for a cargo swap: <b>' + esc2(p.nearest.reg) + '</b>, ' + p.nearest.km + ' km away, ' + esc2(p.nearest.state) + (p.nearest.driver ? ', ' + esc2(p.nearest.driver) : '') + '.' : 'No other active vehicle has a position right now, so a swap cannot be offered from here.') + '</div>' +
+      (can ? '<button class="ack" onclick="triAck(\'' + i.id + '\')">I have seen this. Acknowledge.</button>'
+           : '<button class="ack" disabled>Only the Ops Manager can acknowledge</button><div class="who">Call the Ops Manager now. This stays on every screen until they acknowledge it.</div>') +
+      (open.length > 1 ? '<div class="who">' + (open.length - 1) + ' more red alert' + (open.length > 2 ? 's' : '') + ' behind this one.</div>' : '') +
+      '</div></div>';
+  }
+  function mount(){
+    css();
+    var old = document.getElementById('triLanes'); if (old) old.remove();
+    var oldA = document.getElementById('redAlert'); if (oldA) oldA.remove();
+    var first = document.querySelector('section');
+    var host = document.createElement('div'); host.id = 'triLanes'; host.innerHTML = laneHtml() + redAlertHtml();
+    if (first && first.parentNode) first.parentNode.insertBefore(host, first); else document.body.appendChild(host);
+    if (TICK) clearInterval(TICK);
+    TICK = setInterval(function(){ var c = document.getElementById('triClock'); var open = TRIAGE && TRIAGE.level3.filter(function(i){ return !i.acknowledged_at; })[0]; if (c && open && open.payload && open.payload.due_at) { var m = left(open.payload.due_at); c.textContent = m < 0 ? 'LATE' : m + ' min'; } }, 15000);
+  }
+  async function load(force){
+    if (typeof DATA !== 'undefined' && DATA && DATA.example) { TRIAGE = EXAMPLE_TRIAGE; return mount(); }
+    if (!force && Date.now() - TRIAGE_AT < 20000) return mount();
+    try { var r = await apiFetch('/api/incidents/triage'); TRIAGE = r; TRIAGE_AT = Date.now(); } catch (e) { if (!TRIAGE) TRIAGE = { level1:[], level2:[], level3:[] }; }
+    mount();
+  }
+  window.triDecide = async function(id, decision){
+    if (TRIAGE === EXAMPLE_TRIAGE) { var i = TRIAGE.level2.filter(function(x){ return x.id === id; })[0]; if (i) { i.decision = decision; i.decided_by = 'you (example)'; } return mount(); }
+    try { await apiFetch('/api/incidents/' + id + '/decide', { method: 'POST', body: JSON.stringify({ decision: decision }) }); } catch (e) { alert(e.message); }
+    load(true);
+  };
+  window.triAck = async function(id){
+    if (TRIAGE === EXAMPLE_TRIAGE) { var i = TRIAGE.level3.filter(function(x){ return x.id === id; })[0]; if (i) { i.acknowledged_at = new Date().toISOString(); i.acknowledged_by = 'you (example)'; } return mount(); }
+    try { await apiFetch('/api/incidents/' + id + '/acknowledge', { method: 'POST', body: '{}' }); } catch (e) { alert(e.message); }
+    load(true);
+  };
+  window.SprintTriage = { load: load, mount: mount, example: function(){ TRIAGE = EXAMPLE_TRIAGE; mount(); }, current: function(){ return TRIAGE; } };
+  if (typeof render === 'function') { var _render = render; render = function(){ _render.apply(this, arguments); load(false); }; }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(function(){ load(false); }, 400); });
+  setInterval(function(){ load(true); }, 60000);
+})();
+</script>
 </body>
 </html>

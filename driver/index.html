@@ -261,7 +261,7 @@ main{max-width:640px; margin:0 auto; padding:12px 14px 20px;}
 </head>
 <body>
 <script src="../shared/sprint-db.js?v=1fed664f"></script>
-<script src="../shared/sprint-epod.js?v=ec56025d"></script>
+<script src="../shared/sprint-epod.js?v=1e34e974"></script>
 
 <header>
   <img src="../shared/logo-mark.png" alt="Sprint Couriers">
@@ -606,6 +606,7 @@ function samplePosition() {
         recorded_at: new Date().toISOString()
       });
       savePositionBuffer(buf);
+      checkEstates(pos);
     },
     () => {},
     { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
@@ -1082,6 +1083,11 @@ function stopCardHtml(s, n) {
     if (cold) {
       actions += '<button class="btn ghost" onclick="temperatureStop(\'' + s.id + '\')">Log temperature</button>';
     }
+    actions += '<button class="btn ghost" onclick="measureStop(\'' + s.id + '\')">Measure</button>';
+    if (s.gate && s.gate.href) {
+      actions += '<a class="btn" style="background:#25D366;color:#0E2F22" href="' + esc(s.gate.href) + '" target="_blank" rel="noopener" onclick="gateSent(\'' + s.id + '\')">Ask for the gate code on WhatsApp</a>' +
+        '<div class="stop-line">Opens WhatsApp with the message written. Nothing is sent until you press send.</div>';
+    }
   }
   // Brick 68: the card rides in a wrapper so it can slide, with the action it
   // would take showing underneath as it moves.
@@ -1115,6 +1121,44 @@ async function advanceStop(id) {
   if (!next) return;
   await postStopStatus(s, { status: next });
 }
+/* Brick 84: the tape measure, and the gate code request the system writes. */
+async function measureStop(id) {
+  const s = findStop(id);
+  if (!s || !window.SprintEPOD) return;
+  const d = await SprintEPOD.dims({ title: 'Measure ' + (s.destination || s.waybill) });
+  if (!d) return;
+  const note = document.getElementById('positionNote');
+  try {
+    const r = await apiFetch('/api/shipments/' + s.id + '/dims', { method: 'POST', headers: clientHeaders({ id: uid() }), body: JSON.stringify(d) });
+    if (note) { note.style.display = 'block'; note.textContent = r.mismatch
+      ? 'By volume this parcel is ' + r.volumetricKg + ' kg against ' + r.actualKg + ' kg on the scale. Dispatch has been asked to approve the difference.'
+      : 'By volume this parcel is ' + (r.volumetricKg === null ? 'unknown' : r.volumetricKg + ' kg') + ', so the scale weight stands.'; }
+  } catch (e) {
+    await queueOrSend({ id: uid(), kind: 'dims', url: '/api/shipments/' + s.id + '/dims', method: 'POST', body: d });
+    if (note) { note.style.display = 'block'; note.textContent = 'Measurements saved and waiting for signal.'; }
+  }
+}
+const GATE_CHECKED = {};
+async function checkEstates(pos) {
+  if (!navigator.onLine || !pos || !pos.coords) return;
+  const fix = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+  for (const s of STOPS) {
+    if (s.status !== 'out_for_delivery' || s.gate || GATE_CHECKED[s.id]) continue;
+    GATE_CHECKED[s.id] = Date.now();
+    try {
+      const r = await apiFetch('/api/shipments/' + s.id + '/geofence', { method: 'POST', body: JSON.stringify(fix) });
+      if (r && r.near) {
+        s.gate = { href: r.href, text: r.text, estate: r.estate, incident_id: r.incident_id, prepared: r.prepared, why: r.why };
+        renderStops();
+      }
+    } catch (e) { delete GATE_CHECKED[s.id]; }
+  }
+}
+function gateSent(id) {
+  const s = findStop(id);
+  if (!s || !s.gate || !s.gate.incident_id) return;
+  queueOrSend({ id: uid(), kind: 'gate', url: '/api/incidents/' + s.gate.incident_id + '/gate-sent', method: 'POST', body: {} });
+}
 async function deliverStop(id) {
   const s = findStop(id);
   if (!s) return;
@@ -1132,6 +1176,14 @@ async function deliverStop(id) {
       // simply stays unknown until a delivery that does have one.
       var fix = drepLastFix();
       var body = { status: 'delivered', pod_name: value };
+      // Brick 84, level 2: a cash on delivery job needs the receipt photographed
+      // and the amount collected before it can close. Cancel means not closed.
+      if (s.cod_amount_thebe > 0 && window.SprintEPOD) {
+        const cod = await SprintEPOD.receipt({ amountThebe: s.cod_amount_thebe, title: 'Cash on delivery, ' + (s.destination || s.waybill) });
+        if (!cod) return;
+        body.cod_receipt_base64 = cod.photo;
+        body.cod_collected_thebe = cod.collectedThebe;
+      }
       if (fix && typeof fix.lat === 'number') {
         // Rounded to three decimals, roughly a hundred metres. That is ample to
         // put three stops in a town in the right order and deliberately too
