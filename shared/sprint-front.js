@@ -214,7 +214,7 @@
       var face = i.urgent
         ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5 23 21H1z"/><path fill="#FF6B61" d="M11 9h2v6h-2zM11 16.5h2V19h-2z"/></svg>'
         : (sys ? '&#9679;' : esc(initial(i.name)));
-      h.push('<div class="fi' + (i.urgent ? ' urgent' : '') + '"' + (i.urgent ? ' tabindex="0" role="button" data-urgent="1"' : '') + '><div class="av' + (sys && !i.urgent ? ' sys' : '') + '" title="' + esc(i.urgent ? 'urgent' : sys ? 'the system' : i.name) + '">' + face + '</div>' +
+      h.push('<div class="fi' + (i.urgent ? ' urgent' : '') + '"' + (i.urgent ? ' tabindex="0" role="button" aria-expanded="false" data-urgent="1"' : '') + '><div class="av' + (sys && !i.urgent ? ' sys' : '') + '" title="' + esc(i.urgent ? 'urgent' : sys ? 'the system' : i.name) + '">' + face + '</div>' +
         '<div class="b"><div class="w">' + esc(i.text) + '</div><div class="m">' +
         (i.kind ? '<span class="tag' + (i.urgent ? ' urg' : '') + '">' + esc(FILTERS.filter(function (f) { return f.key === i.kind; }).map(function (f) { return f.label; })[0] || i.kind) + '</span>' : '') +
         '<span>' + esc(i.name ? i.name : (i.who || '')) + '</span><span>' + esc(ago(i.at)) + '</span></div>' +
@@ -237,11 +237,15 @@
     // an urgent row opens its two actions in place, and closes again
     var urg = host.querySelectorAll('.fi[data-urgent]');
     for (var u = 0; u < urg.length; u++) {
+      // Brick 96: the row is announced as a button, so it must also announce
+      // whether it is open. Without this a person on a screen reader hears a
+      // button and has no way to know the two actions are now showing.
+      var say = function (el) { el.setAttribute('aria-expanded', el.classList.contains('open') ? 'true' : 'false'); };
       urg[u].addEventListener('click', function (e) {
         if (e.target.closest('.acts')) return;      // a tap ON an action is the action
-        this.classList.toggle('open');
+        this.classList.toggle('open'); say(this);
       });
-      urg[u].addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.classList.toggle('open'); } });
+      urg[u].addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.classList.toggle('open'); say(this); } });
     }
     var drafts = host.querySelectorAll('.fi .drafted');
     for (var dft = 0; dft < drafts.length; dft++) drafts[dft].addEventListener('click', function (e) {

@@ -201,8 +201,9 @@ html[data-role="driver"] .tiles .tile{display:none}
 html[data-role="driver"] .tiles .tile[data-tile="ops"],
 html[data-role="driver"] .tiles .tile[data-tile="driver"],
 html[data-role="driver"] .tiles .tile[data-tile="fleet"]{display:flex}
-html[data-role="driver"] [data-tiles="preview"],
-html[data-role="driver"] [data-sec="preview"]{display:none}
+/* Brick 96: the Preview island now rides the shared data-allowed contract
+   in apps/shared/sprint-allowed.css instead of a rule written here. Same
+   outcome for a driver, and the same attribute now works on any page. */
 
 html[data-role="staff"] .tiles .tile[data-tile="quote"]{order:-3}
 html[data-role="staff"] .tiles .tile[data-tile="sales"]{order:-2}
@@ -293,6 +294,7 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
      apps/shared/sprint-roles.js for what this does and, just as
      importantly, what it deliberately does not do. -->
 <script src="shared/sprint-roles.js?v=daf3ad52"></script>
+<link rel="stylesheet" href="shared/sprint-allowed.css?v=c6953555">
 <script>
 // Brick 82: the glare mode flag itself, read and applied the same way and
 // for the same reason as the role above, so a phone that chose high
@@ -381,8 +383,8 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
       <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></a>
   </div>
 
-  <div class="sec" data-sec="preview"><h2>Preview</h2><span>example data</span></div>
-  <div class="tiles" data-tiles="preview">
+  <div class="sec" data-sec="preview" data-allowed="admin staff ops accounts manager"><h2>Preview</h2><span>example data</span></div>
+  <div class="tiles" data-tiles="preview" data-allowed="admin staff ops accounts manager">
     <a class="tile g muted" href="care/index.html"><span class="pill soon">Preview</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg></div>
       <div class="n">Customer Care</div><div class="l">Track, quote and complaint intake</div></a>
@@ -498,6 +500,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 </script>
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
 <script src="shared/sprint-find.js?v=240cc7b1"></script>
-<script src="shared/sprint-front.js?v=9ca50abe"></script>
+<script src="shared/sprint-front.js?v=35048076"></script>
 </body>
 </html>
