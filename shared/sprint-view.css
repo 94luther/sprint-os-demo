@@ -1,0 +1,46 @@
+/* Sprint OS: no white flash between pages. Brick 101, phase 3.
+
+   Until now, tapping a department tile did what a web page has always done: the old
+   page vanished, the screen went white for a moment, and the new page appeared. On a
+   phone that flash is the single thing that says "this is a website" rather than
+   "this is an app", and it is the one moment in the whole system nobody could style.
+
+   The browser can do it itself now. This one at-rule tells it to cross fade between
+   two pages of the same site instead of blanking, and the browser handles the rest at
+   the compositor, which is smoother than anything script could manage.
+
+   WHY THIS IS SAFE TO ADD AND IMPOSSIBLE TO BREAK
+     A browser that has never heard of @view-transition ignores the whole block, and
+     navigation carries on exactly as it did before: old page out, new page in. There
+     is no fallback to write, no library to load and nothing to feature detect, which
+     is why this is three lines rather than three hundred.
+
+     Chrome and Edge have had it since 126. Safari since 18.2, on the iPhone as well
+     as the Mac, which is why it is worth adding at all: the phones this is for can
+     actually use it. Firefox ignores it today and loses nothing by doing so.
+
+   NOTHING ELSE CHANGES
+     This only affects the moment BETWEEN two pages. It does not touch layout, colour,
+     the shrinking bar, or the motion layer in sprint-motion.js, which handles movement
+     WITHIN a page. The two do not overlap and neither knows about the other. */
+
+@view-transition {
+  navigation: auto;
+}
+
+/* A shade slower than the browser default, because the Sprint pages are dark and a
+   fast cross fade between two dark pages reads as a flicker rather than a movement. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Somebody who asked their phone for less motion gets the plain instant swap back.
+   The same rule the motion layer follows: the result never differs, only the journey
+   to it, so nothing is ever hidden from a person who turned motion off. */
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}

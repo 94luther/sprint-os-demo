@@ -51,8 +51,38 @@ a{color:inherit;text-decoration:none}
   display:block;margin-top:12px;border-radius:28px;padding:22px 20px 20px;position:relative;overflow:hidden;
   background:linear-gradient(135deg,rgba(20,70,45,.58),rgba(42,140,60,.42) 60%,rgba(70,190,90,.34));backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);border:1px solid rgba(255,255,255,.18);box-shadow:var(--shadow-lg);color:#fff;
 }
-.hero::before{content:"";position:absolute;left:-20%;top:-60%;width:140%;height:110%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));transform:rotate(-8deg)}
-.hero::after{content:"";position:absolute;right:-30px;bottom:-80px;width:170px;height:170px;border-radius:50%;background:rgba(247,148,29,.28)}
+/* Brick 101: the two shapes behind the morning card.
+   They used to be hard edged discs, and the orange one carried no blur at all,
+   which is why it read as a sticker rather than as light. Now each one is a
+   radial gradient that fades to nothing at its own edge, so there is no edge to
+   see, and the two drift slowly across each other on long loops of different
+   lengths. Where green passes under orange the colour shifts on its own; no
+   colour is animated, which matters, because animating a colour repaints the
+   card on every frame and animating a position does not.
+   No blur filter either, deliberately: the soft falloff of the gradient IS the
+   steam, and it costs nothing on a cheap phone, where a blurred layer this size
+   would be re-drawn at every step of the scale. */
+.hero::before{content:"";position:absolute;left:-30%;top:-70%;width:160%;height:170%;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,rgba(150,240,160,.40),rgba(70,190,90,.20) 42%,rgba(70,190,90,0) 68%);
+  will-change:transform;animation:sp-haze-a 34s ease-in-out infinite alternate}
+.hero::after{content:"";position:absolute;right:-45%;bottom:-85%;width:165%;height:175%;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,rgba(247,148,29,.46),rgba(255,176,70,.22) 40%,rgba(255,176,70,0) 66%);
+  will-change:transform;animation:sp-haze-b 47s ease-in-out infinite alternate}
+@keyframes sp-haze-a{
+  0%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(12%,7%,0) scale(1.16)}
+  100%{transform:translate3d(-9%,11%,0) scale(1.05)}
+}
+@keyframes sp-haze-b{
+  0%{transform:translate3d(0,0,0) scale(1.04)}
+  50%{transform:translate3d(-14%,-9%,0) scale(1.2)}
+  100%{transform:translate3d(9%,-5%,0) scale(1)}
+}
+/* Somebody who asked their phone for less motion gets the same soft card,
+   standing still. The look never depends on the movement. */
+@media (prefers-reduced-motion: reduce){
+  .hero::before,.hero::after{animation:none}
+}
 .hero .eyebrow{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#FDDCB5;position:relative}
 .hero h1{font-size:26px;font-weight:900;letter-spacing:-.4px;line-height:1.12;margin:6px 0 8px;position:relative;max-width:300px}
 .hero p{font-size:13.5px;color:rgba(255,255,255,.86);max-width:320px;position:relative}
@@ -295,6 +325,7 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
      importantly, what it deliberately does not do. -->
 <script src="shared/sprint-roles.js?v=daf3ad52"></script>
 <link rel="stylesheet" href="shared/sprint-allowed.css?v=c6953555">
+<link rel="stylesheet" href="shared/sprint-view.css?v=4c6919d3">
 <script src="shared/sprint-motion.js?v=9677b8ce" defer></script>
 <script>
 // Brick 82: the glare mode flag itself, read and applied the same way and
