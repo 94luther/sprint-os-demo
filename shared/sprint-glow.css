@@ -1,0 +1,245 @@
+/* Sprint OS: light that comes from inside the object. Brick 104.
+
+   Luther, 16 Sep 2026, with a board of references: deep near black grounds,
+   objects lit from within, orange that bleeds into the dark around it, soft
+   squircles, and charts whose bars glow rather than sit flat.
+
+   WHAT MAKES THAT LOOK WORK, and it is not "add a shadow"
+
+   Three things happen at once in every one of those references:
+
+     1. THE GROUND IS NEARLY BLACK, not grey. Glow is a contrast effect. On a
+        #1d1d19 panel an orange halo has nothing to bleed into and reads as a
+        smudge. The ground drops to near black and the panels lift only slightly
+        off it, so there is somewhere for the light to fall.
+
+     2. EVERY LIT OBJECT HAS THREE LAYERS: a core, a rim, and a bleed. The core
+        is the colour itself. The rim is a one pixel inner highlight along the
+        top edge, which is what makes a shape look like it is made of glass
+        rather than painted on. The bleed is a large, very soft shadow in the
+        same hue, sitting well outside the shape. Miss the rim and it looks
+        cheap; miss the bleed and it looks flat.
+
+     3. THE GLOW MEANS SOMETHING. In the references everything glows because
+        they are posters. Here it would be noise. So brightness is tied to
+        urgency: a tender closing in two days burns, one closing in twenty seven
+        days barely smoulders. The eye is drawn to the thing that matters, which
+        is the whole job of an operations screen.
+
+   PERFORMANCE, because this is the expensive kind of pretty
+
+   box-shadow and filter are PAINTED, not composited. They cost real work on a
+   cheap Android every time the pixel under them changes. So:
+     nothing here animates a shadow, ever;
+     the drifting shapes behind cards keep animating transform and opacity only,
+       which the compositor handles without repainting;
+     the glow is static, and a static shadow is painted once and cached.
+
+   WHERE IT SWITCHES OFF, and both of these matter more than the look
+
+     SUNLIGHT. A glow is contrast spent on decoration. Outdoors, with the screen
+     dimmed, that contrast is needed for the words. Under html[data-glare="on"]
+     every glow here is removed and the flat high contrast screen comes back
+     untouched. A driver in a car park never sees any of this.
+
+     LESS MOTION. Nothing here moves, so reduced motion is unaffected, but the
+     shapes this sits beside do stop, and the glow is built to look correct with
+     them standing still. */
+
+:root {
+  --glow-orange: 247, 148, 29;
+  --glow-green: 58, 170, 53;
+  --glow-red: 224, 72, 62;
+  --glow-ink: #08080A;
+}
+
+/* 1. THE GROUND. Near black, with one very wide warm pool low on the screen so
+      the dark is not a flat slab. Fixed, so it does not scroll away. */
+html[data-glow="on"] body {
+  background: var(--glow-ink);
+}
+html[data-glow="on"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 55% at 50% 118%, rgba(var(--glow-orange), .16), rgba(var(--glow-orange), 0) 62%),
+    radial-gradient(90% 45% at 12% -8%, rgba(var(--glow-green), .09), rgba(var(--glow-green), 0) 60%);
+}
+
+/* 2. PANELS. Lifted a little off the ground, with the rim highlight along the
+      top edge that makes a surface read as glass rather than paint. */
+html[data-glow="on"] .card,
+html[data-glow="on"] .drawer {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .012));
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .13),
+    0 1px 2px rgba(0, 0, 0, .5),
+    0 14px 34px rgba(0, 0, 0, .46);
+}
+
+/* 3. URGENCY IS BRIGHTNESS. The reference boards glow everywhere; a working
+      screen cannot, or nothing stands out. These three are the only cards that
+      carry a coloured bleed, and they carry it in proportion. */
+html[data-glow="on"] .card:has(.verdict.red) {
+  border-color: rgba(var(--glow-red), .42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .13),
+    0 0 0 1px rgba(var(--glow-red), .14),
+    0 0 34px rgba(var(--glow-red), .30),
+    0 14px 34px rgba(0, 0, 0, .46);
+}
+html[data-glow="on"] .card:has(.verdict.orange) {
+  border-color: rgba(var(--glow-orange), .36);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .13),
+    0 0 26px rgba(var(--glow-orange), .22),
+    0 14px 34px rgba(0, 0, 0, .46);
+}
+html[data-glow="on"] .card:has(.verdict.green) {
+  border-color: rgba(var(--glow-green), .20);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .13),
+    0 0 18px rgba(var(--glow-green), .10),
+    0 14px 34px rgba(0, 0, 0, .46);
+}
+
+/* 4. THE VERDICT PILL. The small bright core in the references: a saturated
+      centre, a tight halo, and the text itself lit rather than outlined. */
+html[data-glow="on"] .verdict {
+  border-radius: 999px;
+  border-width: 1px;
+  text-shadow: 0 0 12px currentColor;
+}
+html[data-glow="on"] .verdict.red {
+  background: rgba(var(--glow-red), .13);
+  box-shadow: 0 0 16px rgba(var(--glow-red), .40), inset 0 0 12px rgba(var(--glow-red), .18);
+}
+html[data-glow="on"] .verdict.orange {
+  background: rgba(var(--glow-orange), .12);
+  box-shadow: 0 0 14px rgba(var(--glow-orange), .32), inset 0 0 12px rgba(var(--glow-orange), .16);
+}
+html[data-glow="on"] .verdict.green {
+  background: rgba(var(--glow-green), .10);
+  box-shadow: 0 0 12px rgba(var(--glow-green), .20);
+}
+
+/* 5. THE BARS, which is the analytic card on that board. A glowing fill and a
+      brighter leading edge, so the eye lands on where the bar ENDS: the number
+      the bar exists to communicate. */
+html[data-glow="on"] .bar {
+  background: rgba(255, 255, 255, .055);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .55);
+  overflow: hidden;
+}
+html[data-glow="on"] .bar-fill {
+  border-radius: 999px;
+  position: relative;
+}
+html[data-glow="on"] .bar-fill.orange {
+  background: linear-gradient(90deg, rgba(var(--glow-orange), .40), rgba(var(--glow-orange), 1));
+  box-shadow: 0 0 18px rgba(var(--glow-orange), .55);
+}
+html[data-glow="on"] .bar-fill.red {
+  background: linear-gradient(90deg, rgba(var(--glow-red), .40), rgba(var(--glow-red), 1));
+  box-shadow: 0 0 18px rgba(var(--glow-red), .55);
+}
+html[data-glow="on"] .bar-fill:not(.orange):not(.red) {
+  background: linear-gradient(90deg, rgba(var(--glow-green), .38), rgba(var(--glow-green), .95));
+  box-shadow: 0 0 14px rgba(var(--glow-green), .40);
+}
+/* the bright edge where the bar stops */
+html[data-glow="on"] .bar-fill::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 0 10px rgba(255, 255, 255, .75);
+}
+html[data-glow="on"] .bar-label {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .9);
+}
+
+/* 6. THE HEADER. A thin lit seam under the bar rather than a grey rule, which
+      is the single cheapest thing that makes a dark screen look designed. */
+html[data-glow="on"] header {
+  background: rgba(8, 8, 10, .82);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg,
+      rgba(var(--glow-orange), 0),
+      rgba(var(--glow-orange), .55),
+      rgba(var(--glow-green), .35),
+      rgba(var(--glow-green), 0)) 1;
+}
+
+/* 7. THE EXAMPLE BANNER. It already holds two drifting shapes; this gives the
+      surface they drift inside an edge to bleed against. */
+html[data-glow="on"] .banner-example {
+  border-radius: 16px;
+  border-color: rgba(var(--glow-orange), .40);
+  box-shadow: 0 0 26px rgba(var(--glow-orange), .16), inset 0 1px 0 rgba(255, 255, 255, .10);
+  text-shadow: 0 0 14px rgba(var(--glow-orange), .45);
+}
+
+/* 8. BUTTONS. The squircle from the reference board: soft corners, lit top
+      edge, and a halo that only appears under a finger. */
+html[data-glow="on"] .btn-mini,
+html[data-glow="on"] .drawer-close {
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
+  border: 1px solid rgba(255, 255, 255, .13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 2px 8px rgba(0, 0, 0, .45);
+}
+html[data-glow="on"] .btn-mini:active,
+html[data-glow="on"] .drawer-close:active {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .14),
+    0 0 22px rgba(var(--glow-orange), .45);
+  border-color: rgba(var(--glow-orange), .55);
+}
+
+/* 9. SECTION HEADINGS, lifted out of flat grey so the page has a rhythm. */
+html[data-glow="on"] .section-head h2 {
+  color: rgba(255, 255, 255, .66);
+  letter-spacing: .09em;
+}
+
+/* ---------------------------------------------------------------------------
+   SUNLIGHT. Everything above is removed, not softened.
+
+   A glow spends contrast on decoration. Outdoors on a dimmed screen that
+   contrast is needed for the words, and the person holding the phone is trying
+   to read a delivery, not admire a card. This restores the flat high contrast
+   screen exactly as it was.
+   --------------------------------------------------------------------------- */
+html[data-glare="on"][data-glow="on"] body::after { display: none; }
+html[data-glare="on"][data-glow="on"] body { background: #0A2417; }
+html[data-glare="on"][data-glow="on"] .card,
+html[data-glare="on"][data-glow="on"] .drawer,
+html[data-glare="on"][data-glow="on"] .verdict,
+html[data-glare="on"][data-glow="on"] .bar,
+html[data-glare="on"][data-glow="on"] .bar-fill,
+html[data-glare="on"][data-glow="on"] .banner-example,
+html[data-glare="on"][data-glow="on"] .btn-mini,
+html[data-glare="on"][data-glow="on"] header {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-image: none !important;
+}
+html[data-glare="on"][data-glow="on"] .bar-fill::after { display: none; }
+
+/* A browser without :has() simply gets the plain panels and no coloured bleed.
+   Nothing is hidden and nothing breaks: the verdict word still says RENEW SOON
+   in its own colour, because the glow was never the only way to read it. */
