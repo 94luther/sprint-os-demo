@@ -125,6 +125,30 @@
       }).join(''));
     } catch (e) {
       if (mine !== seq) return;
+      /* Brick 103: there is no office system on the public demo and there never
+         will be, deliberately. So this used to answer "could not reach the office
+         system" to EVERY search, including 84920, which is the waybill the feed
+         on the front page names and the guide tells a reviewer to type. The first
+         thing anybody tried was the one thing guaranteed to fail.
+
+         When the hub is genuinely unreachable in the office, the honest message
+         below is still the right one. On the demo the invented records answer
+         instead, and say so in as many words, so nobody mistakes them for real
+         consignments. */
+      var EX = root.SprintExample;
+      if (EX && typeof EX.find === 'function') {
+        var demo = EX.find(q);
+        if (mine !== seq) return;
+        if (demo.count) {
+          draw('<div class="fnd-note">Showing invented example records. This copy has no connection to the office system.</div>' +
+            demo.results.map(function (c) {
+              return c.kind === 'shipment' ? shipmentHtml(c) : c.kind === 'vehicle' ? vehicleHtml(c) : customerHtml(c);
+            }).join(''));
+        } else {
+          draw('<div class="fnd-note">' + esc(demo.note) + '</div>');
+        }
+        return;
+      }
       draw('<div class="fnd-note">Could not reach the office system just now, so nothing can be looked up. What is on this screen already is still here.</div>');
     }
   }

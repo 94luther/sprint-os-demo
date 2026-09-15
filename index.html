@@ -51,37 +51,60 @@ a{color:inherit;text-decoration:none}
   display:block;margin-top:12px;border-radius:28px;padding:22px 20px 20px;position:relative;overflow:hidden;
   background:linear-gradient(135deg,rgba(20,70,45,.58),rgba(42,140,60,.42) 60%,rgba(70,190,90,.34));backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);border:1px solid rgba(255,255,255,.18);box-shadow:var(--shadow-lg);color:#fff;
 }
-/* Brick 101: the two shapes behind the morning card.
-   They used to be hard edged discs, and the orange one carried no blur at all,
-   which is why it read as a sticker rather than as light. Now each one is a
-   radial gradient that fades to nothing at its own edge, so there is no edge to
-   see, and the two drift slowly across each other on long loops of different
-   lengths. Where green passes under orange the colour shifts on its own; no
-   colour is animated, which matters, because animating a colour repaints the
-   card on every frame and animating a position does not.
-   No blur filter either, deliberately: the soft falloff of the gradient IS the
-   steam, and it costs nothing on a cheap phone, where a blurred layer this size
-   would be re-drawn at every step of the scale. */
-.hero::before{content:"";position:absolute;left:-30%;top:-70%;width:160%;height:170%;border-radius:50%;
-  background:radial-gradient(circle at 50% 50%,rgba(150,240,160,.40),rgba(70,190,90,.20) 42%,rgba(70,190,90,0) 68%);
-  will-change:transform;animation:sp-haze-a 34s ease-in-out infinite alternate}
-.hero::after{content:"";position:absolute;right:-45%;bottom:-85%;width:165%;height:175%;border-radius:50%;
-  background:radial-gradient(circle at 50% 50%,rgba(247,148,29,.46),rgba(255,176,70,.22) 40%,rgba(255,176,70,0) 66%);
-  will-change:transform;animation:sp-haze-b 47s ease-in-out infinite alternate}
+/* Brick 101, corrected 16 Sep 2026: the shapes behind the morning card.
+
+   They were on 34 and 47 second loops, which is slower than a minute hand moves
+   across its own width. Nothing was broken: the animations ran, reduced motion
+   was off, glare mode was off. It just could not be seen, and for a thing whose
+   only job is to be seen that is the same as being still.
+
+   Three layers now, on 13, 17 and 21 second loops. Those three numbers share no
+   common factor, so the pattern the three of them make together does not come
+   back round for more than fifteen minutes, and it never reads as a loop.
+
+   Each layer drifts AND breathes: its opacity rises and falls on its own
+   schedule. THAT is what changes the colour. Where the green layer is at full
+   strength under an orange one at half strength the mix reads green, and a few
+   seconds later the weights have swapped and the same patch of card reads amber.
+   No colour value is animated anywhere, and none needs to be.
+
+   Why that matters on a cheap phone: opacity and transform are the only two
+   properties a browser can change without redrawing the element, because both
+   are handled by the compositor on the graphics chip. So the card changes colour
+   continuously and costs nothing, which would not be true of animating the
+   colour stops inside a gradient. No blur filter either, for the same reason:
+   the soft falloff of the gradient IS the steam. */
+.hero::before,.hero::after,.hero .haze{
+  position:absolute;border-radius:50%;pointer-events:none;
+  will-change:transform,opacity}
+.hero::before{content:"";left:-30%;top:-70%;width:160%;height:170%;
+  background:radial-gradient(circle at 50% 50%,rgba(150,240,160,.46),rgba(70,190,90,.22) 42%,rgba(70,190,90,0) 68%);
+  animation:sp-haze-a 13s ease-in-out infinite alternate}
+.hero::after{content:"";right:-45%;bottom:-85%;width:165%;height:175%;
+  background:radial-gradient(circle at 50% 50%,rgba(247,148,29,.52),rgba(255,176,70,.24) 40%,rgba(255,176,70,0) 66%);
+  animation:sp-haze-b 17s ease-in-out infinite alternate}
+.hero .haze{left:10%;bottom:-70%;width:150%;height:160%;
+  background:radial-gradient(circle at 50% 50%,rgba(120,225,205,.40),rgba(60,180,175,.18) 44%,rgba(60,180,175,0) 70%);
+  animation:sp-haze-c2 21s ease-in-out infinite alternate}
 @keyframes sp-haze-a{
-  0%{transform:translate3d(0,0,0) scale(1)}
-  50%{transform:translate3d(12%,7%,0) scale(1.16)}
-  100%{transform:translate3d(-9%,11%,0) scale(1.05)}
+  0%{transform:translate3d(0,0,0) scale(1);opacity:.75}
+  50%{transform:translate3d(16%,9%,0) scale(1.20);opacity:1}
+  100%{transform:translate3d(-12%,14%,0) scale(1.06);opacity:.62}
 }
 @keyframes sp-haze-b{
-  0%{transform:translate3d(0,0,0) scale(1.04)}
-  50%{transform:translate3d(-14%,-9%,0) scale(1.2)}
-  100%{transform:translate3d(9%,-5%,0) scale(1)}
+  0%{transform:translate3d(0,0,0) scale(1.04);opacity:.62}
+  50%{transform:translate3d(-18%,-12%,0) scale(1.24);opacity:1}
+  100%{transform:translate3d(12%,-7%,0) scale(1);opacity:.70}
+}
+@keyframes sp-haze-c2{
+  0%{transform:translate3d(0,0,0) scale(1.02);opacity:.38}
+  50%{transform:translate3d(-15%,-14%,0) scale(1.22);opacity:.85}
+  100%{transform:translate3d(14%,-4%,0) scale(1.06);opacity:.45}
 }
 /* Somebody who asked their phone for less motion gets the same soft card,
    standing still. The look never depends on the movement. */
 @media (prefers-reduced-motion: reduce){
-  .hero::before,.hero::after{animation:none}
+  .hero::before,.hero::after,.hero .haze{animation:none}
 }
 .hero .eyebrow{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#FDDCB5;position:relative}
 .hero h1{font-size:26px;font-weight:900;letter-spacing:-.4px;line-height:1.12;margin:6px 0 8px;position:relative;max-width:300px}
@@ -277,7 +300,8 @@ html[data-glare="on"] .glare-toggle{
 }
 html[data-glare="on"] .topbar::before,
 html[data-glare="on"] .hero::before,
-html[data-glare="on"] .hero::after{display:none}
+html[data-glare="on"] .hero::after,
+html[data-glare="on"] .hero .haze{display:none}
 html[data-glare="on"] .hello .t b,
 html[data-glare="on"] .hero h1,
 html[data-glare="on"] .tile .n{color:#FFFFFF;font-weight:900}
@@ -385,6 +409,7 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
   </div>
 
   <a class="hero" href="insights/index.html">
+    <i class="haze" aria-hidden="true"></i>
     <div class="eyebrow" id="heroWhen">This morning</div>
     <h1 id="heroTitle">What the system saw while you slept</h1>
     <p>Five things to know, the money as it stands, and who to call with the question already written.</p>
@@ -543,7 +568,8 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 })();
 </script>
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
-<script src="shared/sprint-find.js?v=b9e20cd5"></script>
-<script src="shared/sprint-front.js?v=dd8396f2"></script>
+<script src="shared/sprint-find.js?v=cc985db9"></script>
+<script src="shared/sprint-example.js?v=be27bd61"></script>
+<script src="shared/sprint-front.js?v=090bc3ae"></script>
 </body>
 </html>

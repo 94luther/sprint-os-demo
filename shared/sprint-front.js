@@ -44,16 +44,17 @@
     '.rc::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(4,20,14,.55) 100%);pointer-events:none}' +
     /* Brick 102: the tender card's circle was a 170 px disc with a 6 px blur, which
        is a disc with a soft edge and still a disc, and it sat perfectly still. It is
-       now a gradient with no edge at all, drifting on its own 41 second loop. That
-       number is deliberate: the two shapes behind the morning card run at 34 and 47
-       seconds, so nothing on the screen ever moves in step with anything else. Only
-       the position animates, never the colour, so the card is not repainted. */
+       now a gradient with no edge at all, drifting on its own 15 second loop. That
+       number is deliberate: the three shapes behind the morning card run at 13, 17
+       and 21 seconds, so nothing on the screen ever moves in step with anything
+       else. Position and opacity animate, never a colour value, so the card is
+       never repainted: the compositor handles both, not the processor. */
     '.rc.money::after{content:"";position:absolute;right:-55%;top:-75%;width:170%;height:190%;border-radius:50%;' +
       'background:radial-gradient(circle at 50% 50%,rgba(247,148,29,.44),rgba(255,176,70,.20) 42%,rgba(255,176,70,0) 68%);' +
-      'will-change:transform;animation:sp-haze-c 41s ease-in-out infinite alternate}' +
-    '@keyframes sp-haze-c{0%{transform:translate3d(0,0,0) scale(1)}' +
-      '50%{transform:translate3d(-13%,10%,0) scale(1.18)}' +
-      '100%{transform:translate3d(8%,-7%,0) scale(1.04)}}' +
+      'will-change:transform,opacity;animation:sp-haze-c 15s ease-in-out infinite alternate}' +
+    '@keyframes sp-haze-c{0%{transform:translate3d(0,0,0) scale(1);opacity:.70}' +
+      '50%{transform:translate3d(-17%,13%,0) scale(1.22);opacity:1}' +
+      '100%{transform:translate3d(11%,-9%,0) scale(1.05);opacity:.64}}' +
     '@media (prefers-reduced-motion: reduce){.rc.money::after{animation:none}}' +
     '.rc > *{position:relative}' +
     '.rc .k{font-size:10.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#FDDCB5}' +
@@ -191,8 +192,13 @@
     var now = Date.now();
     var iso = function (min) { return new Date(now + min * 60000).toISOString(); };
     STATE.example = true;
-    STATE.tenders = [{ issuer: 'EXAMPLE Standards Board', reference: 'EXAMPLE/T/12', title: 'EXAMPLE courier and logistics services', closes_at: iso(12 * 1440 + 3 * 60), status: 'bid' }];
-    STATE.docs = { inDate: 4, total: 6 };
+    /* Brick 103: this screen used to invent its own tender, closing 12 days and
+       3 hours out, while the Tender Desk showed 4 days for the same one. Both
+       now read the same record. The document count is COUNTED from the register
+       rather than typed, which is why it was 4 of 6 here and 7 in the register. */
+    var EX = root.SprintExample;
+    STATE.tenders = EX ? [EX.hero()] : [];
+    STATE.docs = EX ? EX.documentCount() : { inDate: null, total: null };
     STATE.campaigns = [{ name: 'EXAMPLE 20th anniversary campaign', channel: 'video', started_at: iso(-3 * 1440), note: 'EXAMPLE: 3 of 7 films approved, rollout dates not recorded' }];
     STATE.alerts = [];
     STATE.feed = [

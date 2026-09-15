@@ -186,7 +186,7 @@ section{margin-bottom:22px;}
     <button class="btn" type="submit">Sign in</button>
     <div class="err" id="loginErr"></div>
   </form>
-  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <div class="login-hint">This copy carries invented example data and has no connection to the office system, so there is nothing to sign in to. Open any department below.</div>
   <button class="btn ghost" id="offlineBtn">View example data instead</button>
 </div>
 
@@ -365,6 +365,19 @@ function render(){
   // Km per litre by vehicle, a bar against the fleet median so the weak one
   // is visible without reading a number.
   html.push('<section><div class="section-head"><h2>Kilometres per litre, by vehicle</h2></div><div class="panel">');
+  // Brick 72: the fleet against its own median, as the reference's score ring. The ring is the
+  // share of vehicles with a figure that sit within 15 percent of the median; touch it for the
+  // names. A fleet with no figure yet is drawn as no data and names who captures it.
+  {
+    const median = DATA.fleet_median_km_per_litre;
+    const withFig = vehicles.filter(v=>v.km_per_litre!==null && v.km_per_litre!==undefined);
+    const ok = median ? withFig.filter(v=>v.km_per_litre >= median*0.85) : [];
+    const known = !!median && withFig.length>0;
+    window.__spKml = { known, value: known ? Math.round(ok.length/withFig.length*100) : null,
+      detail: known ? (ok.length+' of '+withFig.length+' vehicles with a figure are within 15 percent of the fleet median of '+median+' km per litre.'+(withFig.length<vehicles.length ? ' '+(vehicles.length-withFig.length)+(vehicles.length-withFig.length===1 ? ' more has' : ' more have')+' no figure yet.' : '')) : null };
+    html.push('<div class="sp-ring-wrap"><div id="spKmlRing"></div><div class="sp-ring-side"><b>'+(known ? 'Fleet against its median' : 'No figure yet')+'</b>'+
+      (known ? 'Green when a vehicle is within 15 percent of the median. The bars below name each one.' : 'A figure needs a closed trip with a distance and a fuel purchase to divide it by. Owner: the driver app for trips, the fuel log for litres.')+'</div></div>');
+  }
   renderKmlBars(html, vehicles, 'reg');
   if(DATA.fleet_median_km_per_litre) html.push('<div class="median-key">The white line marks the fleet median, '+DATA.fleet_median_km_per_litre+' km per litre.</div>');
   html.push('</div></section>');
@@ -459,6 +472,13 @@ function render(){
   html.push('</div></section>');
 
   document.getElementById('app').innerHTML = html.join('');
+  if(window.SprintPatterns && window.__spKml){
+    const o = window.__spKml;
+    SprintPatterns.scoreRing(document.getElementById('spKmlRing'), {
+      value: o.known ? o.value : null, label: 'near the median', detail: o.detail,
+      why: 'No vehicle has both a closed trip distance and a fuel purchase yet.', owner: 'the driver app for trips, the fuel log for litres'
+    });
+  }
 }
 
 // Shared by the vehicle and driver km per litre sections: a bar per row
@@ -491,6 +511,10 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
 
 /* ---------- Brick 56: where every vehicle is ---------- */
 var FLEET_LIVE_EXAMPLE = {"generated_at": "2026-09-12T21:21:24.000Z", "vehicles": [{"vehicle_id": "veh_example_3", "reg": "EXAMPLE-B789ABC", "type": "van (cold chain)", "state": "moving", "standing_minutes": 0, "position": {"lat": -24.05, "lng": 26.25, "accuracy_m": 12, "recorded_at": "2026-09-12T21:19:24.000Z", "age_minutes": 2}, "trip": {"id": "trp_example_2", "departed_at": "2026-09-12T18:11:24.000Z", "driver_name": "EXAMPLE Driver Two", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 145, "minutes_on_trip": 190, "deliveries_today": 2}, "documents": {"permit_expires_on": "2027-04-01", "insurance_expires_on": "2027-04-10", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": null, "last_odometer": 5000}, "note": null}, {"vehicle_id": "veh_example_2", "reg": "EXAMPLE-B456ABC", "type": "truck", "state": "standing", "standing_minutes": 32, "position": {"lat": -23.12, "lng": 26.8, "accuracy_m": 9, "recorded_at": "2026-09-12T21:20:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_example_5", "departed_at": "2026-09-12T17:41:24.000Z", "driver_name": "EXAMPLE Driver Three", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 95, "minutes_on_trip": 220, "deliveries_today": 3}, "documents": {"permit_expires_on": "2027-02-28", "insurance_expires_on": "2026-10-05", "roadworthy_expires_on": "2026-09-08", "service_due_at": null, "service_due_km": 69000, "last_odometer": 68720}, "note": null}, {"vehicle_id": "veh_example_1", "reg": "EXAMPLE-B123ABC", "type": "van", "state": "no_trip", "standing_minutes": null, "position": null, "trip": null, "utilisation_today": {"minutes_moving": 0, "minutes_on_trip": 0, "deliveries_today": 0}, "documents": {"permit_expires_on": "2027-03-31", "insurance_expires_on": "2027-01-15", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": 13500, "last_odometer": 12880}, "note": "No trip open, and no position ever recorded for this vehicle."}]};
+// TODO(human): the two numbers that turn a fact into a worry. A vehicle standing
+// longer than standing_min is drawn as the orange item on its card; a trip with
+// no signal longer than quiet_min likewise. expiry_days is how far ahead the
+// paperwork wall looks. Ops knows these better than any default.
 var WORRY = { standing_min: 20, quiet_min: 15, expiry_days: 60 };
 var MAP_TOWNS = [ {n:'Gaborone', lat:-24.65, lng:25.92}, {n:'Mahalapye', lat:-23.10, lng:26.81}, {n:'Palapye', lat:-22.55, lng:27.12}, {n:'Francistown', lat:-21.17, lng:27.51} ];
 function mapXY(lat, lng){
@@ -610,11 +634,17 @@ function renderMap(payload, isLive){
     if (v.position && typeof v.position.lat === 'number') at = mapXY(v.position.lat, v.position.lng);
     else { at = { x: depot.x + 22 + parked * 20, y: depot.y + 18 }; parked++; }
     if (v.state === 'moving') moving++;
-    var g = mapEl('g', { class: 'mapdot' });
+    // The vehicle on the MD's car tracker is what she taps. The dot stays small so the map
+    // reads, but a clear circle behind it is the real target: r 40 in a 600 wide viewBox is
+    // about 44 px across on a phone. role=button lets hub/tests/touch-targets measure it.
+    var g = mapEl('g', { class: 'mapdot', role: 'button', tabindex: '0',
+                         'aria-label': (v.reg || 'vehicle').replace('EXAMPLE-', 'EX ') + ', ' + (v.state || '') });
+    g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 40, fill: 'rgba(0,0,0,0.001)' }));
     if (v.state === 'moving') g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 14, fill: 'rgba(58,170,53,.25)' }));
     g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 8, fill: col, stroke: 'rgba(8,28,20,.8)', 'stroke-width': 2 }));
     g.appendChild(mapEl('text', { x: at.x, y: at.y + 20, 'text-anchor': 'middle' }, (v.reg || '').replace('EXAMPLE-', 'EX ')));
     g.addEventListener('click', function(){ showMapDetail(v); });
+    g.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMapDetail(v); } });
     svg.appendChild(g);
   });
   var pill = document.getElementById('map-pill');
@@ -670,6 +700,7 @@ function renderFleetLive(payload, isLive){
 
 </script>
 <script src="../shared/sprint-notify.js?v=c8c7be6b"></script>
+<script src="../shared/sprint-patterns.js?v=32067fd0"></script>
 <script src="../shared/sprint-chrome.js?v=955d59ff"></script>
 </body>
 </html>

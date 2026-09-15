@@ -177,7 +177,7 @@ pre.summary{white-space:pre-wrap; font-family:var(--font-body); font-size:12px; 
     <button class="btn" type="submit">Sign in</button>
     <div class="err" id="loginErr"></div>
   </form>
-  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <div class="login-hint">This copy carries invented example data and has no connection to the office system, so there is nothing to sign in to. Open any department below.</div>
   <button class="btn ghost" id="offlineBtn">View example data instead</button>
 </div>
 
@@ -242,14 +242,14 @@ let ME=null, DATA=null, SYNCED_AT=null, CURRENT=null;
 const CACHE_KEY='sprintos_incidents_cache_v1';
 
 const EXAMPLE = {
-  incidents: [{ id:'inc_example_1', opened_at: shiftHours(-20), type:'vehicle_accident', severity:4, status:'recovering', title:'EXAMPLE: vehicle overturned on the A1', location_text:'EXAMPLE: A1 near Mochudi', trip_id:'trp_example_2', commander_staff_id:'stf_manager', closed_at:null, closed_reason:null, version:1 }],
+  incidents: [{ id:'inc_example_1', opened_at: shiftHours(-20), type:'vehicle_accident', severity:4, status:'recovering', title:'EXAMPLE: vehicle overturned on the A1', location_text:'EXAMPLE: A1 near Mochudi', trip_id:'trp_example_2', commander_staff_id:'stf_example', closed_at:null, closed_reason:null, version:1 }],
   shipments: [
     {id:'S1', waybill:'EX-0001', customer_id:'C1', destination:'Francistown', declared_value_thebe: 480000},
     {id:'S2', waybill:'EX-0002', customer_id:'C2', destination:'Francistown', declared_value_thebe: 210000},
     {id:'S3', waybill:'EX-0003', customer_id:'C3', destination:'Francistown', declared_value_thebe: 95000}
   ],
   customers: [{id:'C1', name:'EXAMPLE Kalahari Meats'}, {id:'C2', name:'EXAMPLE Naledi Legal Attorneys'}, {id:'C3', name:'EXAMPLE Riverwalk Optometrists'}],
-  staff: [{id:'stf_example_1', name:'EXAMPLE Staff One'}, {id:'stf_manager', name:'Manager Desk'}, {id:'stf_ops', name:'Ops Desk'}],
+  staff: [{id:'stf_example', name:'Luther'}, {id:'stf_example', name:'Manager Desk'}, {id:'stf_example', name:'Ops Desk'}],
   trips: [{id:'trp_example_2', route_label:'EXAMPLE Gaborone to Francistown run', status:'departed'}],
   detail: {
     populations: [
@@ -257,7 +257,7 @@ const EXAMPLE = {
       {id:'is2', incident_id:'inc_example_1', shipment_id:'S2', population:'manifest', parcel_state:'LOCATED', inspected_at:null, note:'EXAMPLE: found at the scene, awaiting full inspection.'},
       {id:'is3', incident_id:'inc_example_1', shipment_id:'S3', population:'manifest', parcel_state:'AT_RISK', inspected_at:null, note:null}
     ],
-    actions: SPINE.map((s,i)=>({ incident_id:'inc_example_1', step_key:s.step_key, status: i<2?'done':'todo', owner_staff_id:'stf_manager', due_at: shiftHours(i+1), done_at: i<2?shiftHours(-10):null, note: i<2?'EXAMPLE: completed at the scene.':null })),
+    actions: SPINE.map((s,i)=>({ incident_id:'inc_example_1', step_key:s.step_key, status: i<2?'done':'todo', owner_staff_id:'stf_example', due_at: shiftHours(i+1), done_at: i<2?shiftHours(-10):null, note: i<2?'EXAMPLE: completed at the scene.':null })),
     notices: [
       {id:'icn1', audience:'customer', channel:'whatsapp', status:'draft', customer_id:'C1', body:'Good morning. A vehicle serving your delivery route was involved in an incident during heavy rain last night. Your parcel may arrive later than planned. Our team is recovering and checking every parcel now. We will update you by 11:00. We are sorry for the disruption. Please contact us if your delivery is urgent.'},
       {id:'icn2', audience:'customer', channel:'whatsapp', status:'draft', customer_id:'C2', body:'Good morning. A vehicle serving your delivery route was involved in an incident during heavy rain last night. Your parcel may arrive later than planned. Our team is recovering and checking every parcel now. We will update you by 11:00. We are sorry for the disruption. Please contact us if your delivery is urgent.'}
@@ -629,11 +629,17 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
   var EXAMPLE_TRIAGE = (function(){
     var now = Date.now();
     var iso = function(min){ return new Date(now + min * 60000).toISOString(); };
+    /* Brick 103: this alert is a DELIVERY RUN carrying tender documents TO that
+       customer. It is not the tender closing, but it shared the name, so a
+       reviewer counted it as a third version of the same deadline. The name now
+       comes from the one shared record, so it can never drift from the tender
+       desk, and the wording says which of the two things this is. */
+    var CUST = (window.SprintExample ? window.SprintExample.hero().issuer : 'EXAMPLE Standards Board');
     return {
       level3: [
         { id:'inc_ex_l3_1', level:3, kind:'sla_breach', status:'open', opened_at: iso(-6), acknowledged_at:null,
-          title:'RED ALERT: tender documents for the EXAMPLE Standards Board have 42 minutes and the vehicle is standing',
-          payload:{ minutes_left:42, due_at: iso(42), priority:'tender', waybill:'EXAMPLE/WB/3107', destination:'EXAMPLE Standards Board, Gaborone',
+          title:'RED ALERT: the delivery run carrying tender documents to ' + CUST + ' has 42 minutes and the vehicle is standing',
+          payload:{ minutes_left:42, due_at: iso(42), priority:'tender', waybill:'EXAMPLE/WB/3107', destination: CUST + ', Gaborone',
                     vehicle:{ reg:'B 100 EXA', state:'standing', standing_minutes:23 }, pin:{ lat:-23.1042, lng:26.8321, recorded_at: iso(-2) },
                     nearest:{ reg:'B 200 EXA', km:11.4, state:'moving', driver:'EXAMPLE driver Kabo' }, why:'42 minutes left and the vehicle is standing on the A1 south of Mahalapye' },
           ladder:{ ok:true, acknowledged:false, minutes_open:6, index:0, at_bottom:false,
@@ -643,7 +649,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
                       nothing shaped like a telephone number. On the office system the number comes
                       off the staff record and a Call button appears in its place. */
                    say:'6 minutes unacknowledged. It is with EXAMPLE Ops Desk, whose number appears here on the office system. If nobody acknowledges it, it goes to EXAMPLE Ops Manager in 4 minutes.' } },
-        { id:'inc_ex_l3_2', level:3, kind:'sla_breach', status:'open', opened_at: iso(-31), acknowledged_at: iso(-28), acknowledged_by:'stf_manager',
+        { id:'inc_ex_l3_2', level:3, kind:'sla_breach', status:'open', opened_at: iso(-31), acknowledged_at: iso(-28), acknowledged_by:'stf_example',
           title:'RED ALERT: court bundle for EXAMPLE Naledi Legal Attorneys had 55 minutes and the vehicle was standing',
           payload:{ minutes_left:55, due_at: iso(24), priority:'legal', waybill:'EXAMPLE/WB/3099', destination:'High Court, Gaborone',
                     vehicle:{ reg:'B 300 EXA', state:'standing', standing_minutes:18 }, pin:{ lat:-24.6541, lng:25.9087, recorded_at: iso(-30) },
@@ -801,6 +807,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
   setInterval(function(){ load(true); }, 60000);
 })();
 </script>
-<script src="../shared/sprint-horizon.js?v=b027116a"></script>
+<script src="../shared/sprint-example.js?v=be27bd61"></script>
+<script src="../shared/sprint-horizon.js?v=744eaf6e"></script>
 </body>
 </html>

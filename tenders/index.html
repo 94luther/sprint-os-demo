@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
 <link rel="stylesheet" href="../shared/sprint-view.css?v=4c6919d3">
 <script src="../shared/sprint-motion.js?v=9677b8ce" defer></script>
+<script src="../shared/sprint-example.js?v=be27bd61"></script>
 <title>Tender Desk - Sprint Couriers</title>
 <meta name="theme-color" content="#131311">
 <link rel="manifest" href="manifest.json">
@@ -78,7 +79,9 @@ section{margin-bottom:22px;}
 .bar-label{position:absolute; inset:0; display:flex; align-items:center; justify-content:flex-end; padding:0 8px; font-size:11px; font-weight:700;}
 
 .owner-line{font-size:11px; color:var(--dim); margin-top:6px; display:flex; justify-content:space-between; align-items:center;}
-.owner-line .btn-mini{background:none; border:1px solid var(--line); color:var(--bone); border-radius:5px; padding:4px 8px; font-size:10px; cursor:pointer; text-transform:uppercase;}
+/* 44 px floor: seven "Verified today" buttons, the smallest control in the building at 24 px.
+   The text stays small and quiet; the target under a thumb does not. Guarded by hub/tests/touch-targets. */
+.owner-line .btn-mini{background:none; border:1px solid var(--line); color:var(--bone); border-radius:12px; padding:0 12px; min-height:44px; font-size:11px; cursor:pointer; text-transform:uppercase; display:inline-flex; align-items:center;}
 
 .empty-note{font-size:12px; color:var(--dim); padding:10px 4px;}
 
@@ -147,7 +150,7 @@ textarea{background:var(--ink); border:1px solid var(--line); color:var(--bone);
     <button class="btn" type="submit">Sign in</button>
     <div class="err" id="loginErr"></div>
   </form>
-  <div class="login-hint">Signing in works on the office computer. On a phone, tap View example data instead.<br>Or continue offline below with example data.</div>
+  <div class="login-hint">This copy carries invented example data and has no connection to the office system, so there is nothing to sign in to. Open any department below.</div>
   <button class="btn ghost" id="offlineBtn">View example data instead</button>
 </div>
 
@@ -197,18 +200,22 @@ function defaultNote(){
 }
 
 const EXAMPLE = {
-  tenders: [
-    {id:'T1', issuer:'EXAMPLE Standards Board', reference:'EXAMPLE/T/12', title:'Courier and logistics services', closes_at: shiftDate(4), status:'bid',
-      note: {checklist:{ppra:false,bocra:true,tax:true,cipa:true,price_band:true,capacity:true,references:false}, evidence: EVIDENCE_DEFAULTS.map((item,i)=>({item, done: i%3!==0})), notes:'PPRA registration lapsed, renewal filed 2 Sep.'}},
-    {id:'T2', issuer:'EXAMPLE Power Utility', reference:'EXAMPLE/RFQ/44', title:'Weekly parts courier, Gaborone to Morupule', closes_at: shiftDate(11), status:'watch',
-      note: {checklist:{ppra:false,bocra:true,tax:true,cipa:true,price_band:false,capacity:true,references:true}, evidence: EVIDENCE_DEFAULTS.map((item,i)=>({item, done:i%2===0})), notes:''}},
-    {id:'T3', issuer:'EXAMPLE Health Ministry', reference:'EXAMPLE/T/09', title:'Cold chain distribution, vaccines', closes_at: shiftDate(19), status:'watch',
-      note: {checklist:{ppra:false,bocra:true,tax:false,cipa:true,price_band:false,capacity:false,references:false}, evidence: EVIDENCE_DEFAULTS.map(item=>({item, done:false})), notes:'Needs cold chain training sign off before bid.'}},
-    {id:'T4', issuer:'EXAMPLE Mining Group', reference:'EXAMPLE/COUR/07', title:'Site to site courier, Jwaneng and Orapa', closes_at: shiftDate(2), status:'bid',
-      note: {checklist:{ppra:false,bocra:true,tax:true,cipa:true,price_band:true,capacity:true,references:true}, evidence: EVIDENCE_DEFAULTS.map(item=>({item, done:true})), notes:'Ready. Awaiting PPRA renewal to submit.'}},
-    {id:'T5', issuer:'First National Bank Botswana', reference:'FNBB/PROC/21/2026', title:'Branch to branch document courier', closes_at: shiftDate(27), status:'watch',
-      note: defaultNote()},
-  ],
+  /* Brick 103: these five used to be written out here with their own dates, and
+     Home carried a sixth version of the first one. They come from
+     shared/sprint-example.js now, so every screen counts down to the same
+     instant. The per tender working notes stay here, because they belong to
+     this desk and no other screen shows them. */
+  tenders: (window.SprintExample ? window.SprintExample.tenders() : []).map(function (t) {
+    var NOTES = {
+      T1: {checklist:{ppra:false,bocra:true,tax:true,cipa:true,price_band:true,capacity:true,references:false}, evidence: EVIDENCE_DEFAULTS.map(function(item,i){return {item, done: i%3!==0};}), notes:'PPRA registration lapsed, renewal filed 2 Sep.'},
+      T2: {checklist:{ppra:false,bocra:true,tax:true,cipa:true,price_band:false,capacity:true,references:true}, evidence: EVIDENCE_DEFAULTS.map(function(item,i){return {item, done:i%2===0};}), notes:''},
+      T3: {checklist:{ppra:false,bocra:true,tax:false,cipa:true,price_band:false,capacity:false,references:false}, evidence: EVIDENCE_DEFAULTS.map(function(item){return {item, done:false};}), notes:'Needs cold chain training sign off before bid.'},
+      T4: {checklist:{ppra:false,bocra:true,tax:true,cipa:true,price_band:true,capacity:true,references:true}, evidence: EVIDENCE_DEFAULTS.map(function(item){return {item, done:true};}), notes:'Ready. Awaiting PPRA renewal to submit.'},
+      T5: null
+    };
+    return {id:t.id, issuer:t.issuer, reference:t.reference, title:t.title,
+            closes_at:t.closes_at, status:t.status, note: NOTES[t.id] || defaultNote()};
+  }),
   documents: [
     {id:'D1', name:'EXAMPLE trade licence', category:'statutory', owner:'Luther', expires_at: daysAgo(841-30<0?0:0), last_verified_at: shiftDate(-200)},
     {id:'D2', name:'BOCRA operating licence', category:'licence', owner:'Barbara', expires_at:'2028-08-22T00:00:00.000Z', last_verified_at: shiftDate(-30)},
@@ -219,7 +226,8 @@ const EXAMPLE = {
     {id:'D7', name:'Domestic tariff sheet', category:'tariff', owner:'Barbara', expires_at: shiftDate(200), last_verified_at: shiftDate(-2)},
   ]
 };
-// PPRA doc genuinely lapsed per spec (841 days ago)
+// The PPRA row: the supplier code was never obtained, open since 16 May 2024.
+// It is a blocked registration, not an expired certificate. docs/COMPANY-DOCUMENTS.md
 EXAMPLE.documents[0].expires_at = daysAgo(841);
 
 async function apiFetch(path, opts){

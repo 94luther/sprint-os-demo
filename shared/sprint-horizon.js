@@ -104,7 +104,12 @@
          'One accident after this date is paid for out of the company.', 'Confirm the renewal with the broker in writing.', 'Ops'),
       mk(16, 'holiday', 'plan', 'EXAMPLE public holiday',
          'Invented for this screen. Nothing delivers.', 'Warn every customer expecting a parcel that day, and check no promised time falls on it.', 'Ops', 'announced'),
-      mk(23, 'tender', 'money', 'EXAMPLE courier and logistics services closes (EXAMPLE Standards Board)',
+      /* Brick 103: this said 23 days while Home said 12 and the Tender Desk said
+         4, for the same tender. It now asks the shared record. */
+      mk((typeof self !== 'undefined' && self.SprintExample)
+           ? Math.floor(self.SprintExample.hero().closes_in_minutes / 1440)
+           : 4,
+         'tender', 'money', 'EXAMPLE courier and logistics services closes (EXAMPLE Standards Board)',
          'A tender closes at a time of day, not a date. Late by one minute is not submitted.',
          'The pack must be finished the working day before, never on the morning.', 'Sales'),
       mk(41, 'document', 'stop', 'EXAMPLE trade licence expires',
