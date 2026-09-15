@@ -35,6 +35,17 @@
 (function (root) {
   'use strict';
 
+  /* Where this file itself was loaded from. Department pages sit one folder
+     down and the front door does not, so a fixed path would be wrong on one of
+     them. Captured at parse time because document.currentScript is null later. */
+  var HERE = (function () {
+    try {
+      var s = document.currentScript && document.currentScript.src;
+      if (s) return s.replace(/[^/]*$/, '');
+    } catch (e) {}
+    return 'shared/';
+  })();
+
   var CSS = '' +
     '.epod-wrap{position:fixed;inset:0;z-index:70;display:none;align-items:flex-end;background:rgba(4,20,14,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}' +
     '.epod-wrap.show{display:flex}' +
@@ -195,6 +206,98 @@
 
   /* ---------------- 2. the barcode ---------------- */
   var FORMATS = ['code_128', 'code_39', 'ean_13', 'ean_8', 'itf', 'codabar', 'qr_code'];
+  /* The same list in the decoder's own spelling. Kept beside the one above on
+     purpose: if a format is ever added, both lines have to change together, and
+     having them apart is how one of them gets forgotten. */
+  var ZX_FORMATS = ['Code128', 'Code39', 'EAN13', 'EAN8', 'ITF', 'Codabar', 'QRCode'];
+
+  /* Phase 1, 15 September 2026. Apple has never shipped the browser's own
+     barcode reader to Safari, so every iPhone used to be handed a box to type
+     into while every Android pointed a camera. This carries a decoder in the
+     page so the camera works on both, and typing goes back to being the last
+     resort rather than the only option on half the phones.
+
+     Three things worth knowing before changing any of it:
+
+     1. IT IS LOADED ONLY WHEN SOMEBODY SCANS. The decoder is 953 KB. It is not
+        in the first load and not in the app shell. A driver who never opens the
+        scan sheet never downloads it.
+     2. IT NEVER LEAVES THE BUILDING. Out of the box this library fetches its own
+        decoder from a public content network on first use. That would be a
+        request going out every time a parcel is scanned, and a scanner that dies
+        the moment the office loses its line. locateFile below points it at the
+        copy in apps/shared/vendor instead.
+     3. IT FAILS BACK, NOT OVER. If the file is missing or the decoder will not
+        start, the sheet says so in words and offers the typed field, exactly as
+        before. Nothing here can leave a driver with no way to record a waybill. */
+  var zxReady = null;
+  function loadDecoder() {
+    if (zxReady) return zxReady;
+    zxReady = new Promise(function (resolve, reject) {
+      if (root.ZXingWASM) return resolve(root.ZXingWASM);
+      var sc = document.createElement('script');
+      sc.src = HERE + 'vendor/zxing-reader.js';
+      sc.async = true;
+      sc.onload = function () { root.ZXingWASM ? resolve(root.ZXingWASM) : reject(new Error('decoder loaded but set nothing')); };
+      sc.onerror = function () { reject(new Error('decoder file could not be loaded')); };
+      document.head.appendChild(sc);
+    }).then(function (Z) {
+      // the wasm sits next to the script, never on somebody else's server
+      if (typeof Z.prepareZXingModule === 'function') {
+        Z.prepareZXingModule({
+          overrides: { locateFile: function (path, prefix) {
+            return /\.wasm$/.test(path) ? HERE + 'vendor/' + path : (prefix || '') + path;
+          } },
+          fireImmediately: false
+        });
+      }
+      return Z;
+    });
+    return zxReady;
+  }
+
+  /* Wears the same shape as the browser's own BarcodeDetector, so the loop that
+     watches the camera below never needs to know which one it got. */
+  function wasmDetector() {
+    return loadDecoder().then(function (Z) {
+      var cv = document.createElement('canvas');
+      var cx = cv.getContext('2d', { willReadFrequently: true });
+      return {
+        kind: 'carried in the page',
+        detect: function (video) {
+          // videoWidth for a camera, width for a canvas or an image. Taking both
+          // means this can be measured against a picture instead of only a phone.
+          var w = video.videoWidth || video.width, h = video.videoHeight || video.height;
+          if (!w || !h) return Promise.resolve([]);
+          // half size is plenty for a label held up to a phone, and it keeps
+          // the decode well inside one frame on an older handset
+          var scale = Math.min(1, 800 / Math.max(w, h));
+          cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
+          cx.drawImage(video, 0, 0, cv.width, cv.height);
+          var data;
+          try { data = cx.getImageData(0, 0, cv.width, cv.height); } catch (e) { return Promise.resolve([]); }
+          return Z.readBarcodesFromImageData(data, { formats: ZX_FORMATS, tryHarder: true, maxNumberOfSymbols: 1 })
+            .then(function (res) {
+              return (res || []).filter(function (r) { return r && r.isValid !== false && r.text; })
+                                .map(function (r) { return { rawValue: r.text }; });
+            }, function () { return []; });
+        }
+      };
+    });
+  }
+
+  /* Native first where it exists, because it is the phone's own and it is
+     faster. The carried decoder second. Neither, and the sheet says so. */
+  function detectorFor() {
+    if (typeof root.BarcodeDetector === 'function') {
+      try { return Promise.resolve({ kind: 'the phone\'s own', detect: new root.BarcodeDetector({ formats: FORMATS }).detect.bind(new root.BarcodeDetector({ formats: FORMATS })) }); } catch (e) {}
+      try {
+        var d = new root.BarcodeDetector();
+        return Promise.resolve({ kind: 'the phone\'s own', detect: d.detect.bind(d) });
+      } catch (e2) {}
+    }
+    return wasmDetector();
+  }
   function scan(opts) {
     opts = opts || {};
     var s = sheet(opts.title || 'Scan the waybill', opts.hint || 'Point the camera at the barcode on the label.');
@@ -219,22 +322,20 @@
     document.addEventListener('visibilitychange', function v() { if (document.hidden) { onHide(); document.removeEventListener('visibilitychange', v); } });
     root.addEventListener('pagehide', onHide, { once: true });
 
-    if (!can) {
-      why.textContent = 'This phone’s browser cannot read barcodes through the camera, so type the number from the label.';
-      s.body.appendChild(field); s.body.appendChild(why); s.body.appendChild(row);
-      setTimeout(function () { field.focus(); }, 50);
-      return s.promise;
-    }
     var video = el('video'); video.setAttribute('playsinline', ''); video.muted = true; video.autoplay = true;
     s.body.appendChild(video); s.body.appendChild(field); s.body.appendChild(why); s.body.appendChild(row);
-    var detector;
-    try { detector = new root.BarcodeDetector({ formats: FORMATS }); } catch (e) { try { detector = new root.BarcodeDetector(); } catch (e2) { detector = null; } }
-    if (!detector || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    var detector = null;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       video.style.display = 'none';
       why.textContent = 'The camera cannot be used here, so type the number from the label.';
       return s.promise;
     }
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false }).then(function (st) {
+    // the camera is asked for first, because that is the slow part and the
+    // permission prompt should not wait behind a download
+    var camera = navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    if (!can) why.textContent = 'Getting the reader ready';
+    detectorFor().then(function (d) { detector = d; }, function () { detector = null; });
+    camera.then(function (st) {
       if (stopped) { st.getTracks().forEach(function (t) { t.stop(); }); return; }
       stream = st; video.srcObject = st;
       return video.play().catch(function () {});
@@ -243,6 +344,17 @@
       why.textContent = 'Looking for a barcode';
       (function tick() {
         if (stopped) return;
+        if (!detector) {
+          // still arriving, or it never will. Either way the typed field is
+          // already on screen and works.
+          if (zxReady) { zxReady.catch(function () {
+            if (stopped) return;
+            video.style.display = 'none';
+            why.textContent = 'The reader could not start on this phone, so type the number from the label.';
+            stopped = true; release();
+          }); }
+          setTimeout(tick, 200); return;
+        }
         if (ticking) { setTimeout(tick, 300); return; }
         ticking = true;
         detector.detect(video).then(function (codes) {
@@ -418,5 +530,10 @@
     return s.promise;
   }
 
-  root.SprintEPOD = { sign: sign, scan: scan, exception: exception, receipt: receipt, dims: dims, EXTRA_REASONS: EXTRA };
+  root.SprintEPOD = {
+    sign: sign, scan: scan, exception: exception, receipt: receipt, dims: dims,
+    EXTRA_REASONS: EXTRA,
+    // which reader this phone would actually use, and the formats it is watching
+    reader: detectorFor, formats: FORMATS, decoderFormats: ZX_FORMATS
+  };
 })(typeof window !== 'undefined' ? window : this);
