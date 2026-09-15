@@ -85,6 +85,53 @@ section{margin-bottom:22px;}
 
 .empty-note{font-size:12px; color:var(--dim); padding:10px 4px;}
 
+/* 16 Sep 2026: the Tender Desk had no motion at all, and Luther asked for the
+   orange to move and for a disc behind the tender, the way the home page has.
+   Same loop lengths as the home page (13, 17, 21 and 15 seconds), so nothing on
+   any screen ever moves in step with anything else. Transform and opacity only,
+   which the compositor handles without repainting the page. */
+body{position:relative; isolation:isolate;}
+body::before{content:""; position:fixed; z-index:-1; pointer-events:none;
+  left:-35%; top:-30%; width:120%; height:90%; border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,rgba(247,148,29,.30),rgba(247,148,29,.12) 42%,rgba(247,148,29,0) 68%);
+  will-change:transform,opacity; animation:td-haze-page 21s ease-in-out infinite alternate;}
+
+.banner-example{position:relative; overflow:hidden; isolation:isolate;}
+.banner-example::before,.banner-example::after{content:""; position:absolute; z-index:-1; pointer-events:none;
+  border-radius:50%; will-change:transform,opacity;}
+.banner-example::before{left:-20%; top:-120%; width:70%; height:340%;
+  background:radial-gradient(circle at 50% 50%,rgba(247,148,29,.42),rgba(247,148,29,.16) 45%,rgba(247,148,29,0) 70%);
+  animation:td-haze-a 13s ease-in-out infinite alternate;}
+.banner-example::after{right:-25%; top:-140%; width:80%; height:380%;
+  background:radial-gradient(circle at 50% 50%,rgba(255,196,110,.36),rgba(255,176,70,.14) 44%,rgba(255,176,70,0) 70%);
+  animation:td-haze-b 17s ease-in-out infinite alternate;}
+
+.card.tender{position:relative; overflow:hidden; isolation:isolate;}
+.card.tender::after{content:""; position:absolute; z-index:-1; pointer-events:none;
+  right:-38%; top:-110%; width:95%; height:330%; border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,rgba(247,148,29,.40),rgba(255,176,70,.16) 44%,rgba(255,176,70,0) 70%);
+  will-change:transform,opacity; animation:td-haze-c 15s ease-in-out infinite alternate;}
+
+@keyframes td-haze-page{
+  0%{transform:translate3d(0,0,0) scale(1);opacity:.55}
+  50%{transform:translate3d(14%,10%,0) scale(1.18);opacity:.95}
+  100%{transform:translate3d(-8%,16%,0) scale(1.06);opacity:.6}}
+@keyframes td-haze-a{
+  0%{transform:translate3d(0,0,0) scale(1);opacity:.7}
+  50%{transform:translate3d(38%,14%,0) scale(1.22);opacity:1}
+  100%{transform:translate3d(-14%,22%,0) scale(1.06);opacity:.6}}
+@keyframes td-haze-b{
+  0%{transform:translate3d(0,0,0) scale(1.04);opacity:.6}
+  50%{transform:translate3d(-40%,-16%,0) scale(1.24);opacity:1}
+  100%{transform:translate3d(18%,-8%,0) scale(1);opacity:.7}}
+@keyframes td-haze-c{
+  0%{transform:translate3d(0,0,0) scale(1);opacity:.7}
+  50%{transform:translate3d(-30%,18%,0) scale(1.22);opacity:1}
+  100%{transform:translate3d(16%,-12%,0) scale(1.05);opacity:.64}}
+@media (prefers-reduced-motion: reduce){
+  body::before,.banner-example::before,.banner-example::after,.card.tender::after{animation:none}}
+
+
 .drawer-bg{position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:40; display:none;}
 .drawer-bg.show{display:block;}
 .drawer{
@@ -341,7 +388,7 @@ function render(){
     const days = daysBetween(new Date().toISOString(), t.closes_at);
     const v = countdownVerdict(days);
     const pct = Math.min(100, Math.max(4, Math.round((Math.max(0,days)/30)*100)));
-    html.push('<div class="card" onclick="openTender(\''+t.id+'\')">'+
+    html.push('<div class="card tender" onclick="openTender(\''+t.id+'\')">'+
       '<div class="card-top"><div><div class="card-title">'+esc(t.issuer)+'</div><div class="card-sub">'+esc(t.title)+' &middot; '+esc(t.reference)+'</div></div>'+
       '<span class="verdict '+v.cls+'">'+v.label+'</span></div>'+
       '<div class="bar"><div class="bar-fill '+v.cls+'" style="width:'+pct+'%"></div><span class="bar-label">'+(days<0?'closed':days+' days left')+'</span></div>'+
