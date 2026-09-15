@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Try Sprint OS</title>
+<style>
+:root{--ink:#1d1d1f;--dim:#6e6e73;--line:rgba(0,0,0,.09);--green:#3AAA35;--orange:#F7941D;--deep:#0E2F22}
+*{box-sizing:border-box}
+body{margin:0;background:#f5f5f7;font-family:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;color:var(--ink);padding:26px 20px 44px;max-width:760px;margin:0 auto;-webkit-text-size-adjust:100%}
+h1{font-size:26px;letter-spacing:-.5px;margin:0 0 4px}
+.sub{color:var(--dim);font-size:14.5px;line-height:1.45;margin:0 0 22px}
+.card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:20px;margin-bottom:14px}
+.scan{text-align:center}
+.scan img{width:230px;height:230px;image-rendering:-webkit-optimize-contrast;border-radius:14px}
+.scan .big{font-size:17px;font-weight:800;margin:6px 0 2px}
+.scan code{display:inline-block;font-size:13px;background:#f0f0f2;border-radius:8px;padding:7px 12px;margin-top:8px;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+h2{font-size:16px;margin:0 0 12px;letter-spacing:-.2px}
+ol{margin:0;padding-left:0;list-style:none;counter-reset:s}
+ol li{counter-increment:s;position:relative;padding:0 0 14px 40px;font-size:14.5px;line-height:1.5}
+ol li:last-child{padding-bottom:0}
+ol li::before{content:counter(s);position:absolute;left:0;top:-1px;width:27px;height:27px;border-radius:50%;background:var(--deep);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
+ol li b{font-weight:700}
+.try{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.t{border:1px solid var(--line);border-radius:16px;padding:14px}
+.t b{display:block;font-size:14px;margin-bottom:4px}
+.t small{color:var(--dim);font-size:12.8px;line-height:1.45;display:block}
+.t .ask{display:block;margin-top:8px;font-size:12.8px;color:var(--deep);font-weight:700}
+.flag{background:#FFF8E8;border:1px solid #F0C96A;border-radius:16px;padding:15px 18px;font-size:14px;line-height:1.5}
+.flag b{color:#8A5B00}
+.foot{color:var(--dim);font-size:12.5px;line-height:1.5;margin-top:20px}
+@media (max-width:560px){.try{grid-template-columns:1fr}}
+</style></head><body>
+
+<h1>Try Sprint OS on your phone</h1>
+<p class="sub">Nothing to install from a shop, no password, no sign in. It opens like a web page and then sits on the home screen like an app. Everything in it is made up example data, so tap anything you like.</p>
+
+<div class="card scan">
+  <img alt="Point your camera here" src="data:image/png;base64,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">
+  <div class="big">Open the camera and point it here</div>
+  <div style="color:#6e6e73;font-size:13.5px">Tap the yellow bar that pops up</div>
+  <code>94luther.github.io/sprint-os-demo</code>
+</div>
+
+<div class="card">
+  <h2>To keep it on the home screen, on an iPhone</h2>
+  <ol>
+    <li>It must be open in <b>Safari</b>, not in Chrome and not inside WhatsApp.</li>
+    <li>Tap the <b>share button</b>, the square with the arrow pointing up, at the bottom of the screen.</li>
+    <li>Scroll down that list and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+    <li>Close Safari. There is now a <b>Sprint</b> icon with the cheetah on the home screen. Open it from there and the address bar is gone, so it looks and feels like an app.</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>Four things worth trying, and what to tell me</h2>
+  <div class="try">
+    <div class="t"><b>The white circle, bottom right</b><small>Type three letters of a customer name, or a vehicle, or a waybill. One box, one answer, instead of four screens.</small><span class="ask">Did it find what you expected?</span></div>
+    <div class="t"><b>The red row at the top</b><small>Tap it. It opens two things you can actually do, instead of a page to read. Nothing is sent by tapping.</small><span class="ask">Is it obvious that it is urgent without reading it?</span></div>
+    <div class="t"><b>Tenders</b><small>The closing date counts itself down in days and hours, and it says how many of the registered documents are still in date.</small><span class="ask">Is that the number you actually chase?</span></div>
+    <div class="t"><b>Outside in the sun</b><small>Stand in the car park with the screen dimmed and look at the same red row.</small><span class="ask">Can you still tell it apart from the others?</span></div>
+  </div>
+</div>
+
+<div class="flag">
+  <b>Please read this bit.</b> Every name, price, vehicle and delivery in here is invented for the demo, which is why so much of it says EXAMPLE. No real customer, no real rate and no real staff number is in it, and it cannot reach the office system. It is safe to show anyone.
+</div>
+
+<div class="card"><h2>Two places to go from here</h2><div class="try"><a class="t" style="text-decoration:none;color:inherit;display:block" href="../index.html"><b>Open Sprint OS</b><small>The system itself. Every department, on the phone. Made up data throughout.</small><span class="ask">Tap to open</span></a><a class="t" style="text-decoration:none;color:inherit;display:block" href="next.html"><b>What is planned next</b><small>What is built, what is coming, what is waiting on a decision, and what it is waiting for.</small><span class="ask">Tap to read</span></a></div></div>
+<p class="foot">Built by Luther for Sprint Couriers. If something is confusing, that is the useful thing to say, not the polite thing. Confusing is a fault in the screen, not in the person reading it.</p>
+</body></html>
