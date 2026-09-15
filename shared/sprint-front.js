@@ -42,7 +42,19 @@
       'background:linear-gradient(135deg,rgba(20,70,45,.66),rgba(42,140,60,.44) 60%,rgba(70,190,90,.30));backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);' +
       'border:1px solid rgba(255,255,255,.2);box-shadow:0 22px 54px -24px rgba(0,0,0,.65);display:flex;flex-direction:column;justify-content:flex-end;text-decoration:none}' +
     '.rc::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(4,20,14,.55) 100%);pointer-events:none}' +
-    '.rc.money::after{content:"";position:absolute;right:-40px;top:-50px;width:170px;height:170px;border-radius:50%;background:rgba(247,148,29,.32);filter:blur(6px)}' +
+    /* Brick 102: the tender card's circle was a 170 px disc with a 6 px blur, which
+       is a disc with a soft edge and still a disc, and it sat perfectly still. It is
+       now a gradient with no edge at all, drifting on its own 41 second loop. That
+       number is deliberate: the two shapes behind the morning card run at 34 and 47
+       seconds, so nothing on the screen ever moves in step with anything else. Only
+       the position animates, never the colour, so the card is not repainted. */
+    '.rc.money::after{content:"";position:absolute;right:-55%;top:-75%;width:170%;height:190%;border-radius:50%;' +
+      'background:radial-gradient(circle at 50% 50%,rgba(247,148,29,.44),rgba(255,176,70,.20) 42%,rgba(255,176,70,0) 68%);' +
+      'will-change:transform;animation:sp-haze-c 41s ease-in-out infinite alternate}' +
+    '@keyframes sp-haze-c{0%{transform:translate3d(0,0,0) scale(1)}' +
+      '50%{transform:translate3d(-13%,10%,0) scale(1.18)}' +
+      '100%{transform:translate3d(8%,-7%,0) scale(1.04)}}' +
+    '@media (prefers-reduced-motion: reduce){.rc.money::after{animation:none}}' +
     '.rc > *{position:relative}' +
     '.rc .k{font-size:10.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#FDDCB5}' +
     '.rc .t{font-size:17px;font-weight:900;line-height:1.15;margin:4px 0 6px;letter-spacing:-.2px}' +

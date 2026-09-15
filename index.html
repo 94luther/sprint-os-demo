@@ -135,6 +135,12 @@ a{color:inherit;text-decoration:none}
   display:flex;align-items:center;justify-content:space-around;height:66px;position:relative;
 }
 .bar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:700;color:#C9D6CF;width:60px;min-height:44px}
+/* Brick 102: the page used to stop dead where it met the bottom bar, with a row of
+   text cut clean in half. This is a strip of the page's own dark, fading upward, so
+   whatever is scrolling simply dissolves before it reaches the bar instead of being
+   guillotined by it. It ignores taps, so it costs nothing to reach past. */
+.bar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:34px;pointer-events:none;
+  background:linear-gradient(to top,rgba(4,20,14,.85),rgba(4,20,14,0))}
 .bar a svg{width:22px;height:22px;stroke:#C9D6CF}
 .bar a.on{color:#8FE08A}.bar a.on svg{stroke:#8FE08A}
 .bar .plus{
@@ -181,7 +187,13 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:120px;point
    transparent. The band's tail now feathers into the bar and the bar's own curve clips the
    corner, so there is nothing to see but the mark on the glass. Morning is the default; the
    other four parts of the day are named on <html> by sprint-chrome.js from the phone's clock. */
-.topbar img{-webkit-mask-image:linear-gradient(to right,#000 78%,transparent 100%);mask-image:linear-gradient(to right,#000 78%,transparent 100%)}
+/* Brick 102: the fade came OFF the logo. Measured 15 Sep 2026: the ink in
+   logo-mark.png runs to the full width of the file and this mask started fading at
+   78 per cent of it, so the end of the wordmark was being dissolved on every screen.
+   Softening a mark into its background is one thing; eating the last fifth of the
+   company's name is another, and that is what was happening.
+   The bar itself now carries a soft edge instead, where there is nothing to lose. */
+.topbar{-webkit-mask-image:linear-gradient(to bottom,#000 88%,rgba(0,0,0,.86) 100%);mask-image:linear-gradient(to bottom,#000 88%,rgba(0,0,0,.86) 100%)}
 html[data-daypart="dawn"] body{background-image:radial-gradient(520px 440px at 16% 10%, rgba(140,235,150,.36), transparent 62%),radial-gradient(460px 420px at 82% 12%, rgba(255,178,130,.34), transparent 60%),radial-gradient(760px 640px at 90% 94%, rgba(247,148,29,.72), transparent 58%),radial-gradient(400px 400px at 26% 80%, rgba(255,176,70,.26), transparent 60%),linear-gradient(155deg,#0F3A2C 0%,#1C6444 34%,#2F8C5A 54%,#A06034 80%,#E0854A 100%)}
 html[data-daypart="afternoon"] body{background-image:radial-gradient(520px 440px at 16% 10%, rgba(140,235,150,.40), transparent 62%),radial-gradient(460px 440px at 84% 22%, rgba(255,255,255,.32), transparent 60%),radial-gradient(760px 640px at 90% 94%, rgba(247,148,29,.92), transparent 58%),radial-gradient(400px 400px at 26% 80%, rgba(255,176,70,.34), transparent 60%),linear-gradient(155deg,#0B3B2C 0%,#186D46 36%,#2E9A5B 56%,#A3601C 80%,#DA7C1A 100%)}
 html[data-daypart="evening"] body{background-image:radial-gradient(520px 440px at 16% 10%, rgba(140,235,150,.28), transparent 62%),radial-gradient(460px 440px at 82% 20%, rgba(255,140,60,.30), transparent 60%),radial-gradient(760px 640px at 88% 92%, rgba(240,120,30,.95), transparent 58%),radial-gradient(400px 400px at 26% 80%, rgba(255,150,60,.34), transparent 60%),linear-gradient(155deg,#072C1F 0%,#0F5236 34%,#1C7748 54%,#8B4418 78%,#C9581A 100%)}
@@ -532,6 +544,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 </script>
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
 <script src="shared/sprint-find.js?v=b9e20cd5"></script>
-<script src="shared/sprint-front.js?v=f9b70c7c"></script>
+<script src="shared/sprint-front.js?v=dd8396f2"></script>
 </body>
 </html>
