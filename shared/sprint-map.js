@@ -357,6 +357,44 @@
     s.push('<path d="' + path + '" fill="#2A3138" fill-opacity=".92" ' +
       'stroke="rgba(190,205,215,.42)" stroke-width="1.4" stroke-linejoin="round"/>');
 
+    /* RAIN, DRAWN UNDER EVERYTHING AND OVER NOTHING.
+
+       Luther asked for it as a danger signal, not as weather: he wants whoever is
+       looking to know there might be trouble where a van is going. So it is drawn
+       as soft discs over the towns that are wet, beneath the road and beneath the
+       vehicles, because a vehicle must never become harder to see because of it.
+
+       Blue is deliberate and it is the only blue on this map. Green means moving,
+       orange means standing, and slate means land. Blue has been kept out of the
+       palette until now precisely so that it could mean one thing when it arrived.
+
+       It gets DARKER and TIGHTER as the rain gets harder, rather than bigger, so
+       that heavy rain over one town cannot be mistaken for light rain over a whole
+       region. And the map never invents a dry country: when the hub does not know,
+       nothing is drawn and the page says so in words. */
+    if (opts.rain && opts.rain.length) {
+      var wet = opts.rain.filter(function (r) { return r && r.band && r.band !== 'dry'; });
+      if (wet.length) {
+        var depth = { light: .16, steady: .26, heavy: .38, violent: .52 };
+        var spread = { light: 46, steady: 40, heavy: 34, violent: 28 };
+        s.push('<defs>');
+        Object.keys(depth).forEach(function (k) {
+          s.push('<radialGradient id="sp-rain-' + k + '">' +
+            '<stop offset="0%" stop-color="#5AA9E6" stop-opacity="' + depth[k] + '"/>' +
+            '<stop offset="60%" stop-color="#4E8FD0" stop-opacity="' + (depth[k] * 0.45).toFixed(3) + '"/>' +
+            '<stop offset="100%" stop-color="#4E8FD0" stop-opacity="0"/></radialGradient>');
+        });
+        s.push('</defs>');
+        wet.forEach(function (r) {
+          var t = townAt(r.town);
+          if (!t) return;
+          var rr = spread[r.band] || 40;
+          s.push('<circle cx="' + x(t.lng).toFixed(1) + '" cy="' + y(t.lat).toFixed(1) +
+            '" r="' + rr + '" fill="url(#sp-rain-' + r.band + ')"/>');
+        });
+      }
+    }
+
     /* THE A1. It is one road and it carries most of this business: Lobatse up
        through Gaborone, Palapye and Francistown to Kasane. A map of Botswana with
        no road on it makes every vehicle look like it is standing in a desert, and
@@ -519,6 +557,21 @@
 
     s.push('</svg>');
     s.push(legend(vehicles));
+
+    /* The words matter more than the blue. A colour tells somebody there is rain;
+       a sentence tells them what to do about it, and this file already holds the
+       sentence because the hub sent it. */
+    if (opts.rain && opts.rain.length) {
+      var loud = opts.rain.filter(function (r) { return r && r.act; })
+        .sort(function (a, b) { return (b.mm || 0) - (a.mm || 0); });
+      if (loud.length) {
+        s.push('<div class="sp-map-rain"><b>Rain</b>' + loud.slice(0, 3).map(function (r) {
+          return '<div><b>' + esc(r.town) + ', ' + esc(r.say) + '.</b> ' + esc(r.act) + '</div>';
+        }).join('') + '</div>');
+      }
+    } else if (opts.rain_say) {
+      s.push('<div class="sp-map-rain quiet">' + esc(opts.rain_say) + '</div>');
+    }
 
     // Never a bare map with nothing on it and no explanation.
     if (!vehicles.length) {
