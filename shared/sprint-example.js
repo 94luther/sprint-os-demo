@@ -483,9 +483,10 @@
     known: true,
     unkept: [
       { decision_id: 'EXAMPLE dec_4471', action_id: 'set_renewal', days_ago: 9,
-        level: 'high', checkable: true, decided_at: '2026-09-07',
+        level: 'high', checkable: true, decided_at: '2026-09-07', loudness: 21,
+        stakes: { known: true, count: 11, weight: 2.38 },
         say: 'You marked this renewal booked 9 days ago and the licence date has not moved. Either it was booked and nobody wrote the new date down, or it was not booked. From here those look the same and they end the same way.',
-        why: 'This says what the system can see and nothing more: the licence expiry date moves further out has not happened. The commonest reason is that it was done and nobody came back to write it down, which is worth two minutes to fix either way.',
+        why: '11 trips have run on this licence since you marked it handled. If it is not in date, the insurance on every one of those loads is arguable, and that is found out after an accident rather than before one. This says what the system can see and nothing more: the licence expiry date moves further out has not happened. The commonest reason is that it was done and nobody came back to write it down, which is worth two minutes to fix either way.',
         do_this: 'Do it now, or write down what happened instead.',
         actions: [
           { id: 'set_licence', label: 'Put the new date in now', primary: true, sends: false,
