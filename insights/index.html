@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover">
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
-<script src="../shared/sprint-example.js?v=68915d7a"></script>
+<script src="../shared/sprint-example.js?v=9994432e"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
 <link rel="stylesheet" href="../shared/sprint-view.css?v=4c6919d3">
 <script src="../shared/sprint-motion.js?v=9677b8ce" defer></script>
@@ -109,6 +109,56 @@ h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
 .didrow.skip .x::before{content:"SKIPPED ";font-weight:800;color:#FDBE74;letter-spacing:.4px;font-size:11px}
 .didrow .w{display:block;font-size:11px;color:#93A29B;margin-top:2px}
 .didfoot{font-size:11.2px;color:#93A29B;padding:10px 0 6px;line-height:1.4}
+/* THE PEOPLE BANDS.
+
+   Two rules the rest of this page already follows, and which matter more here than
+   anywhere else on it.
+
+   GEOMETRY, NOT CHIPS: how much somebody carried is drawn as width, so the person
+   doing a third of the work is obvious before a single number is read.
+
+   AN EXPOSURE IS NOT AN ACCUSATION: those cards are edged in amber or red like
+   every other risk on this page, and the sentence under each one says whose problem
+   it is. A card that says somebody has worked nineteen days without a break is a
+   card about the company, and it is worded and coloured as one. */
+.pband{display:grid;gap:8px;margin-bottom:14px}
+.prow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:baseline;
+  padding:11px 13px;background:rgba(255,255,255,.06);
+  border:2px solid rgba(255,255,255,.12);border-radius:16px}
+.pname{font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pnum{font-size:12.5px;color:#A7B5AE;font-weight:700;text-align:right;white-space:nowrap}
+.pload{grid-column:1 / -1;height:9px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.pload i{display:block;height:100%;background:#3AAA35;border-radius:99px}
+.pload.big i{background:#F7941D}
+.pmeta{grid-column:1 / -1;font-size:11.5px;color:#A7B5AE;line-height:1.45}
+.pmeta b{color:#EAF3EE}
+.pmeta .warn{color:#FFC478}
+.pmeta .down{color:#FF9E96}
+
+.expo{padding:12px 14px;margin-bottom:9px;border-radius:16px;
+  background:rgba(247,148,29,.12);border:2px solid rgba(247,148,29,.38)}
+.expo.high{background:rgba(224,72,62,.13);border-color:rgba(224,72,62,.42)}
+.expo b.h{display:block;font-size:13.5px;font-weight:800;margin-bottom:5px}
+.expo p{margin:0 0 6px;font-size:12.5px;line-height:1.5;color:#D9E3DE}
+.expo .do{font-size:12.5px;line-height:1.5;color:#FFC478;font-weight:700}
+.expo.high .do{color:#FFB3AC}
+
+.offrow{display:flex;align-items:baseline;gap:10px;padding:11px 13px;margin-bottom:8px;
+  background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);border-radius:16px}
+.offrow b{font-size:14px;font-weight:800;flex:none}
+.offrow span{font-size:12.5px;color:#D9E3DE;line-height:1.45}
+.offrow .sick{color:#FFC478;font-weight:700}
+.nodate{color:#FF9E96;font-weight:700}
+
+.wrow{display:grid;grid-template-columns:1fr auto;gap:5px 10px;padding:11px 13px;
+  margin-bottom:8px;background:rgba(255,255,255,.06);
+  border:2px solid rgba(255,255,255,.12);border-radius:16px}
+.wrow .n{font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wrow .v{font-size:13px;font-weight:800;text-align:right;white-space:nowrap}
+.wfail{grid-column:1 / -1;height:9px;border-radius:99px;background:rgba(58,170,53,.28);overflow:hidden}
+.wfail i{display:block;height:100%;background:#E0483E;border-radius:0 99px 99px 0;float:right}
+.wmeta{grid-column:1 / -1;font-size:11.5px;color:#A7B5AE;line-height:1.45}
+
 /* Concentration, drawn. The bar IS the quantity; nothing here is a chip. */
 .cbar{display:flex;height:34px;border-radius:10px;overflow:hidden;margin:10px 0 8px;
   background:rgba(255,255,255,.06)}
@@ -151,6 +201,19 @@ h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
 
   <h2>Who to call, and the exact question</h2>
   <div id="calls"></div>
+
+  <!-- THE PEOPLE. Every other band on this page is about a thing: money, parcels,
+       vehicles. This one is about the four people who actually move the work, and
+       it sits directly under the money because that is the honest order of what
+       this company is made of. -->
+  <h2>Your people</h2>
+  <div id="people"></div>
+
+  <h2>Who is here today</h2>
+  <div id="roster"></div>
+
+  <h2>What each customer costs to serve</h2>
+  <div id="worth"></div>
 
   <h2>Fleet</h2>
   <div class="cards" id="fleet"></div>
@@ -229,6 +292,7 @@ function renderKnow(items){
 
 /* ---------- money, drawn as space ---------- */
 function renderMoney(){
+  try { drawPeople(); drawRoster(); drawWorth(); } catch (e) {}
   var root = document.getElementById('money'); root.innerHTML='';
   var owed = metric('money_owed');
   if (owed && owed.known) {
@@ -375,6 +439,108 @@ function renderBlind(){
 }
 
 
+
+/* ---------- The people, the roster, and what customers cost ---------- */
+function P(o) { return (window.SprintExample && window.SprintExample[o]) || (DATA && DATA[o]) || null; }
+
+function drawExposures(list) {
+  return (list || []).map(function (e) {
+    return '<div class="expo ' + (e.level === 'high' ? 'high' : '') + '">' +
+      '<b class="h">' + esc(e.say) + '</b>' +
+      '<p>' + esc(e.why) + '</p>' +
+      '<div class="do">' + esc(e.do_this) + '</div></div>';
+  }).join('');
+}
+
+function drawPeople() {
+  var box = document.getElementById('people');
+  var d = P('people');
+  if (!box) return;
+  if (!d || !d.known) {
+    box.innerHTML = '<div class="unknown"><b>Not known yet.</b> There are no drivers ' +
+      'on this machine, so nothing can be said about anybody.</div>';
+    return;
+  }
+  var top = Math.max.apply(null, d.people.map(function (x) { return x.deliveries; })) || 1;
+  /* The exposures come FIRST. The list of who did what is context; the exposures
+     are the reason this band exists at all. */
+  box.innerHTML = drawExposures(d.exposures) +
+    '<div class="pband">' + d.people.map(function (x) {
+      var share = Math.round(x.deliveries / d.total_deliveries * 100);
+      var meta = [];
+      meta.push('<b>' + share + '%</b> of the month');
+      if (x.on_time && x.on_time.known) meta.push(x.on_time.value + '% on time');
+      if (x.movement) {
+        meta.push('<span class="' + (x.movement.worse ? 'down' : '') + '">' +
+          esc(x.movement.say) + '</span>');
+      }
+      if (x.stretch && x.stretch.known && x.stretch.days >= 12) {
+        meta.push('<span class="warn">' + x.stretch.days + ' days in a row</span>');
+      }
+      if (x.licence && x.licence.known && x.licence.warn) {
+        meta.push('<span class="warn">licence ' + esc(x.licence.say) + '</span>');
+      }
+      if (x.licence && !x.licence.known) meta.push('<span class="warn">no licence date</span>');
+      return '<div class="prow">' +
+        '<div class="pname">' + esc(x.name) + '</div>' +
+        '<div class="pnum">' + x.deliveries + ' delivered</div>' +
+        '<div class="pload' + (share >= 33 ? ' big' : '') + '"><i style="width:' +
+          Math.round(x.deliveries / top * 100) + '%"></i></div>' +
+        '<div class="pmeta">' + meta.join(' &middot; ') + '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+}
+
+function drawRoster() {
+  var box = document.getElementById('roster');
+  var d = P('roster');
+  if (!box) return;
+  if (!d || !d.known) {
+    box.innerHTML = '<div class="unknown"><b>Not known yet.</b> Nothing is being ' +
+      'assumed: an empty absence list and no absence list look identical on a screen ' +
+      'and mean opposite things.</div>';
+    return;
+  }
+  var who = d.off.length
+    ? d.off.map(function (o) {
+        return '<div class="offrow"><b>' + esc(o.name) + '</b>' +
+          '<span><span class="' + (o.kind === 'sick' ? 'sick' : '') + '">' + esc(o.say) + '</span>, ' +
+          (o.to ? esc(o.back) : '<span class="nodate">no return date</span>') +
+          (o.note ? '. ' + esc(o.note) : '') + '</span></div>';
+      }).join('')
+    : '<div class="offrow"><b>Everybody is in today.</b></div>';
+  box.innerHTML = who + drawExposures(d.findings);
+}
+
+function drawWorth() {
+  var box = document.getElementById('worth');
+  var d = P('worth');
+  if (!box) return;
+  if (!d || !d.known) {
+    box.innerHTML = '<div class="unknown"><b>Not known yet.</b> No work is recorded ' +
+      'in the window, which is a reporting gap and not a quiet quarter.</div>';
+    return;
+  }
+  /* The honest line about the missing cost side goes at the TOP, not in a footnote,
+     because everything below it is half an answer until the fuel table has rows. */
+  var head = !d.cost_basis.known
+    ? '<div class="unknown"><b>No margin on this page is real yet.</b> ' +
+      esc(d.cost_basis.why) + ' The fix is ' + esc(d.cost_basis.who) + '.</div>'
+    : '';
+  box.innerHTML = head + d.customers.map(function (c) {
+    var fail = c.fail_rate && c.fail_rate.known ? c.fail_rate.value : null;
+    return '<div class="wrow">' +
+      '<div class="n">' + esc(c.name) + '</div>' +
+      '<div class="v">' + (c.billed_thebe == null ? 'not billed' : pula(c.billed_thebe)) + '</div>' +
+      (fail == null ? '' : '<div class="wfail"><i style="width:' + fail + '%"></i></div>') +
+      '<div class="wmeta">' + c.jobs + ' jobs' +
+        (fail == null ? ', too few to give a failure rate' : ', ' + fail + '% failed, ' + c.failed + ' second journeys nobody invoiced') +
+        (c.days_to_pay && c.days_to_pay.known
+          ? ', pays in ' + c.days_to_pay.days + ' days' + (c.days_to_pay.slow ? ' which is slow' : '')
+          : '') +
+      '</div></div>';
+  }).join('') + drawExposures(d.findings);
+}
 
 /* ---------- Do this now: the proactive band ---------- */
 function customerName(id){

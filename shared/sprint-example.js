@@ -329,8 +329,141 @@
     };
   }
 
+  /* THE PEOPLE, THE ROSTER AND WHAT CUSTOMERS COST, as example figures.
+
+     The engines went live tonight as hub routes and there was nothing to LOOK at,
+     which makes them an address rather than a product. The demonstration copy has
+     no hub at all, so the same shapes the hub returns are written here as invented
+     people doing invented work.
+
+     Every name is invented and checked against the lead book by the publish gate,
+     which has already caught me once tonight reaching for a real company because it
+     sounded plausible.
+
+     THE FIGURES ARE DELIBERATELY UNCOMFORTABLE. A demonstration where everybody is
+     fine shows nothing. Here one driver has worked nineteen days without a break,
+     one licence runs out in three weeks, one person carries a third of the work, one
+     road has a single driver who has ever driven it, and one customer fails a
+     quarter of their deliveries. Those are the findings this layer exists to
+     produce, so the example holds one of each and the screen can be judged on
+     whether it makes them obvious. */
+  var people = {
+    known: true,
+    window_days: 30,
+    total_deliveries: 214,
+    people: [
+      { name: 'EXAMPLE Thato M', deliveries: 76, deliveries_before: 71,
+        on_time: { known: true, value: 94, of: 74 },
+        movement: { points: -1, say: 'the same as their own month before', worse: false },
+        pod: { known: true, value: 99, of: 76 }, failed: 2,
+        stretch: { known: true, days: 19 },
+        licence: { known: true, days_left: 412, warn: false, say: 'in date' } },
+      { name: 'EXAMPLE Boitumelo K', deliveries: 58, deliveries_before: 61,
+        on_time: { known: true, value: 88, of: 55 },
+        movement: { points: -3, say: 'down 3 points against their own month before', worse: false },
+        pod: { known: true, value: 96, of: 58 }, failed: 5,
+        stretch: { known: true, days: 4 },
+        licence: { known: true, days_left: 21, warn: true, say: 'expires in 21 days' } },
+      { name: 'EXAMPLE Kagiso T', deliveries: 49, deliveries_before: 62,
+        on_time: { known: true, value: 79, of: 47 },
+        movement: { points: -13, say: 'down 13 points against their own month before', worse: true },
+        pod: { known: true, value: 91, of: 49 }, failed: 7,
+        stretch: { known: true, days: 6 },
+        licence: { known: true, days_left: 180, warn: false, say: 'in date' } },
+      { name: 'EXAMPLE Neo S', deliveries: 31, deliveries_before: 28,
+        on_time: { known: true, value: 97, of: 30 },
+        movement: { points: 4, say: 'up 4 points against their own month before', worse: false },
+        pod: { known: true, value: 100, of: 31 }, failed: 1,
+        stretch: { known: true, days: 2 },
+        licence: { known: false, why: 'no licence expiry is recorded for this person' } }
+    ],
+    exposures: [
+      { kind: 'no break', who: 'EXAMPLE Thato M', level: 'high',
+        say: 'EXAMPLE Thato M has worked 19 days in a row.',
+        why: 'This is a company risk before it is anything else. Tiredness is the cheapest cause of an accident to prevent and the most expensive to explain afterwards, and nobody in this building is currently counting.',
+        do_this: 'Give them a day. If the run cannot lose them for a day, that is the finding: one person is a single point of failure.' },
+      { kind: 'single point', who: 'EXAMPLE Thato M', level: 'high',
+        say: 'EXAMPLE Thato M carried 36 per cent of every delivery this month.',
+        why: 'If that person is ill for a week, that much of the work has nowhere to go. It is the same risk as one customer carrying the revenue, in the other column.',
+        do_this: 'Find out whether it is the round, the vehicle or the person, then spread whichever one of those you can.' },
+      { kind: 'licence', who: 'EXAMPLE Boitumelo K', level: 'watch',
+        say: 'EXAMPLE Boitumelo K licence expires in 21 days.',
+        why: 'A driver on an expired licence voids the insurance on whatever they are driving, and the first anybody hears of it is usually an accident.',
+        do_this: 'Book the renewal now and hold the date.' },
+      { kind: 'slipping', who: 'EXAMPLE Kagiso T', level: 'watch',
+        say: 'EXAMPLE Kagiso T is down 13 points against their own month before.',
+        why: 'Measured against their OWN previous month, not against anybody else, so it is not a route or a round that changed. Something has.',
+        do_this: 'Ask them what changed before deciding what it means. It is as often a vehicle or a customer as it is a person.' },
+      { kind: 'licence unknown', who: 'EXAMPLE Neo S', level: 'watch',
+        say: 'No licence expiry is recorded for EXAMPLE Neo S.',
+        why: 'Not knowing is the same exposure as an expired one, because nobody can be told to renew a date nobody holds.',
+        do_this: 'Photograph the licence and put the date in.' }
+    ],
+    say: '5 things about the people running this company that no screen has ever shown you. Most of them are the company carrying a risk, not somebody doing badly.'
+  };
+
+  var roster = {
+    known: true,
+    date: '2026-09-16',
+    off: [
+      { name: 'EXAMPLE Neo S', kind: 'sick', say: 'off sick', planned: false,
+        from: '2026-09-15', to: null, note: '',
+        back: 'NO RETURN DATE. An absence with no end is how a week becomes three, and nobody notices because nothing ever falls due.' },
+      { name: 'EXAMPLE Lorato D', kind: 'leave', say: 'on leave', planned: true,
+        from: '2026-09-14', to: '2026-09-22', note: 'booked in July', back: 'back 2026-09-22' }
+    ],
+    findings: [
+      { level: 'high', route: 'Kasane',
+        say: 'Nobody available has driven Kasane in the last 60 days.',
+        why: 'Every person who knows this road is off today. It has run 7 times in that window, so it is not a road this company can simply not do.',
+        do_this: 'Either move the work, or send somebody with whoever ran it last so that this cannot happen again for the same reason.' },
+      { level: 'watch', route: 'Ghanzi',
+        say: 'Only EXAMPLE Thato M has driven Ghanzi in the last 60 days.',
+        why: 'One person is the entire capability for this road. They are not off today, and the day they are, this becomes the sentence above.',
+        do_this: 'Put a second person on it once, deliberately, before it is urgent.' },
+      { level: 'watch', who: 'EXAMPLE Neo S',
+        say: 'EXAMPLE Neo S is off sick with no return date.',
+        why: 'An absence with no end never falls due, so nobody is ever reminded to ask. This is how a week quietly becomes three.',
+        do_this: 'Put an expected date on it, even a wrong one. A date that moves is visible; no date at all is not.' }
+    ],
+    say: '2 away today. 3 things follow from that which nothing else on any screen would tell you.'
+  };
+
+  var worth = {
+    known: true,
+    window_days: 90,
+    cost_basis: { known: false,
+      why: 'the fuel table holds 0 rows. Two fills are the minimum that can produce a cost per kilometre, because one fill says how much fuel was bought and two say how far it went.',
+      who: 'any driver, on the next fill, by photographing the slip in the driver app' },
+    customers: [
+      { name: 'EXAMPLE Kalahari Meats', jobs: 96, failed: 4,
+        fail_rate: { known: true, value: 4 }, billed_thebe: 5420000,
+        days_to_pay: { known: true, days: 28, slow: false }, margin: { known: false } },
+      { name: 'EXAMPLE Standards Board', jobs: 61, failed: 2,
+        fail_rate: { known: true, value: 3 }, billed_thebe: 3910000,
+        days_to_pay: { known: true, days: 62, slow: true }, margin: { known: false } },
+      { name: 'EXAMPLE Blue Aloe Chemists', jobs: 44, failed: 11,
+        fail_rate: { known: true, value: 25 }, billed_thebe: 2960000,
+        days_to_pay: { known: true, days: 31, slow: false }, margin: { known: false } }
+    ],
+    findings: [
+      { who: 'EXAMPLE Blue Aloe Chemists', level: 'high',
+        say: 'EXAMPLE Blue Aloe Chemists failed 25 per cent of deliveries, 11 of 44.',
+        why: 'Every one of those is a second journey with the same fuel, the same hour and the same vehicle taken off something else, and not one of them is on an invoice. This is the cost that never appears anywhere.',
+        do_this: 'Look at the reasons before the customer. wrong address 9, refused 2. A wrong address repeated nine times is a data problem, not a customer problem.' },
+      { who: 'EXAMPLE Standards Board', level: 'watch',
+        say: 'EXAMPLE Standards Board takes 62 days to pay.',
+        why: 'Money owed that long is money this company has lent them, without interest and without agreeing to.',
+        do_this: 'Worth knowing what the signed terms actually say before anybody raises it, because half of slow paying is a terms mismatch nobody ever read.' }
+    ],
+    say: 'What each customer is WORTH can be shown. What they COST cannot, yet, because the fuel table holds 0 rows. Until that changes, no margin on this page is real, and it is better to say so than to print a confident wrong one.'
+  };
+
   var API = {
     NOW: NOW,
+    people: people,
+    roster: roster,
+    worth: worth,
     cash: cash,
     revenue_by_customer: revenue_by_customer,
     concentration: concentration,
