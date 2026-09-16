@@ -257,8 +257,83 @@
     };
   }
 
+  /* THE MONEY, ONE SET OF FIGURES, and this file was built for exactly this and
+     then not used for it.
+
+     On 15 September a reviewer found the same tender closing at three different
+     times on three screens and called it the most damaging thing in the product.
+     This file was the answer. On 16 September the same fault turned up in the one
+     place that matters more than a tender, and nobody had looked:
+
+         apps/insights/index.html           paid in 30 days    P136
+         apps/accounts/index.html           paid in 30 days    P12,845
+         apps/cockpit/index.html            paid in 30 days    P186,400
+         apps/demo/roles.html               paid in 30 days    P2,140
+
+     Four screens, four invented numbers, for one fact. A factor of one thousand
+     three hundred between the smallest and the largest. Two reviewers separately
+     named it the reason not to put this console in front of the managing director,
+     and they were right: she will open two screens in her first five minutes,
+     because that is what an owner does, and the moment they disagree about money
+     she is finished with all of it.
+
+     None of those files was broken. Each was written at a different sitting and
+     nothing ever compared them, which is the same cause as the tender and is the
+     only kind of bug that a test cannot find by looking at one file at a time.
+
+     So the money lives here now, once. hub/tests/example-consistency.test.js fails
+     the build if any screen carries its own figure again.
+
+     THE SHAPE OF THE INVENTED BUSINESS: a courier doing roughly two hundred
+     thousand pula a month, with about a quarter of that outstanding at any moment
+     and a fifth of the outstanding past due. Those ratios are what make the
+     numbers look like a real company rather than like numbers. */
+  var cash = {
+    paid_30d_thebe: 18640000,        // P186,400 collected in the last thirty days
+    invoiced_30d_thebe: 21180000,    // P211,800 billed in the same window
+    owed_thebe: 5240000,             // P52,400 outstanding right now
+    overdue_thebe: 1310000,          // P13,100 of that is past its due date
+    overdue_by_customer: [
+      { customer_id: 'cus_kalahari', customer_name: 'EXAMPLE Kalahari Meats', amount_thebe: 612000, days: 41 },
+      { customer_id: 'cus_blue_aloe', customer_name: 'EXAMPLE Blue Aloe Chemists', amount_thebe: 388000, days: 22 },
+      { customer_id: 'cus_chobe', customer_name: 'EXAMPLE Chobe Traders', amount_thebe: 310000, days: 12 }
+    ],
+    paid_top: 'EXAMPLE Kalahari Meats'
+  };
+
+  /* Revenue by customer, which is the bar the MD has never been shown. The top
+     three add to 58 per cent of the month, and that concentration IS the finding:
+     it is the largest single risk in a business this size and no screen has ever
+     said it out loud. */
+  var revenue_by_customer = [
+    { customer_id: 'cus_kalahari', customer_name: 'EXAMPLE Kalahari Meats', thebe: 5420000 },
+    { customer_id: 'cus_standards', customer_name: 'EXAMPLE Standards Board', thebe: 3910000 },
+    { customer_id: 'cus_blue_aloe', customer_name: 'EXAMPLE Blue Aloe Chemists', thebe: 2960000 },
+    { customer_id: 'cus_chobe', customer_name: 'EXAMPLE Chobe Traders', thebe: 2240000 },
+    { customer_id: 'cus_gaba', customer_name: 'EXAMPLE Gaborone Dental', thebe: 1680000 },
+    { customer_id: 'cus_bots', customer_name: 'EXAMPLE Botswana Seed', thebe: 1290000 },
+    { customer_id: 'cus_other', customer_name: 'EXAMPLE nineteen smaller accounts', thebe: 3680000 }
+  ];
+
+  function concentration() {
+    var total = revenue_by_customer.reduce(function (n, r) { return n + r.thebe; }, 0);
+    var top3 = revenue_by_customer.slice(0, 3).reduce(function (n, r) { return n + r.thebe; }, 0);
+    return {
+      total_thebe: total,
+      top3_thebe: top3,
+      top3_share: total ? Math.round(top3 / total * 100) : null,
+      rows: revenue_by_customer.map(function (r) {
+        return { name: r.customer_name, thebe: r.thebe,
+                 share: total ? Math.round(r.thebe / total * 100) : null };
+      })
+    };
+  }
+
   var API = {
     NOW: NOW,
+    cash: cash,
+    revenue_by_customer: revenue_by_customer,
+    concentration: concentration,
     at: at,
     DAY: DAY,
     tenders: tenders,

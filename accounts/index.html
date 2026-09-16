@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="../shared/sprint-example.js?v=68915d7a"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
@@ -244,14 +245,12 @@ function addInvoiced(ids){
 /* ---------- example data ---------- */
 function shiftDate(days){ const d = new Date(); d.setUTCDate(d.getUTCDate()+days); return d.toISOString(); }
 const EXAMPLE = {
-  cash: {
-    paid_30d_thebe: 1284500, paid_top: 'EXAMPLE Kalahari Meats',
-    overdue_thebe: 612300, overdue_by_customer: [
-      {customer:'EXAMPLE Boteti Mining Supplies', amount_thebe:284000, days:41},
-      {customer:'EXAMPLE Riverwalk Optometrists', amount_thebe:198300, days:22},
-      {customer:'EXAMPLE Naledi Legal Attorneys', amount_thebe:130000, days:9},
-    ]
-  },
+  /* The money is NOT invented here any more. Four screens carried four figures
+     for one fact, a factor of thirteen hundred apart, and the managing director
+     opens two screens in her first five minutes. One set of facts lives in
+     apps/shared/sprint-example.js and a test fails the build if a screen grows
+     its own again. */
+  cash: (window.SprintExample && window.SprintExample.cash) || {},
   ready: [
     {customer:'EXAMPLE Sunrise Pharmacy Group', shipments:[
       {id:'s1', waybill:'SC48310', destination:'Gaborone CBD', amount_thebe:87000},

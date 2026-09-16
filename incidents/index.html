@@ -657,7 +657,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
       level2: [
         { id:'inc_ex_l2_1', level:2, kind:'cod_shortfall', status:'open', opened_at: iso(-14), decision:null,
           title:'Cash on delivery short by P250.00 on EXAMPLE/WB/3111',
-          payload:{ waybill:'EXAMPLE/WB/3111', owed_thebe:150000, collected_thebe:125000, shortfall_thebe:25000, pod_name:'EXAMPLE consignee', driver:'EXAMPLE driver Kabo' } },
+          payload:{ waybill:'EXAMPLE/WB/3111', cod_owed_thebe:150000, collected_thebe:125000, shortfall_thebe:25000, pod_name:'EXAMPLE consignee', driver:'EXAMPLE driver Kabo' } },
         { id:'inc_ex_l2_2', level:2, kind:'volumetric_mismatch', status:'open', opened_at: iso(-40), decision:null,
           title:'Volumetric mismatch on EXAMPLE/WB/3115: 12.8 kg by volume against 8 kg on the scale',
           payload:{ waybill:'EXAMPLE/WB/3115', actual_kg:8, volumetric_kg:12.8, chargeable_kg:12.8, difference_kg:4.8, dims_cm:{ length:40, width:40, height:40 }, measured_by:'EXAMPLE driver Neo' } }
@@ -714,7 +714,12 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
     if (!T.level2.length) h.push('<div class="empty">Nothing waiting for a decision.</div>');
     T.level2.forEach(function(i){ var p = i.payload || {};
       var detail = i.kind === 'cod_shortfall'
-        ? 'Owed P' + pula(p.owed_thebe) + ', collected P' + pula(p.collected_thebe) + ', short <b>P' + pula(p.shortfall_thebe) + '</b>. Signed for by ' + esc2(p.pod_name || 'unknown') + '.'
+        /* cod_owed_thebe, not owed_thebe. What a consignee owes on ONE parcel is
+           a different fact from what every customer owes the company, and the two
+           shared a name until a guard looking for the second one found the first.
+           A field name that means two things is how the money on four screens
+           managed to disagree by a factor of thirteen hundred. */
+        ? 'Owed P' + pula(p.cod_owed_thebe) + ', collected P' + pula(p.collected_thebe) + ', short <b>P' + pula(p.shortfall_thebe) + '</b>. Signed for by ' + esc2(p.pod_name || 'unknown') + '.'
         : 'On the scale ' + p.actual_kg + ' kg, by volume ' + p.volumetric_kg + ' kg (' + (p.dims_cm ? p.dims_cm.length + ' by ' + p.dims_cm.width + ' by ' + p.dims_cm.height + ' cm' : 'no sides recorded') + '). Approving bills <b>' + p.chargeable_kg + ' kg</b>.';
       h.push('<div class="card"><div class="t">' + esc2(i.title) + '</div><div class="m">' + detail + ' Opened ' + ago(i.opened_at) + '.</div>' +
         (i.decision ? '<div class="m done">' + esc2(i.decision) + ' by ' + esc2(i.decided_by) + '</div>'
@@ -828,7 +833,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
   setInterval(function(){ load(true); }, 60000);
 })();
 </script>
-<script src="../shared/sprint-example.js?v=be27bd61"></script>
+<script src="../shared/sprint-example.js?v=68915d7a"></script>
 <script src="../shared/sprint-horizon.js?v=744eaf6e"></script>
 <script src="../shared/sprint-reach.js?v=f4d04a26"></script>
 </body>

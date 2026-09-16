@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="../shared/sprint-example.js?v=be27bd61"></script>
+<script src="../shared/sprint-example.js?v=68915d7a"></script>
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
 <link rel="stylesheet" href="../shared/sprint-view.css?v=4c6919d3">
@@ -239,16 +239,12 @@ const EXAMPLE = {
   quotes: {out:14, accepted:6, expiring7d:3},
   jobs_today: {booked:5, collected:3, in_transit:4, out_for_delivery:2, delivered:11, exception:1},
   on_time_rate_30d: 91,
-  cash: {
-    paid_30d_thebe: 18640000, overdue_thebe: 4210000,
-    overdue_by_customer: [
-      {customer:'EXAMPLE Boteti Mining Supplies', amount_thebe:1820000, days:38},
-      {customer:'EXAMPLE Riverwalk Optometrists', amount_thebe:920000, days:21},
-      {customer:'EXAMPLE Naledi Legal Attorneys', amount_thebe:610000, days:14},
-      {customer:'EXAMPLE Tlokweng Hardware', amount_thebe:460000, days:9},
-      {customer:'EXAMPLE Palapye Fresh Produce', amount_thebe:400000, days:6},
-    ]
-  },
+  /* The money is NOT invented here any more. Four screens carried four figures
+     for one fact, a factor of thirteen hundred apart, and the managing director
+     opens two screens in her first five minutes. One set of facts lives in
+     apps/shared/sprint-example.js and a test fails the build if a screen grows
+     its own again. */
+  cash: (window.SprintExample && window.SprintExample.cash) || {},
   /* Brick 103: one shared record, so this board and the Tender Desk and Home all
      count down to the same instant. days_left is derived, never typed beside a
      date that can drift away from it. */
