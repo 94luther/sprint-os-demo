@@ -40,7 +40,7 @@
     '.rail::-webkit-scrollbar{display:none}' +
     '.rc{flex:0 0 82%;max-width:340px;scroll-snap-align:start;position:relative;overflow:hidden;border-radius:26px;min-height:168px;padding:16px 16px 14px;color:#fff;' +
       'background:linear-gradient(135deg,rgba(20,70,45,.66),rgba(42,140,60,.44) 60%,rgba(70,190,90,.30));backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);' +
-      'border:1px solid rgba(255,255,255,.2);box-shadow:0 22px 54px -24px rgba(0,0,0,.65);display:flex;flex-direction:column;justify-content:flex-end;text-decoration:none}' +
+      'border:2px solid rgba(255,255,255,.2);box-shadow:0 22px 54px -24px rgba(0,0,0,.65);display:flex;flex-direction:column;justify-content:flex-end;text-decoration:none}' +
     '.rc::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(4,20,14,.55) 100%);pointer-events:none}' +
     /* Brick 102: the tender card's circle was a 170 px disc with a 6 px blur, which
        is a disc with a soft edge and still a disc, and it sat perfectly still. It is
@@ -56,7 +56,12 @@
       '50%{transform:translate3d(-17%,13%,0) scale(1.22);opacity:1}' +
       '100%{transform:translate3d(11%,-9%,0) scale(1.05);opacity:.64}}' +
     '@media (prefers-reduced-motion: reduce){.rc.money::after{animation:none}}' +
-    '.rc > *{position:relative}' +
+    '/* 16 Sep 2026: the drifting circle was painting OVER the words, because an
+       ::after with no z-index paints after its element's content. Shapes behind,
+       words in front, and the card isolated so the numbers stay local. */
+    '.rc{isolation:isolate}' +
+    '.rc.money::after{z-index:0}' +
+    '.rc > *{position:relative;z-index:1}' +
     '.rc .k{font-size:10.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#FDDCB5}' +
     '.rc .t{font-size:17px;font-weight:900;line-height:1.15;margin:4px 0 6px;letter-spacing:-.2px}' +
     '.rc .s{font-size:12.5px;color:rgba(255,255,255,.88);line-height:1.4}' +
@@ -69,13 +74,13 @@
     /* the filters */
     '.filters{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 6px;margin:6px -2px 4px;scrollbar-width:none}' +
     '.filters::-webkit-scrollbar{display:none}' +
-    '.filters button{flex:none;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.26);background:rgba(8,28,20,.40);color:#F4F7F5;font:inherit;font-weight:800;font-size:13px;' +
+    '.filters button{flex:none;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid rgba(255,255,255,.26);background:rgba(8,28,20,.40);color:#F4F7F5;font:inherit;font-weight:800;font-size:13px;' +
       'backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);display:flex;align-items:center;gap:8px}' +
     '.filters button.on{background:#fff;color:#0E2F22;border-color:#fff}' +
     '.filters button b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--orange,#F7941D);color:#0E2F22;font-size:11px}' +
     /* the feed */
     '.feed{display:flex;flex-direction:column;gap:10px}' +
-    '.fi{display:flex;gap:12px;align-items:flex-start;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.22);border-radius:22px;padding:12px 14px;' +
+    '.fi{display:flex;gap:12px;align-items:flex-start;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.22);border-radius:22px;padding:12px 14px;' +
       'backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65);min-height:64px}' +
     /* Brick 95: an urgent row must not depend on colour. Red washes out in
        Botswana sun and on a screen dimmed to save battery. So it also gets
@@ -88,10 +93,10 @@
     '.acts .unwired{opacity:.55;font-style:italic}' +
     '.fi .acts{display:none;gap:8px;margin-top:10px;flex-wrap:wrap}' +
     '.fi.open .acts{display:flex}' +
-    '.fi .acts a,.fi .acts button{min-height:48px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.3);' +
+    '.fi .acts a,.fi .acts button{min-height:48px;padding:0 16px;border-radius:999px;border:2px solid rgba(255,255,255,.3);' +
       'background:rgba(255,255,255,.14);color:#fff;font:inherit;font-weight:800;font-size:13.5px;display:inline-flex;align-items:center;text-decoration:none}' +
     '.fi .acts a.go,.fi .acts button.go{background:#fff;color:#0E2F22;border-color:#fff}' +
-    '.fi .av{flex:none;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff}' +
+    '.fi .av{flex:none;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff}' +
     '.fi .av.sys{background:rgba(58,170,53,.25);color:#8FE08A}' +
     '.fi .b{flex:1;min-width:0}' +
     '.fi .w{font-size:14px;font-weight:700;line-height:1.35;color:#F4F7F5}' +

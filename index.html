@@ -38,18 +38,18 @@ a{color:inherit;text-decoration:none}
 
 /* greeting */
 .hello{display:flex;align-items:center;gap:12px;padding:22px 0 8px}
-.avatar{width:46px;height:46px;border-radius:50%;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}
+.avatar{width:46px;height:46px;border-radius:50%;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}
 .avatar img{width:30px;height:30px;object-fit:contain}
 .hello .t{flex:1;min-width:0}
 .hello .t small{display:block;font-size:12.5px;color:var(--ink-3);font-weight:600}
 .hello .t b{display:block;font-size:19px;font-weight:800;letter-spacing:-.2px}
-.bell{width:42px;height:42px;border-radius:50%;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;flex:none;position:relative}
+.bell{width:42px;height:42px;border-radius:50%;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;flex:none;position:relative}
 .bell i{position:absolute;top:11px;right:12px;width:7px;height:7px;border-radius:50%;background:var(--orange)}
 
 /* hero */
 .hero{
   display:block;margin-top:12px;border-radius:28px;padding:22px 20px 20px;position:relative;overflow:hidden;
-  background:linear-gradient(135deg,rgba(20,70,45,.58),rgba(42,140,60,.42) 60%,rgba(70,190,90,.34));backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);border:1px solid rgba(255,255,255,.18);box-shadow:var(--shadow-lg);color:#fff;
+  background:linear-gradient(135deg,rgba(20,70,45,.58),rgba(42,140,60,.42) 60%,rgba(70,190,90,.34));backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);border:2px solid rgba(255,255,255,.18);box-shadow:var(--shadow-lg);color:#fff;
 }
 /* Brick 101, corrected 16 Sep 2026: the shapes behind the morning card.
 
@@ -106,6 +106,47 @@ a{color:inherit;text-decoration:none}
 @media (prefers-reduced-motion: reduce){
   .hero::before,.hero::after,.hero .haze{animation:none}
 }
+
+/* 16 Sep 2026, Sam, watching it on an iPhone: "that blur that's animating, it's
+   going over the text, it's going over the button. It should be behind."
+
+   He is right and the cause is a rule that catches everybody: ::before and
+   ::after are children of their element, and with no z-index they paint in
+   document order, so ::after lands ON TOP of the content. Measured on the
+   running page, every layer read z-index: auto.
+
+   isolation:isolate gives each card its own stacking context, so these numbers
+   mean something locally and a layer cannot escape behind the card's own
+   background and disappear. Shapes at 0, words and buttons at 1. */
+
+/* The sideways rows fade at their edges instead of slicing a card in half.
+   Measured on an iPhone 15 Pro Max viewport: .rail hides 255 px past its right
+   edge, .filters hides 297 px. A card cut by a hard edge looks broken; the same
+   card fading out says "there is more, keep going".
+
+   Asymmetric on purpose. No fade on the left at the start of a row, because a
+   fade there implies content already passed. It appears only once scrolled,
+   driven by scroll() with no script. A browser without scroll timelines keeps
+   the soft right edge, which is the half that does the work. */
+.rail,.filters{
+  -webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 34px),transparent 100%);
+  mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 34px),transparent 100%);
+  scroll-padding-inline:2px}
+@supports (animation-timeline: scroll(self inline)){
+  @keyframes sp-rail-edges{
+    0%{-webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 34px),transparent 100%);
+       mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 34px),transparent 100%)}
+    8%,92%{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 34px,#000 calc(100% - 34px),transparent 100%);
+       mask-image:linear-gradient(to right,transparent 0,#000 34px,#000 calc(100% - 34px),transparent 100%)}
+    100%{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 34px,#000 100%);
+       mask-image:linear-gradient(to right,transparent 0,#000 34px,#000 100%)}
+  }
+  .rail,.filters{animation:sp-rail-edges linear both;animation-timeline:scroll(self inline)}
+}
+
+.hero{isolation:isolate}
+.hero::before,.hero::after,.hero .haze{z-index:0}
+.hero .eyebrow,.hero h1,.hero p,.hero .cta{position:relative;z-index:1}
 .hero .eyebrow{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#FDDCB5;position:relative}
 .hero h1{font-size:26px;font-weight:900;letter-spacing:-.4px;line-height:1.12;margin:6px 0 8px;position:relative;max-width:300px}
 .hero p{font-size:13.5px;color:rgba(255,255,255,.86);max-width:320px;position:relative}
@@ -131,7 +172,7 @@ a{color:inherit;text-decoration:none}
 /* tiles */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .tile{
-  background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border-radius:var(--r);padding:14px 14px 13px;box-shadow:var(--shadow);
+  background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border-radius:var(--r);padding:14px 14px 13px;box-shadow:var(--shadow);
   display:flex;flex-direction:column;gap:10px;min-height:128px;position:relative;transition:transform .12s ease;
 }
 .tile:active{transform:scale(.97)}
@@ -154,7 +195,7 @@ a{color:inherit;text-decoration:none}
   position:fixed;left:0;right:0;bottom:0;z-index:20;padding:0 14px calc(10px + env(safe-area-inset-bottom));
 }
 .bar .in{
-  max-width:560px;margin:0 auto;background:rgba(8,28,20,.52);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border-radius:26px;box-shadow:0 18px 40px -16px rgba(0,0,0,.6);
+  max-width:560px;margin:0 auto;background:rgba(8,28,20,.52);border:2px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border-radius:26px;box-shadow:0 18px 40px -16px rgba(0,0,0,.6);
   display:flex;align-items:center;justify-content:space-around;height:66px;position:relative;
 }
 .bar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:700;color:#C9D6CF;width:60px;min-height:44px}
@@ -323,7 +364,7 @@ html[data-glare="on"] .tile .l,
 html[data-glare="on"] .hero p,
 html[data-glare="on"] .note,
 html[data-glare="on"] .pills.under .pill.when{color:#EAF3EE;font-weight:700}
-html[data-glare="on"] .pill.when{background:#123723;border:1px solid rgba(255,255,255,.6)}
+html[data-glare="on"] .pill.when{background:#123723;border:2px solid rgba(255,255,255,.6)}
 html[data-glare="on"] .pill.live{background:#2FD124;color:#04140C;font-weight:800}
 html[data-glare="on"] .pill.hot{background:#FFA733;color:#0A2417;font-weight:800}
 html[data-glare="on"] .hero .cta{background:#FFFFFF;color:#0A2417;font-weight:900}
@@ -354,7 +395,7 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
    floor hub/tests/touch-targets.test.js holds every other page to */
 .glare-toggle{
   width:44px;height:44px;border-radius:50%;padding:0;color:inherit;flex:none;
-  background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);
+  background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);
   backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
   box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
 }
@@ -367,6 +408,31 @@ html[data-glare="on"] .glare-toggle svg{stroke:#FFA733}
   box-shadow:0 16px 34px -10px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .find-fab:active{transform:scale(.94)}
 html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
+
+/* The top bar copies the bottom nav. 16 Sep 2026, Luther's instruction, and it
+   sits at the END of this stylesheet on purpose: the original .topbar rule is
+   further down the file, so an override written above it silently loses. It did
+   lose, once, and the measurement caught it: the bar still spanned the full 415
+   px while the nav sat at 14..401.
+
+   It was a full width slab bleeding 18 px past the gutter on each side while the
+   bottom nav is a floating pill sitting inside it. Two different objects doing
+   the same job at opposite ends of one screen. Same radius, border, blur, shadow
+   and gutter now, so the screen is bracketed by a matching pair. */
+.topbar{
+  /* -4px each side: the page gutter is 18 px but the bottom nav centres itself
+     inside a 560 px cap, which lands it at 14 px on a 415 px screen. Measured,
+     not guessed, and this is what makes the two pills line up exactly. */
+  margin:calc(env(safe-area-inset-top,0px) + 6px) -4px 10px !important;
+  padding:6px 14px 6px 12px !important;
+  border-radius:26px !important;
+  border:2px solid rgba(255,255,255,.26) !important;
+  background:rgba(8,28,20,.52) !important;
+  backdrop-filter:blur(22px) saturate(150%);
+  -webkit-backdrop-filter:blur(22px) saturate(150%);
+  box-shadow:0 18px 40px -16px rgba(0,0,0,.6);
+  overflow:hidden}
+.topbar img{height:46px}
 </style>
 <!-- Brick 81: loaded here, blocking, before <body> exists, so data-role is
      already correct on <html> before the tiles below are ever parsed. See
@@ -583,6 +649,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
 <script src="shared/sprint-find.js?v=cc985db9"></script>
 <script src="shared/sprint-example.js?v=be27bd61"></script>
-<script src="shared/sprint-front.js?v=090bc3ae"></script>
+<script src="shared/sprint-front.js?v=b75e7073"></script>
 </body>
 </html>
