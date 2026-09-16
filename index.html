@@ -767,7 +767,17 @@ body::before{
   /* THE MONEY BAR. Reads the one set of shared facts, so it can never disagree with
      the Accounts screen it links to. That disagreement is exactly what four screens
      were doing about this number until tonight. */
-  try {
+  /* IT HAS TO WAIT FOR THE FACTS.
+
+     This block runs while the page is still being parsed and the shared facts file
+     is loaded near the bottom, so window.SprintExample did not exist yet and the bar
+     drew nothing at all. It looked exactly like a money bar with no money in it,
+     which is the most misleading possible failure for this particular widget.
+
+     Moving the script tag would have been the other fix, and it is the wrong one:
+     two existing tests police where that file loads and why. Waiting is correct and
+     costs nothing, because the bar is below the fold anyway. */
+  function drawMoney() {
     var el = document.getElementById('moneyBar');
     var c = window.SprintExample && window.SprintExample.cash;
     if (el && c) {
@@ -789,6 +799,11 @@ body::before{
           '<span class="v">' + pula(c.overdue_thebe) + '</span>' +
           '<span class="bar"><i style="width:' + w(c.overdue_thebe) + '%"></i></span></div>';
     }
+  }
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', drawMoney);
+    } else { drawMoney(); }
   } catch (e) {}
   try {
     /* The high contrast switch moved into Settings on 16 September. It used to sit
