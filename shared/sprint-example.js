@@ -381,23 +381,28 @@
       { kind: 'no break', who: 'EXAMPLE Thato M', level: 'high',
         say: 'EXAMPLE Thato M has worked 19 days in a row.',
         why: 'This is a company risk before it is anything else. Tiredness is the cheapest cause of an accident to prevent and the most expensive to explain afterwards, and nobody in this building is currently counting.',
-        do_this: 'Give them a day. If the run cannot lose them for a day, that is the finding: one person is a single point of failure.' },
+        do_this: 'Give them a day. If the run cannot lose them for a day, that is the finding: one person is a single point of failure.',
+        actions: [{"who":"EXAMPLE Thato M","id":"book_rest","label":"Book them a day off","primary":true,"sends":false,"does":"Writes a day of leave into the roster and shows you who can cover the road they usually take.","needs":["date"]},{"who":"EXAMPLE Thato M","id":"see_cover","label":"Who could cover","sends":false,"does":"Lists everybody who has actually driven their road in the last sixty days, so the cover is somebody who knows it rather than somebody who is free."}] },
       { kind: 'single point', who: 'EXAMPLE Thato M', level: 'high',
         say: 'EXAMPLE Thato M carried 36 per cent of every delivery this month.',
         why: 'If that person is ill for a week, that much of the work has nowhere to go. It is the same risk as one customer carrying the revenue, in the other column.',
-        do_this: 'Find out whether it is the round, the vehicle or the person, then spread whichever one of those you can.' },
+        do_this: 'Find out whether it is the round, the vehicle or the person, then spread whichever one of those you can.',
+        actions: [{"who":"EXAMPLE Thato M","id":"spread_round","label":"Spread this round","primary":true,"sends":false,"does":"Shows the roads only this person drives, and who is closest to being able to take one. Spreading a round is a decision, so it writes nothing until you say which road and who."},{"who":"EXAMPLE Thato M","id":"note","label":"Write it down for later","sends":false,"does":"Saves this as a note against that person so it is still here next month."}] },
       { kind: 'licence', who: 'EXAMPLE Boitumelo K', level: 'watch',
         say: 'EXAMPLE Boitumelo K licence expires in 21 days.',
         why: 'A driver on an expired licence voids the insurance on whatever they are driving, and the first anybody hears of it is usually an accident.',
-        do_this: 'Book the renewal now and hold the date.' },
+        do_this: 'Book the renewal now and hold the date.',
+        actions: [{"who":"EXAMPLE Boitumelo K","id":"set_renewal","label":"Mark the renewal booked","primary":true,"sends":false,"does":"Records that the renewal has been arranged and stops this card coming back every day until the new date is in.","needs":["date"]},{"who":"EXAMPLE Boitumelo K","id":"remind","label":"Remind me in a week","sends":false,"does":"Puts it back on this page in seven days rather than tomorrow."}] },
       { kind: 'slipping', who: 'EXAMPLE Kagiso T', level: 'watch',
         say: 'EXAMPLE Kagiso T is down 13 points against their own month before.',
         why: 'Measured against their OWN previous month, not against anybody else, so it is not a route or a round that changed. Something has.',
-        do_this: 'Ask them what changed before deciding what it means. It is as often a vehicle or a customer as it is a person.' },
+        do_this: 'Ask them what changed before deciding what it means. It is as often a vehicle or a customer as it is a person.',
+        actions: [{"who":"EXAMPLE Kagiso T","id":"ask_first","label":"Write the question first","primary":true,"sends":false,"does":"Writes the opening line for the conversation, framed as a question about what changed rather than as a complaint about a number. Nothing is sent: you read it, change it, and speak to them yourself.","message":"I noticed your deliveries have been harder to get out on time this month than last. Before I assume anything, what has changed? Is it the vehicle, the round, a customer, or something else going on?"},{"who":"EXAMPLE Kagiso T","id":"check_vehicle","label":"Check their vehicle first","sends":false,"does":"Opens the fleet record for whatever they have been driving. It is as often the van as the person and that is the cheaper thing to rule out."}] },
       { kind: 'licence unknown', who: 'EXAMPLE Neo S', level: 'watch',
         say: 'No licence expiry is recorded for EXAMPLE Neo S.',
         why: 'Not knowing is the same exposure as an expired one, because nobody can be told to renew a date nobody holds.',
-        do_this: 'Photograph the licence and put the date in.' }
+        do_this: 'Photograph the licence and put the date in.',
+        actions: [{"who":"EXAMPLE Neo S","id":"set_licence","label":"Add the licence date","primary":true,"sends":false,"does":"Takes the expiry off the licence and puts it in, which turns an unknown into something the system can warn you about.","needs":["date"]}] }
     ],
     say: '5 things about the people running this company that no screen has ever shown you. Most of them are the company carrying a risk, not somebody doing badly.'
   };
@@ -416,15 +421,18 @@
       { level: 'high', route: 'Kasane',
         say: 'Nobody available has driven Kasane in the last 60 days.',
         why: 'Every person who knows this road is off today. It has run 7 times in that window, so it is not a road this company can simply not do.',
-        do_this: 'Either move the work, or send somebody with whoever ran it last so that this cannot happen again for the same reason.' },
+        do_this: 'Either move the work, or send somebody with whoever ran it last so that this cannot happen again for the same reason.',
+        actions: [{"id":"move_work","label":"Move the work booked today","primary":true,"sends":false,"does":"Shows what is promised on that road today and what each one would cost to move, so the decision is made against the promises rather than against a blank map."},{"id":"pair_next","label":"Pair somebody on it next time","sends":false,"does":"Books a second person onto the next run of this road with whoever drove it last, which is the only thing that stops this happening again for the same reason."}] },
       { level: 'watch', route: 'Ghanzi',
         say: 'Only EXAMPLE Thato M has driven Ghanzi in the last 60 days.',
         why: 'One person is the entire capability for this road. They are not off today, and the day they are, this becomes the sentence above.',
-        do_this: 'Put a second person on it once, deliberately, before it is urgent.' },
+        do_this: 'Put a second person on it once, deliberately, before it is urgent.',
+        actions: [{"id":"pair_next","label":"Put a second person on it","primary":true,"sends":false,"does":"Books somebody onto the next run alongside the one person who knows this road. Doing it once, deliberately, is cheaper than doing it in a hurry."}] },
       { level: 'watch', who: 'EXAMPLE Neo S',
         say: 'EXAMPLE Neo S is off sick with no return date.',
         why: 'An absence with no end never falls due, so nobody is ever reminded to ask. This is how a week quietly becomes three.',
-        do_this: 'Put an expected date on it, even a wrong one. A date that moves is visible; no date at all is not.' }
+        do_this: 'Put an expected date on it, even a wrong one. A date that moves is visible; no date at all is not.',
+        actions: [{"id":"set_return","label":"Set an expected date","primary":true,"sends":false,"does":"Puts an expected return on the absence. A date that moves is visible; no date at all is not.","needs":["date"]},{"id":"check_in","label":"Write a message to check in","sends":false,"does":"Writes a short message asking how they are and when they expect to be back. It asks after the person before it asks after the date, and nothing is sent until you send it.","message":"Morning, just checking in, no rush at all. How are you doing? When you have an idea of when you might be back, let me know so I can sort the runs out. Take the time you need."}] }
     ],
     say: '2 away today. 3 things follow from that which nothing else on any screen would tell you.'
   };
@@ -450,11 +458,13 @@
       { who: 'EXAMPLE Blue Aloe Chemists', level: 'high',
         say: 'EXAMPLE Blue Aloe Chemists failed 25 per cent of deliveries, 11 of 44.',
         why: 'Every one of those is a second journey with the same fuel, the same hour and the same vehicle taken off something else, and not one of them is on an invoice. This is the cost that never appears anywhere.',
-        do_this: 'Look at the reasons before the customer. wrong address 9, refused 2. A wrong address repeated nine times is a data problem, not a customer problem.' },
+        do_this: 'Look at the reasons before the customer. wrong address 9, refused 2. A wrong address repeated nine times is a data problem, not a customer problem.',
+        actions: [{"id":"fix_addresses","label":"Look at the addresses first","primary":true,"sends":false,"does":"Lists every failed delivery for this customer with the address as it was given. If the same one is wrong nine times, it is one correction and not a difficult conversation."},{"id":"ask_customer","label":"Write to the customer","sends":false,"does":"Writes a note offering to check the delivery details together. It offers help rather than assigning blame, and nothing is sent until you send it.","message":"Good day, this is Sprint Couriers. We have had a few deliveries to you that did not get through first time, and we would rather fix that than keep trying. Could we check the delivery address and a contact number for the receiving side with you? It should save us both the second trip."}] },
       { who: 'EXAMPLE Standards Board', level: 'watch',
         say: 'EXAMPLE Standards Board takes 62 days to pay.',
         why: 'Money owed that long is money this company has lent them, without interest and without agreeing to.',
-        do_this: 'Worth knowing what the signed terms actually say before anybody raises it, because half of slow paying is a terms mismatch nobody ever read.' }
+        do_this: 'Worth knowing what the signed terms actually say before anybody raises it, because half of slow paying is a terms mismatch nobody ever read.',
+        actions: [{"id":"read_terms","label":"What did we agree","primary":true,"sends":false,"does":"Opens the signed terms for this customer. Half of slow paying is a terms mismatch nobody has read, and going in without checking is how a good account gets an argument it did not deserve."},{"id":"statement","label":"Draft a statement","sends":false,"does":"Prepares the statement of what is outstanding. It is a draft and it goes nowhere until somebody sends it."}] }
     ],
     say: 'What each customer is WORTH can be shown. What they COST cannot, yet, because the fuel table holds 0 rows. Until that changes, no margin on this page is real, and it is better to say so than to print a confident wrong one.'
   };
