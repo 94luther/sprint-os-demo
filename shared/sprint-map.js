@@ -320,6 +320,16 @@
        inside an SVG applies to that SVG and nothing else. */
     s.push('<style>' +
       '.sp-pulse{animation:spPulse 2.4s cubic-bezier(.4,0,.6,1) infinite}' +
+      /* Outward, not in and out. A breathing ring reads as alive; a ring that
+         expands and fades reads as something arriving, which is what a van stopped
+         beyond its threshold actually is. */
+      '.sp-alarm{animation:spAlarm 1.6s ease-out infinite}' +
+      '@keyframes spAlarm{' +
+        '0%{transform:scale(.55);opacity:.55}' +
+        '80%{transform:scale(2.1);opacity:0}' +
+        '100%{transform:scale(2.1);opacity:0}}' +
+      '.sp-veh-hit{cursor:pointer}' +
+      '.sp-veh-hit:focus{outline:2px solid #F7941D;outline-offset:2px}' +
       '@keyframes spPulse{' +
         '0%{transform:scale(.62);opacity:.42}' +
         '55%{transform:scale(1.35);opacity:.06}' +
@@ -327,7 +337,8 @@
       '.sp-town-hit{cursor:pointer}' +
       '.sp-town-hit:focus{outline:2px solid #F7941D;outline-offset:2px}' +
       '@media (prefers-reduced-motion: reduce){' +
-        '.sp-pulse{animation:none;opacity:.24}}' +
+        '.sp-pulse{animation:none;opacity:.24}' +
+        '.sp-alarm{animation:none;opacity:.42}}' +
       '</style>');
 
     /* THE COUNTRY, FLAT, AND NOT GREEN. Rewritten the same night it was built.
@@ -524,15 +535,44 @@
          Reduced motion is honoured in the stylesheet: the ring stops and the dot
          stays, because somebody who has asked their phone to stop moving things
          has asked for a reason. */
+      /* THREE STOPPED STATES, NOT ONE, and this is behaviour rather than colour.
+
+         The build already carried standing_minutes and a twenty minute threshold, and
+         did nothing with them except change the colour of some text. A van at a
+         traffic light and a van that has not moved for forty minutes were the same
+         object on this map.
+
+         They are three things now and they look like three things:
+
+           MOVING            green, a ring that breathes
+           STOPPED           amber, a still ring. Every trip has stops in it and a
+                             stop is not a problem; it is a fact.
+           STOPPED TOO LONG  red, a ring that expands and fades outward like something
+                             arriving, because it is the only state on this map that
+                             somebody has to do something about.
+
+         No incident record is created by any of this. A van stopped at a robot must
+         never become a row in the incident table, and the difference between "worth
+         looking at" and "confirmed incident" is a person deciding, not a timer. */
+      var limit = opts.standing_limit || 20;
+      var tooLong = v.state === 'standing' && (v.standing_minutes || 0) >= limit;
+      if (tooLong) col = '#E0483E';
       if (!stale) {
-        var pulsing = v.state === 'moving';
-        s.push('<circle class="sp-veh-ring' + (pulsing ? ' sp-pulse' : '') + '" ' +
+        var ring = v.state === 'moving' ? ' sp-pulse' : (tooLong ? ' sp-alarm' : '');
+        s.push('<circle class="sp-veh-ring' + ring + '" ' +
           'cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) +
-          '" r="11" fill="' + col + '" opacity="' + (pulsing ? '.28' : '.16') + '" ' +
+          '" r="11" fill="' + col + '" opacity="' + (v.state === 'moving' ? '.28' : tooLong ? '.34' : '.16') + '" ' +
           'style="transform-origin:' + vx.toFixed(1) + 'px ' + vy.toFixed(1) + 'px"/>');
       }
+      /* The dot is the target. It carries the registration so the page that owns the
+         data can answer, and an invisible 13 unit disc over it so a thumb can hit it,
+         for the same reason the town dots have one. */
       s.push('<circle cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="5" fill="' + col +
-        '" stroke="rgba(0,0,0,.45)" stroke-width="1"><title>' + esc(v.reg) + ', ' +
+        '" stroke="rgba(0,0,0,.45)" stroke-width="1"/>');
+      s.push('<circle class="sp-veh-hit" data-veh="' + esc(v.reg) + '" ' +
+        'cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="13" fill="transparent" ' +
+        'role="button" tabindex="0" aria-label="' + esc(v.reg) + ', ' +
+        esc(STATE_WORD[v.state] || v.state) + '"><title>' + esc(v.reg) + ', ' +
         esc(STATE_WORD[v.state] || v.state) + '</title></circle>');
       /* The registration AND the state, beside the dot. The state used to live in
          a tooltip, which a thumb can never open. */

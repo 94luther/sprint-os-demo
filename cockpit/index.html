@@ -207,13 +207,15 @@ header h1{font-size:15px; flex:1;}
 <body>
 <header>
   <h1>Manager Cockpit</h1>
-  <span id="pulseWidget"></span>
+  <!-- Sprint Pulse is out of the primary cockpit. Team total, scored people and
+       points are internal scoring language that does not help anybody run a
+       courier business, and it was sitting in the first thing a manager reads. -->
   <span class="hdr-bell" id="bell" title="What needs you"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
   <div class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Loading</span></div>
 </header>
 <div id="bannerWrap"></div>
 <div class="grid" id="grid"><div style="grid-column:1/-1; padding:30px; color:var(--dim); font-size:13px;">Loading cockpit...</div></div>
-<div style="padding:0 10px 10px;" id="pulsePanelWrap"></div>
+<!-- pulse panel removed from the primary cockpit, 17 Sep 2026 -->
 
 <script src="../shared/recognition-widget.js?v=34671ad6"></script>
 <script>

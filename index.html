@@ -366,12 +366,17 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
    are small, they never wrap into unusable cards, and at 320 px they shrink rather
    than stack, because a strip that becomes a column stops being a glance. */
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 12px}
-.kpi{background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.22);
+/* Every strip number is an anchor now, not a card. A number nobody can open is a
+   poster, and this application is full of posters. */
+.kpi{display:block;text-decoration:none;color:inherit;
+  background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.22);
   border-radius:18px;padding:11px 10px;min-width:0;
   backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
 .kpi .v{font-size:20px;font-weight:900;letter-spacing:-.5px;line-height:1.05;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi .k{font-size:10.5px;font-weight:700;color:var(--ink-3);margin-top:3px;line-height:1.25}
+.kpi:active{transform:scale(.97);border-color:rgba(255,255,255,.45)}
+.hello .t .brand{font-size:17px;font-weight:900;letter-spacing:-.3px}
 .kpi.warn .v{color:#FFC478}
 .kpi.bad .v{color:#FF9E96}
 @media (max-width:359px){
@@ -603,12 +608,26 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
   var UNKNOWN = '\u2014';
 
   /* Build the one shape, from whichever source answered. */
+  /* The fleet counts, from whichever vehicle list this copy has. Counted rather
+     than invented: every vehicle already carries a state word. */
+  function countFleet(vehicles) {
+    var out = { moving: 0, stopped: 0, quiet: 0 };
+    (vehicles || []).forEach(function (v) {
+      if (v.state === 'moving') out.moving++;
+      else if (v.state === 'standing' || v.state === 'incident') out.stopped++;
+      else out.quiet++;
+    });
+    return out;
+  }
+
   function fromDemo() {
     var E = window.SprintExample || {};
     var people = E.people || {}, roster = E.roster || {}, cash = E.cash || {};
     var findings = (people.exposures || []).concat(roster.findings || []);
+    var veh = (window.FLEET_LIVE_EXAMPLE && window.FLEET_LIVE_EXAMPLE.vehicles) || E.vehicles || null;
     return {
       source: 'demo',
+      fleet: veh ? countFleet(veh) : {},
       loaded: !!(E.people && E.roster && E.cash),
       jobs: people.total_deliveries == null ? null : people.total_deliveries,
       attention: findings.length,
@@ -626,6 +645,11 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     ]);
     var people = out[0], roster = out[1], over = out[2];
     if (!people && !roster && !over) throw new Error('the hub answered nothing');
+    var fleet = {};
+    try {
+      var fl = await window.apiFetch('/api/fleet').catch(function () { return null; });
+      if (fl && fl.vehicles) fleet = countFleet(fl.vehicles);
+    } catch (e) {}
     var findings = ((people && people.exposures) || []).concat((roster && roster.findings) || []);
     var money = null;
     try {
@@ -633,6 +657,7 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     } catch (e) {}
     return {
       source: 'live',
+      fleet: fleet,
       loaded: !!(people && roster),
       jobs: people && people.total_deliveries != null ? people.total_deliveries : null,
       attention: (people || roster) ? findings.length : null,
@@ -645,39 +670,40 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     var role = 'manager';
     try { role = (window.SprintRoles && window.SprintRoles.getRole()) || role; } catch (e) {}
 
-    /* The real roles, taken from apps/shared/sprint-roles.js, which knows admin,
-       staff, ops, accounts, manager and driver. An earlier version of this file had
-       a branch for a role called sales, which does not exist and could never run. */
     var num = function (v) { return v == null ? UNKNOWN : String(v); };
     var mon = function (v) { return pula(v) || UNKNOWN; };
 
+    /* WHAT IS HAPPENING RIGHT NOW, not what happened this month. The fleet state is
+       already in this build: every vehicle carries moving, standing, no_signal or
+       incident, and standing carries the minutes. It had never been counted. */
+    var f = state.fleet || {};
     var SETS = {
       driver: [
-        { v: num(state.jobs), k: 'Jobs this month' },
-        { v: num(state.attention), k: 'Exceptions', cls: state.attention ? 'warn' : '' },
-        { v: mon(state.past_due), k: 'Past due', cls: 'bad' }
+        { v: num(f.moving), k: 'Moving', go: 'fleet/index.html#moving' },
+        { v: num(f.stopped), k: 'Stopped', cls: f.stopped ? 'warn' : '', go: 'fleet/index.html#stopped' },
+        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'bad' : '', go: 'insights/index.html' }
       ],
       accounts: [
-        { v: mon(state.past_due), k: 'Past due', cls: 'bad' },
-        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'warn' : '' },
-        { v: num(state.jobs), k: 'Jobs this month' }
+        { v: mon(state.past_due), k: 'Past due', cls: 'bad', go: 'accounts/index.html' },
+        { v: num(f.moving), k: 'Moving', go: 'fleet/index.html#moving' },
+        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'warn' : '', go: 'insights/index.html' }
       ],
       DEFAULT: [
-        { v: num(state.jobs), k: 'Jobs this month' },
-        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'warn' : '' },
-        { v: mon(state.past_due), k: 'Past due', cls: 'bad' }
+        { v: num(f.moving), k: 'Moving', go: 'fleet/index.html#moving' },
+        { v: num(f.stopped), k: 'Stopped', cls: f.stopped ? 'warn' : '', go: 'fleet/index.html#stopped' },
+        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'bad' : '', go: 'insights/index.html' }
       ]
     };
     var set = SETS[role] || SETS.DEFAULT;
     var kp = document.getElementById('kpis');
     if (kp) {
       kp.innerHTML = set.map(function (m) {
-        return '<div class="kpi ' + (m.cls || '') + '"><div class="v">' + esc(m.v) + '</div>' +
-          '<div class="k">' + esc(m.k) + '</div></div>';
+        return '<a class="kpi ' + (m.cls || '') + '" href="' + esc(m.go) + '">' +
+          '<div class="v">' + esc(m.v) + '</div>' +
+          '<div class="k">' + esc(m.k) + '</div></a>';
       }).join('');
     }
 
-    /* The action card. Escaped, and honest about not knowing. */
     var dn = document.getElementById('doNow');
     if (!dn) return;
     var top = state.findings.slice().sort(function (a, b) {
@@ -795,7 +821,7 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
 <body>
 <div class="wrap">
   <div class="hello">
-    <div class="t" id="hello" role="button" title="Tap to tell the app your name"><small id="greet">Good morning</small><b id="today">Sprint Couriers</b></div>
+    <div class="t"><b class="brand">Sprint OS</b></div>
     <div class="bell" id="bell" role="button" title="What needs you"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
   </div>
 
@@ -804,7 +830,11 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
        sentence, and a person opening this at seven in the morning needs a number
        before they need a paragraph. The card it replaced still exists: it is the
        Open button on the action card below, going to the same place. -->
-  <div class="kpis" id="kpis" aria-label="The three numbers"></div>
+  <!-- THE LIVE STRIP. Three operational numbers, and every one of them is a door.
+       The rule this follows, from now on everywhere in Sprint OS: if a person can see
+       a number, they can touch it, and touching it shows the things that make it up.
+       A number nobody can open is a poster. -->
+  <div class="kpis" id="kpis" aria-label="What is happening right now"></div>
 
   <a class="donow" id="doNow" href="insights/index.html"></a>
 
@@ -904,8 +934,6 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
       if (hn) { localStorage.setItem(KEY, clean(decodeURIComponent(hn[1].replace(/\+/g, ' ')))); history.replaceState(null, '', location.pathname + q); }
       name = clean(localStorage.getItem(KEY));
     } catch (e) {}
-    var word = part === 'afternoon' ? 'Good afternoon' : (part === 'evening' || part === 'night') ? 'Good evening' : 'Good morning';
-    document.getElementById('greet').textContent = word + (name ? ', ' + name : '');
     var d = new Date();
     document.getElementById('today').textContent =
       ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()] + ' ' + d.getDate() + ' ' +
@@ -967,7 +995,7 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
         var v = clean(nameIn.value);
         try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {}
         name = v;
-        var g = document.getElementById('greet');
+        var g = null;
         if (g) g.textContent = word + (name ? ', ' + name : '');
         sheet.style.transform = 'translateY(100%)';
         back.style.opacity = '0';
