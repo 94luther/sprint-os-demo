@@ -540,16 +540,11 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
 /* The feather at the top, the same one as the bottom, mirrored. There was a
    blur up here but no fade, so content met the header at a hard line: the same
    fault Sam caught at the bottom of the page. */
-body::before{
-  content:"";
-  position:fixed;left:0;right:0;top:0;
-  height:calc(env(safe-area-inset-top,0px) + 96px);
-  pointer-events:none;z-index:14;
-  backdrop-filter:blur(6px) saturate(125%);
-  -webkit-backdrop-filter:blur(6px) saturate(125%);
-  -webkit-mask-image:linear-gradient(to top,transparent 0%,rgba(0,0,0,.10) 34%,rgba(0,0,0,.34) 58%,rgba(0,0,0,.72) 80%,#000 100%);
-  mask-image:linear-gradient(to top,transparent 0%,rgba(0,0,0,.10) 34%,rgba(0,0,0,.34) 58%,rgba(0,0,0,.72) 80%,#000 100%);
-  background:linear-gradient(to top,rgba(11,61,46,0),rgba(11,61,46,.16) 55%,rgba(11,61,46,.46))}
+/* THE TOP FEATHER IS GONE. It was a fixed 96 px blur that made sense while the
+   header was sticky, because it softened content sliding under a bar that stayed.
+   The header is static now, so that mask went on floating over the page after the
+   header itself had scrolled away, blurring real content to solve a problem that no
+   longer existed. A non sticky header needs no atmospheric mask. */
 </style>
 <!-- Brick 81: loaded here, blocking, before <body> exists, so data-role is
      already correct on <html> before the tiles below are ever parsed. See
@@ -574,78 +569,144 @@ body::before{
      code and not four dashboards. Every number comes from a source this page already
      had; nothing here is invented, and anything unknown says so rather than showing
      a zero that looks like a measurement. */
-  /* IT HAS TO WAIT FOR THE FACTS, AND THIS IS THE SECOND TIME TONIGHT.
+  /* ONE STATE, EITHER LIVE OR DEMONSTRATION, NEVER A MIXTURE.
 
-     This block runs while the page is still parsing, and apps/shared/sprint-example.js
-     is loaded near the bottom, so window.SprintExample did not exist yet. The three
-     numbers, the action card and the four shortcuts all rendered EMPTY, which looks
-     exactly like a company with nothing happening rather than like a script that ran
-     too early. The money bar did the identical thing an hour ago.
+     The first version of this read window.SprintExample directly and had no live
+     path at all. On the office system that meant three INVENTED management numbers
+     and an invented action card sitting above a live activity feed, which is worse
+     than showing nothing: a mixture is unnoticeable and a blank is not. That is a
+     stop ship fault and it was mine.
 
-     Once is a mistake; twice is a pattern, so it is written down here rather than
-     just fixed: anything on this page that reads SprintExample must wait for the
-     document, because that file loads last on purpose and two tests police where. */
-  function drawCockpit() {
+     So the page asks the hub first. If the hub answers, everything on this strip is
+     live. If there is no hub, which is what the public demonstration is, everything
+     is the invented set and the page says so once at the bottom. The rendering code
+     below cannot tell which one it was handed, because it is handed the same shape
+     either way.
+
+     AND UNKNOWN IS NOT ZERO. Number(x) || 0 turned a figure that failed to load into
+     a confident zero, and the action card announced that nothing needed anybody when
+     the truth was that nothing had loaded. An empty dataset and a healthy business
+     are not the same state and must never look the same. Anything not positively
+     known renders as a dash and says why. */
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function pula(t) {
+    if (t == null || isNaN(Number(t))) return null;
+    var n = Number(t) / 100;
+    return n >= 1000 ? 'P' + (n / 1000).toFixed(1) + 'k' : 'P' + n.toFixed(0);
+  }
+
+  var UNKNOWN = '\u2014';
+
+  /* Build the one shape, from whichever source answered. */
+  function fromDemo() {
     var E = window.SprintExample || {};
-    var role = 'manager';
-    try { role = (window.SprintRoles && window.SprintRoles.current && window.SprintRoles.current()) || role; } catch (e) {}
-
-    var pula = function (t) {
-      var n = Math.round(Number(t) || 0) / 100;
-      return n >= 1000 ? 'P' + (n / 1000).toFixed(1) + 'k' : 'P' + n.toFixed(0);
+    var people = E.people || {}, roster = E.roster || {}, cash = E.cash || {};
+    var findings = (people.exposures || []).concat(roster.findings || []);
+    return {
+      source: 'demo',
+      loaded: !!(E.people && E.roster && E.cash),
+      jobs: people.total_deliveries == null ? null : people.total_deliveries,
+      attention: findings.length,
+      past_due: cash.overdue_thebe == null ? null : cash.overdue_thebe,
+      findings: findings
     };
+  }
 
-    var cash = E.cash || {};
-    var people = E.people || {};
-    var roster = E.roster || {};
-    var attention = ((people.exposures || []).length) + ((roster.findings || []).length);
+  async function fromHub() {
+    if (typeof window.apiFetch !== 'function') throw new Error('no hub on this copy');
+    var out = await Promise.all([
+      window.apiFetch('/api/people').catch(function () { return null; }),
+      window.apiFetch('/api/roster').catch(function () { return null; }),
+      window.apiFetch('/api/overhead').catch(function () { return null; })
+    ]);
+    var people = out[0], roster = out[1], over = out[2];
+    if (!people && !roster && !over) throw new Error('the hub answered nothing');
+    var findings = ((people && people.exposures) || []).concat((roster && roster.findings) || []);
+    var money = null;
+    try {
+      money = (over.metrics || []).filter(function (m) { return m.key === 'money_owed'; })[0];
+    } catch (e) {}
+    return {
+      source: 'live',
+      loaded: !!(people && roster),
+      jobs: people && people.total_deliveries != null ? people.total_deliveries : null,
+      attention: (people || roster) ? findings.length : null,
+      past_due: money && money.known ? money.value : null,
+      findings: findings
+    };
+  }
+
+  function render(state) {
+    var role = 'manager';
+    try { role = (window.SprintRoles && window.SprintRoles.getRole()) || role; } catch (e) {}
+
+    /* The real roles, taken from apps/shared/sprint-roles.js, which knows admin,
+       staff, ops, accounts, manager and driver. An earlier version of this file had
+       a branch for a role called sales, which does not exist and could never run. */
+    var num = function (v) { return v == null ? UNKNOWN : String(v); };
+    var mon = function (v) { return pula(v) || UNKNOWN; };
 
     var SETS = {
       driver: [
-        { v: '\u2014', k: 'Stops left', cls: '' },
-        { v: '\u2014', k: 'Next stop', cls: '' },
-        { v: String(attention || 0), k: 'Exceptions', cls: attention ? 'warn' : '' }
+        { v: num(state.jobs), k: 'Jobs this month' },
+        { v: num(state.attention), k: 'Exceptions', cls: state.attention ? 'warn' : '' },
+        { v: mon(state.past_due), k: 'Past due', cls: 'bad' }
       ],
-      sales: [
-        { v: '\u2014', k: 'Pipeline', cls: '' },
-        { v: String((E.tenders && E.tenders().length) || 0), k: 'Tenders open', cls: '' },
-        { v: pula(cash.owed_thebe), k: 'Owed to Sprint', cls: 'warn' }
+      accounts: [
+        { v: mon(state.past_due), k: 'Past due', cls: 'bad' },
+        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'warn' : '' },
+        { v: num(state.jobs), k: 'Jobs this month' }
       ],
       DEFAULT: [
-        { v: String((people.total_deliveries) || 0), k: 'Jobs this month', cls: '' },
-        { v: String(attention || 0), k: 'Need attention', cls: attention ? 'warn' : '' },
-        { v: pula(cash.overdue_thebe), k: 'Past due', cls: 'bad' }
+        { v: num(state.jobs), k: 'Jobs this month' },
+        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'warn' : '' },
+        { v: mon(state.past_due), k: 'Past due', cls: 'bad' }
       ]
     };
     var set = SETS[role] || SETS.DEFAULT;
     var kp = document.getElementById('kpis');
     if (kp) {
       kp.innerHTML = set.map(function (m) {
-        return '<div class="kpi ' + m.cls + '"><div class="v">' + m.v + '</div>' +
-          '<div class="k">' + m.k + '</div></div>';
+        return '<div class="kpi ' + (m.cls || '') + '"><div class="v">' + esc(m.v) + '</div>' +
+          '<div class="k">' + esc(m.k) + '</div></div>';
       }).join('');
     }
 
-    /* ONE thing to do, chosen from what the engines already found rather than
-       written here. The highest level exposure wins; if nothing is wrong it says so
-       rather than inventing urgency. */
-    var top = ((people.exposures || []).concat(roster.findings || []))
-      .sort(function (a, b) { return (a.level === 'high' ? 0 : 1) - (b.level === 'high' ? 0 : 1); })[0];
+    /* The action card. Escaped, and honest about not knowing. */
     var dn = document.getElementById('doNow');
-    if (dn) {
-      dn.innerHTML = top
-        ? '<div class="lab">Do this now</div>' +
-          '<div class="h">' + (top.say || '').replace(/^EXAMPLE /, '') + '</div>' +
-          '<div class="sub">' + (top.do_this || '') + '</div>' +
-          '<span class="go">Open</span>'
-        : '<div class="lab">Do this now</div>' +
-          '<div class="h">Nothing needs you this morning.</div>' +
-          '<div class="sub">Every licence is in date, everybody has had a break, and no road is down to one driver.</div>' +
-          '<span class="go">See the detail</span>';
-    }
+    if (!dn) return;
+    var top = state.findings.slice().sort(function (a, b) {
+      return (a.level === 'high' ? 0 : 1) - (b.level === 'high' ? 0 : 1);
+    })[0];
 
-    /* Four shortcuts for this role. Every other department is still one tap away
-       under All departments and no route has been removed. */
+    if (!state.loaded) {
+      dn.innerHTML = '<div class="lab">Do this now</div>' +
+        '<div class="h">Waiting for data.</div>' +
+        '<div class="sub">This card cannot say whether anything needs you, because ' +
+        'nothing has loaded. That is not the same as a quiet morning.</div>' +
+        '<span class="go">Try Insights</span>';
+      return;
+    }
+    dn.innerHTML = top
+      ? '<div class="lab">Do this now</div>' +
+        '<div class="h">' + esc(String(top.say || '').replace(/^EXAMPLE /, '')) + '</div>' +
+        '<div class="sub">' + esc(top.do_this || '') + '</div>' +
+        '<span class="go">Open</span>'
+      : '<div class="lab">Do this now</div>' +
+        '<div class="h">Nothing needs you this morning.</div>' +
+        '<div class="sub">Every source answered and none of them raised anything.</div>' +
+        '<span class="go">See the detail</span>';
+  }
+
+  /* Four shortcuts, for a role that actually exists. */
+  function drawQuick() {
+    var role = 'manager';
+    try { role = (window.SprintRoles && window.SprintRoles.getRole()) || role; } catch (e) {}
     var ic = {
       cockpit: '<path d="M4 14a8 8 0 1 1 16 0"/><path d="M12 14l4-4"/>',
       ops: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 9h8M8 13h8"/>',
@@ -653,24 +714,34 @@ body::before{
       tenders: '<path d="M6 3h9l5 5v13H6z"/><path d="M14 3v6h6"/>',
       fleet: '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/>',
       driver: '<circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/>',
-      insights: '<path d="M12 3v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="3.5"/>',
+      money: '<path d="M3 7h18v12H3z"/><path d="M3 11h18"/>',
       incidents: '<path d="M12 3l10 18H2z"/><path d="M12 10v4"/>'
     };
     var QUICK = {
       driver: [['driver', 'My stops', 'driver/index.html'], ['ops', 'Ops Board', 'ops/index.html'],
                ['fleet', 'Fleet', 'fleet/index.html'], ['incidents', 'Report', 'incidents/index.html']],
-      sales: [['sales', 'Sales Desk', 'sales/index.html'], ['tenders', 'Tender Desk', 'tenders/index.html'],
-              ['insights', 'Insights', 'insights/index.html'], ['cockpit', 'Cockpit', 'cockpit/index.html']],
+      ops: [['ops', 'Ops Board', 'ops/index.html'], ['fleet', 'Fleet', 'fleet/index.html'],
+            ['incidents', 'Incident Desk', 'incidents/index.html'], ['driver', 'Driver app', 'driver/index.html']],
+      accounts: [['money', 'Accounts', 'accounts/index.html'], ['sales', 'Sales Desk', 'sales/index.html'],
+                 ['cockpit', 'Manager Cockpit', 'cockpit/index.html'], ['ops', 'Ops Board', 'ops/index.html']],
       DEFAULT: [['cockpit', 'Manager Cockpit', 'cockpit/index.html'], ['ops', 'Ops Board', 'ops/index.html'],
                 ['sales', 'Sales Desk', 'sales/index.html'], ['tenders', 'Tender Desk', 'tenders/index.html']]
     };
     var q = document.getElementById('quick');
-    if (q) {
-      q.innerHTML = (QUICK[role] || QUICK.DEFAULT).map(function (r) {
-        return '<a href="' + r[2] + '"><svg viewBox="0 0 24 24" stroke-linecap="round" ' +
-          'stroke-linejoin="round">' + (ic[r[0]] || '') + '</svg><span class="n">' + r[1] + '</span></a>';
-      }).join('');
-    }
+    if (!q) return;
+    q.innerHTML = (QUICK[role] || QUICK.DEFAULT).map(function (r) {
+      return '<a href="' + esc(r[2]) + '"><svg viewBox="0 0 24 24" stroke-linecap="round" ' +
+        'stroke-linejoin="round">' + (ic[r[0]] || '') + '</svg><span class="n">' +
+        esc(r[1]) + '</span></a>';
+    }).join('');
+  }
+
+  async function drawCockpit() {
+    var state;
+    try { state = await fromHub(); }
+    catch (e) { state = fromDemo(); }
+    render(state);
+    drawQuick();
 
     var va = document.getElementById('viewAll');
     if (va && !va.dataset.wired) {
@@ -681,7 +752,17 @@ body::before{
         va.textContent = open ? 'Show less' : 'View all activity';
       });
     }
+
+    /* The hub tells the app who this person really is AFTER the first paint, so a
+       page that renders once keeps showing whatever it guessed. Subscribe, redraw. */
+    try {
+      if (window.SprintRoles && window.SprintRoles.subscribe && !window.__cockpitSubscribed) {
+        window.__cockpitSubscribed = true;
+        window.SprintRoles.subscribe(function () { render(state); drawQuick(); });
+      }
+    } catch (e) {}
   }
+
   try {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', drawCockpit);
@@ -715,7 +796,7 @@ body::before{
 <div class="wrap">
   <div class="hello">
     <div class="t" id="hello" role="button" title="Tap to tell the app your name"><small id="greet">Good morning</small><b id="today">Sprint Couriers</b></div>
-    <div class="bell" id="bell" role="button" title="What needs you"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><i></i></div>
+    <div class="bell" id="bell" role="button" title="What needs you"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
   </div>
 
   <!-- THE COCKPIT STRIP. Three numbers, then the one thing to do, then the way to
@@ -774,7 +855,7 @@ body::before{
   <div id="front" aria-live="polite"></div>
   <button type="button" class="viewall" id="viewAll">View all activity</button>
 
-  <div class="sec" data-sec="preview" data-allowed="admin staff ops accounts manager"><h2>Preview</h2><span>example data</span></div>
+  <div class="sec" data-sec="preview" data-allowed="admin staff ops accounts manager"><h2>Preview</h2><span>not wired to the hub yet</span></div>
   <div class="tiles" data-tiles="preview" data-allowed="admin staff ops accounts manager">
     <a class="tile g muted" href="care/index.html"><span class="pill soon">Preview</span>
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg></div>
@@ -786,7 +867,7 @@ body::before{
       <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l14-5v12L3 13z"/><path d="M17 8a4 4 0 0 1 0 8"/></svg></div>
       <div class="n">Marketing</div><div class="l">Calendar, assets, attribution</div></a>
   </div>
-  <p class="note">Every figure on a phone is example data. On the office computer the same pages read the live system.</p>
+  
 </div>
 
 <!-- Brick 94: the thumb reaches the bottom right of a phone, not the top, so the
