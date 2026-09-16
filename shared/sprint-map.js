@@ -271,23 +271,125 @@
     return s.join('');
   }
 
+  /* ------------------------------------------------------------------
+     WHERE a vehicle is standing decides whether standing is a problem.
+
+     Luther, asked what the idle threshold should be, 16 Sep 2026:
+     "more than 30 minutes on the a1 or in transit".
+
+     He answered with a number AND a place, and the place is the important
+     half. Thirty minutes at the depot is lunch. Thirty minutes on the A1
+     between Mahalapye and Palapye is a breakdown, a puncture or a driver
+     asleep, and nobody in the office knows which. A flat threshold raises the
+     first and buries the second underneath it.
+     ------------------------------------------------------------------ */
+
+  /* Botswana's spine, south to north: Ramatlabama, Lobatse, Gaborone,
+     Mahalapye, Palapye, Francistown, Nata, Kazungula. */
+  var A1 = [
+    [25.60, -25.72], [25.68, -25.22], [25.91, -24.65], [26.15, -24.15],
+    [26.81, -23.10], [27.13, -22.55], [27.42, -21.98], [27.51, -21.17],
+    [26.18, -20.21], [25.63, -19.00], [25.26, -17.80]
+  ];
+
+  /* Somewhere with a reason to stop. The depot, and every town the map already
+     labels, which is a blunt proxy and honest about it: idle in the middle of
+     Palapye is probably delivering, idle 40 km outside it is probably not.
+
+     The real list is customer addresses. Nothing in the database knows where a
+     delivery is GOING yet, which is open question 8, and this rule is now the
+     second thing waiting on that answer. */
+  var KNOWN_STOPS = [{ n: 'the Gaborone depot', lng: 25.9231, lat: -24.6282 }];
+
+  function km(aLat, aLng, bLat, bLng) {
+    var R = 6371, t = Math.PI / 180;
+    var dLat = (bLat - aLat) * t, dLng = (bLng - aLng) * t;
+    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(aLat * t) * Math.cos(bLat * t) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+
+  /* Distance from a point to a line segment, on the ground rather than on the
+     page, so "near the A1" means the same at Lobatse as at Kasane. */
+  function kmToSegment(p, a, b) {
+    var lat0 = p.lat * Math.PI / 180;
+    var px = p.lng * Math.cos(lat0), py = p.lat;
+    var ax = a[0] * Math.cos(lat0), ay = a[1];
+    var bx = b[0] * Math.cos(lat0), by = b[1];
+    var dx = bx - ax, dy = by - ay;
+    var len = dx * dx + dy * dy;
+    var t = len ? ((px - ax) * dx + (py - ay) * dy) / len : 0;
+    t = Math.max(0, Math.min(1, t));
+    var cx = ax + t * dx, cy = ay + t * dy;
+    return km(p.lat, p.lng, cy, cx / Math.cos(lat0));
+  }
+
+  function onA1(p, within) {
+    if (!p) return false;
+    within = within || 5;
+    for (var i = 1; i < A1.length; i++) {
+      if (kmToSegment(p, A1[i - 1], A1[i]) <= within) return true;
+    }
+    return false;
+  }
+
+  /* The nearest place worth stopping at, and how far away it is. */
+  function nearestStop(p) {
+    if (!p) return null;
+    var best = null;
+    KNOWN_STOPS.concat(TOWNS).forEach(function (t) {
+      var d = km(p.lat, p.lng, t.lat, t.lng);
+      if (!best || d < best.km) best = { n: t.n, km: d };
+    });
+    return best;
+  }
+
+  /* In words, so the alert is a sentence somebody can act on rather than a
+     status nobody can. */
+  function whereIs(p, stopWithin) {
+    var near = nearestStop(p);
+    var atStop = near && near.km <= (stopWithin || 3);
+    if (atStop) return { at_stop: true, say: 'at ' + near.n };
+    if (onA1(p)) {
+      return { at_stop: false, on_a1: true,
+        say: 'on the A1' + (near ? ', ' + Math.round(near.km) + ' km from ' + near.n : '') };
+    }
+    return { at_stop: false, on_a1: false,
+      say: near ? Math.round(near.km) + ' km from ' + near.n : 'away from any known stop' };
+  }
+
   /* What is worth interrupting somebody about. Thresholds are stated, never
      hidden, so a number that feels wrong can be argued with. */
   function alerts(vehicles, opts) {
     opts = opts || {};
-    var idleAfter = opts.idle_minutes || 20;
+    /* Luther's rule: 30 minutes, but only where standing still is not the job.
+       At a depot or in a town the vehicle is almost certainly working, so that
+       gets a far longer fuse and a quieter voice. */
+    var idleInTransit = opts.idle_transit_minutes || 30;
+    var idleAtStop = opts.idle_at_stop_minutes || 120;
     var staleAfter = opts.stale_minutes || 15;
     var out = [];
     (vehicles || []).forEach(function (v) {
-      if ((v.state === 'standing' || v.state === 'idle') && v.standing_minutes >= idleAfter) {
-        out.push({
-          level: v.standing_minutes >= idleAfter * 2 ? 'red' : 'amber',
-          reg: v.reg,
-          say: v.reg + ' has been standing ' + v.standing_minutes + ' minutes' +
-            (v.driver ? ', ' + v.driver : '') + '.',
-          why: 'A vehicle standing longer than ' + idleAfter + ' minutes on a working day is ' +
-            'either a long stop nobody knew about or a problem nobody has reported.'
-        });
+      if ((v.state === 'standing' || v.state === 'idle') && v.standing_minutes) {
+        var w = v.position ? whereIs(v.position, opts.stop_within_km) : null;
+        var inTransit = !w || !w.at_stop;
+        var limit = inTransit ? idleInTransit : idleAtStop;
+        if (v.standing_minutes >= limit) {
+          out.push({
+            level: inTransit ? 'red' : 'amber',
+            reg: v.reg,
+            on_a1: !!(w && w.on_a1),
+            at_stop: !!(w && w.at_stop),
+            say: v.reg + ' has been standing ' + v.standing_minutes + ' minutes' +
+              (w ? ' ' + w.say : '') + (v.driver ? ', ' + v.driver : '') + '.',
+            why: inTransit
+              ? 'Thirty minutes stopped away from a depot or a customer is a breakdown, a ' +
+                'puncture or a driver nobody has heard from, and from the office there is no ' +
+                'way to tell which. Ring the driver.'
+              : 'Two hours at a stop is longer than a delivery or a lunch, so it is worth one ' +
+                'question. Standing at a depot is not itself a problem.'
+          });
+        }
       }
       if (v.state === 'no_signal') {
         out.push({
@@ -393,7 +495,7 @@
     };
   }
 
-  var API = { draw: draw, heat: heat, legend: legend, STATE_WORD: STATE_WORD, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
+  var API = { draw: draw, heat: heat, legend: legend, whereIs: whereIs, onA1: onA1, nearestStop: nearestStop, STATE_WORD: STATE_WORD, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
   if (typeof module === 'object' && module.exports) module.exports = API;
   root.SprintMap = API;
 })(typeof self !== 'undefined' ? self : this);
