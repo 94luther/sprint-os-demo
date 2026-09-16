@@ -356,16 +356,70 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
   html:not([data-glare="off"]) .note{color:#EAF3EE;font-weight:700}
 }
 
-/* the one tap control, a plain icon button, never smaller than the 44 px
-   floor hub/tests/touch-targets.test.js holds every other page to */
-.glare-toggle{
-  width:44px;height:44px;border-radius:50%;padding:0;color:inherit;flex:none;
-  background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);
+/* SETTINGS, the sheet behind the greeting.
+
+   It rises from the BOTTOM, which is the half of the screen a thumb owns. Every
+   way out is down there too: the Done button, a swipe down, and the backdrop
+   above it. Nothing here asks the hand to travel to the top of the screen, which
+   was the exact fault in the search panel Luther could not close.
+
+   Only transform and opacity animate, so the slide and the drag never cost a
+   repaint. */
+.set-back{
+  position:fixed;inset:0;z-index:90;
+  background:rgba(4,20,14,.62);
+  opacity:0;transition:opacity .2s ease;
+  display:flex;align-items:flex-end;justify-content:center}
+.set-back.in{opacity:1}
+.set-back.in .set-sheet{transform:translateY(0)}
+.set-sheet{
+  width:100%;max-width:520px;
+  transform:translateY(100%);
+  transition:transform .26s cubic-bezier(.22,.61,.36,1);
+  background:rgba(12,40,28,.94);
   backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
-  box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
+  border:2px solid rgba(255,255,255,.18);
+  border-bottom:none;
+  border-radius:26px 26px 0 0;
+  padding:10px 18px calc(22px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -22px 54px -24px rgba(0,0,0,.75)}
+.set-grip{
+  width:42px;height:5px;border-radius:999px;margin:0 auto 10px;
+  background:rgba(255,255,255,.34)}
+.set-sheet h3{margin:2px 0 14px;font-size:17px;font-weight:800;letter-spacing:-.2px}
+.set-row{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  width:100%;min-height:58px;padding:10px 14px;margin-bottom:10px;
+  background:rgba(255,255,255,.07);
+  border:2px solid rgba(255,255,255,.14);
+  border-radius:16px;
+  color:inherit;font:inherit;text-align:left}
+.set-row span{display:block;font-size:14px;font-weight:700}
+.set-row small{display:block;font-size:11.5px;font-weight:500;color:var(--ink-3);margin-top:2px}
+.set-row input{
+  flex:none;width:44%;min-height:40px;padding:8px 12px;
+  background:rgba(0,0,0,.28);border:2px solid rgba(255,255,255,.18);
+  border-radius:12px;color:inherit;font:inherit;font-size:14px}
+/* the switch: the knob is the only thing that moves, and it moves with transform */
+.set-sw .sw{
+  flex:none;width:52px;height:32px;border-radius:999px;position:relative;
+  background:rgba(255,255,255,.18);
+  border:2px solid rgba(255,255,255,.22);
+  transition:background .18s ease}
+.set-sw .sw::after{
+  content:"";position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;
+  background:#F4F7F5;transition:transform .18s cubic-bezier(.22,.61,.36,1)}
+.set-sw[aria-pressed="true"] .sw{background:#F7941D;border-color:#F7941D}
+.set-sw[aria-pressed="true"] .sw::after{transform:translateX(20px)}
+.set-done{
+  width:100%;min-height:52px;margin-top:4px;
+  background:#F7941D;color:#0A2417;border:none;border-radius:16px;
+  font:inherit;font-size:15.5px;font-weight:800}
+html[data-glare="on"] .set-sheet{background:#0E2F22;backdrop-filter:none;-webkit-backdrop-filter:none}
+html[data-glare="on"] .set-row{background:#123723;border-color:rgba(255,255,255,.55)}
+@media (prefers-reduced-motion: reduce){
+  .set-back,.set-sheet,.set-sw .sw::after{transition:none}
 }
-.glare-toggle svg{width:20px;height:20px}
-html[data-glare="on"] .glare-toggle svg{stroke:#FFA733}
 
 /* Brick 94: the find button. Bottom right, clear of the bar, 60 px of target. */
 .find-fab{position:fixed;right:16px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:46;
@@ -396,44 +450,16 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
   box-shadow:0 18px 40px -16px rgba(0,0,0,.6);
   overflow:hidden}
 
-/* The wordmark, full bleed: it touches the top and bottom of the header rather
-   than floating inside padding. */
-.brandmark{
-  position:relative;
-  align-self:stretch;
-  flex:none;
-  display:flex;
-  align-items:center;
-  padding-left:14px;
-  margin:-8px 0;
-  overflow:hidden}
-.brandmark img{
-  position:relative;
-  z-index:1;
-  height:100%;
-  width:auto;
-  max-height:46px;
-  object-fit:contain;
-  object-position:left center;
-  display:block}
+/* THE WORDMARK IS GONE FROM THE HEADER, 16 September 2026.
 
-/* Sam's gradient, and it is the right fix for a real problem. The wordmark
-   carries 616 opaque white pixels between its letters, measured from the file.
-   On a dark card those read as holes. A white wash behind the mark gives them
-   something to belong to: the white stops being a gap and becomes part of a lit
-   surface. Left to right, not top to bottom, because the wordmark is a
-   horizontal object: light across it is a sheen, light down it is a fold. */
-.brandmark::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:0;
-  background:linear-gradient(90deg,
-    rgba(255,255,255,.30) 0%,
-    rgba(255,255,255,.17) 42%,
-    rgba(255,255,255,.05) 74%,
-    rgba(255,255,255,0) 100%);
-  pointer-events:none}
+   Luther: "That logo looks horrible. Why not just remove it with the dark mode
+   thing?" He is right twice over. The mark is a wide wordmark whose file carries
+   616 opaque white pixels between the letters, so on a dark bar they read as
+   holes, and the white gradient behind it was a patch on a wound rather than a
+   fix. And a logo on every screen of an app she has already opened tells the
+   managing director nothing she does not already know, while costing her the
+   most valuable strip of a phone screen. The space goes to her business. The
+   brand file itself is untouched and still ships; it is simply not in the way. */
 
 /* The feather at the top, the same one as the bottom, mirrored. There was a
    blur up here but no fade, so content met the header at a hard line: the same
@@ -492,11 +518,9 @@ body::before{
 <body>
 <div class="wrap">
   <div class="hello">
-    <div class="brandmark"><img src="shared/logo-mark.png" alt="Sprint Couriers"></div>
     <div class="t" id="hello" role="button" title="Tap to tell the app your name"><small id="greet">Good morning</small><b id="today">Sprint Couriers</b></div>
     <div class="pills under"><span class="pill mode" id="topMode">EXAMPLE</span></div>
     <div class="bell" id="bell" role="button" title="What needs you"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><i></i></div>
-    <button type="button" class="glare-toggle" id="glareToggle" aria-pressed="false" title="Switch to high contrast for bright sun"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v3M12 18.5v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2.5 12h3M18.5 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
   </div>
 
   <a class="hero" href="insights/index.html">
@@ -599,14 +623,91 @@ body::before{
     if (ew) ew.textContent = copy[0];
     if (et) et.textContent = copy[1];
     // tap the greeting to set or change the name; it stays on this phone
+    /* SETTINGS, behind the greeting.
+
+       Two things on this page belong to the PERSON rather than to the business:
+       what the app calls them, and whether the screen is readable in the sun. Both
+       are set once and never thought about again, which is exactly why neither
+       deserved a permanent place at the top of the screen.
+
+       It replaces a window.prompt, which was the other half of the problem. A
+       browser prompt is a grey box from 1996 in the middle of an app built to look
+       like this one, and on a phone it hides the very greeting it is asking about.
+
+       It closes by tapping the backdrop, by the Done button at the BOTTOM where a
+       thumb is, and by Escape on the document rather than on a field. That is the
+       lesson from the search panel tonight: three ways out at a desk and none in a
+       hand is the same as no way out. */
     var hello = document.getElementById('hello');
-    if (hello) hello.addEventListener('click', function () {
-      var v = window.prompt('What should the app call you?', name || '');
-      if (v === null) return;
-      v = clean(v);
-      try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {}
-      name = v; document.getElementById('greet').textContent = word + (name ? ', ' + name : '');
-    });
+    function settings() {
+      var back = document.createElement('div');
+      back.className = 'set-back';
+      back.innerHTML =
+        '<div class="set-sheet" role="dialog" aria-label="Settings">' +
+          '<div class="set-grip" aria-hidden="true"></div>' +
+          '<h3>Settings</h3>' +
+          '<label class="set-row"><span>What should we call you</span>' +
+            '<input id="setName" type="text" autocomplete="given-name" placeholder="Your name" maxlength="24"></label>' +
+          '<button type="button" class="set-row set-sw" id="setGlare" aria-pressed="false">' +
+            '<span>High contrast<small>For reading the screen in bright sun</small></span>' +
+            '<i class="sw" aria-hidden="true"></i></button>' +
+          '<button type="button" class="set-done" id="setDone">Done</button>' +
+        '</div>';
+      document.body.appendChild(back);
+      var sheet = back.firstElementChild;
+      var nameIn = back.querySelector('#setName');
+      var glare = back.querySelector('#setGlare');
+      nameIn.value = name || '';
+
+      function paintGlare() {
+        var on = window.SprintGlare && window.SprintGlare.get() === 'on';
+        glare.setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+      paintGlare();
+      glare.addEventListener('click', function () {
+        try { if (window.SprintGlare) window.SprintGlare.toggle(); } catch (e) {}
+        paintGlare();
+      });
+
+      function shut() {
+        var v = clean(nameIn.value);
+        try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {}
+        name = v;
+        var g = document.getElementById('greet');
+        if (g) g.textContent = word + (name ? ', ' + name : '');
+        sheet.style.transform = 'translateY(100%)';
+        back.style.opacity = '0';
+        setTimeout(function () { if (back.parentNode) back.parentNode.removeChild(back); }, 200);
+        document.removeEventListener('keydown', onKey);
+      }
+      function onKey(e) { if (e.key === 'Escape') shut(); }
+      document.addEventListener('keydown', onKey);
+      back.querySelector('#setDone').addEventListener('click', shut);
+      back.addEventListener('click', function (e) { if (e.target === back) shut(); });
+
+      /* the same swipe down the search panel learned tonight */
+      var y0 = null, dy = 0;
+      sheet.addEventListener('touchstart', function (e) {
+        if (e.touches.length !== 1) { y0 = null; return; }
+        y0 = e.touches[0].clientY; dy = 0; sheet.style.transition = 'none';
+      }, { passive: true });
+      sheet.addEventListener('touchmove', function (e) {
+        if (y0 === null) return;
+        dy = e.touches[0].clientY - y0;
+        if (dy < 0) dy = 0;
+        sheet.style.transform = 'translateY(' + dy + 'px)';
+      }, { passive: true });
+      sheet.addEventListener('touchend', function () {
+        if (y0 === null) return;
+        var far = dy > 90; y0 = null;
+        sheet.style.transition = 'transform .22s cubic-bezier(.22,.61,.36,1)';
+        sheet.style.transform = '';
+        if (far) shut();
+      });
+
+      requestAnimationFrame(function () { back.classList.add('in'); });
+    }
+    if (hello) hello.addEventListener('click', settings);
   })();
 })();
 </script>
@@ -618,14 +719,11 @@ body::before{
 (function () {
   'use strict';
   try {
-    var btn = document.getElementById('glareToggle');
-    if (btn && window.SprintGlare) {
-      btn.setAttribute('aria-pressed', window.SprintGlare.get() === 'on' ? 'true' : 'false');
-      btn.addEventListener('click', function () {
-        var next = window.SprintGlare.toggle();
-        btn.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
-      });
-    }
+    /* The high contrast switch moved into Settings on 16 September. It used to sit
+       in the header beside the wordmark, and Luther's question was the right one:
+       why is a display preference occupying the top of every screen? A person sets
+       it once. It now lives behind the greeting, with their name, which is the only
+       other thing on this page that belongs to the person rather than the business. */
   } catch (e) {}
   try {
     if (window.SprintRoles) window.SprintRoles.refreshFromHub();

@@ -46,26 +46,85 @@
 (function (root) {
   'use strict';
 
-  /* Botswana, simplified, as longitude and latitude pairs. Public geography,
-     traced from nothing: these are the national extremes and the recognisable
-     turns between them, clockwise from the north west. */
+  /* BOTSWANA, THE REAL SHAPE. 16 September 2026.
+
+     Luther: "That map of Botswana is disgusting."
+
+     He was looking at a thirty point polygon. Thirty points cannot draw a
+     country: the Chobe finger in the north flattens into a stub, the long
+     straight of the Namibian border gets a kink it does not have, and the
+     Ngotwane in the south east, which is a river and therefore wriggles the
+     whole way, came out as two ruled lines. It read as a shape somebody
+     remembered rather than a country somebody knows, and every vehicle standing
+     on it inherited that doubt.
+
+     These 279 points are the actual national boundary, taken from Natural Earth
+     at ten million scale, which is public domain, and reduced from 956 points
+     with Douglas Peucker at a tolerance of 0.010 degrees, which is about one
+     kilometre. One kilometre of error is invisible on a phone and a country is
+     600 kilometres across, so the shape is exact to the eye at a twentieth of
+     the data.
+
+     IT IS STILL DRAWN AND NEVER FETCHED, which is the whole point of doing it
+     this way. The coordinates are baked into this file. Nothing asks a tile
+     server for a picture of where Sprint's vehicles are, because the pattern of
+     requests alone would tell a stranger where this company operates. The build
+     has a test that fails if any file under apps reaches an external address,
+     and this change keeps that true.
+
+     The towns are checked against this outline by hand and by test: every town
+     this map labels must fall inside the country this map draws. That test has
+     already caught two faults in the old shape, Kasane in the north and Lobatse
+     in the south east, both of which were outside their own country. All twelve
+     are inside this one. */
   var OUTLINE = [
-    [20.00, -17.78], [21.45, -18.00], [23.30, -17.98], [24.55, -18.02],
-    /* Botswana's northern tip at Kazungula, where four countries meet. The
-       first version of this edge ran 4 km too far south and put Kasane,
-       the northernmost town in the country, outside Botswana. The test
-       caught it. */
-    [24.95, -17.86], [25.13, -17.74], [25.26, -17.76], [25.85, -18.30], [26.17, -19.53],
-    [27.30, -20.48], [27.72, -20.50], [28.60, -21.65], [29.37, -22.09],
-    [29.03, -22.20], [28.35, -22.58], [27.70, -23.20], [27.10, -23.55],
-    [26.80, -24.25], [26.05, -24.68],
-    /* The south eastern border along the Ngotwane. It ran too far west here
-       and left Lobatse, which is in Botswana, outside Botswana. Caught by the
-       same test that caught Kasane: every town this map labels must fall
-       inside the outline this map draws. */
-    [25.88, -25.30], [25.30, -25.75],
-    [24.20, -25.83], [23.00, -25.98], [22.00, -26.20], [21.10, -26.85],
-    [20.62, -26.48], [20.00, -25.30], [19.99, -22.00], [20.00, -19.50]
+    [25.260,-17.794],[25.219,-17.880],[25.255,-18.001],[25.296,-18.069],[25.388,-18.139],[25.508,-18.399],
+    [25.622,-18.501],[25.670,-18.566],[25.762,-18.630],[25.779,-18.739],[25.815,-18.814],[25.941,-18.921],
+    [25.968,-19.001],[25.949,-19.103],[26.034,-19.244],[26.155,-19.537],[26.194,-19.560],[26.303,-19.577],
+    [26.333,-19.613],[26.312,-19.651],[26.385,-19.679],[26.432,-19.737],[26.549,-19.784],[26.596,-19.856],
+    [26.674,-19.883],[26.714,-19.927],[26.812,-19.946],[26.925,-20.001],[27.027,-20.010],[27.097,-20.069],
+    [27.202,-20.093],[27.266,-20.234],[27.284,-20.351],[27.268,-20.496],[27.341,-20.473],[27.591,-20.473],
+    [27.698,-20.509],[27.703,-20.566],[27.682,-20.637],[27.710,-20.757],[27.676,-20.867],[27.667,-21.071],
+    [27.709,-21.134],[27.794,-21.197],[27.885,-21.310],[27.950,-21.438],[27.940,-21.478],[27.953,-21.510],
+    [27.971,-21.514],[27.990,-21.552],[28.033,-21.578],[28.322,-21.603],[28.465,-21.660],[28.554,-21.637],
+    [28.616,-21.647],[28.861,-21.757],[29.039,-21.798],[29.058,-21.829],[29.018,-21.898],[29.014,-21.940],
+    [29.041,-22.021],[29.108,-22.069],[29.239,-22.073],[29.274,-22.125],[29.350,-22.187],[29.222,-22.182],
+    [29.169,-22.214],[29.039,-22.224],[28.960,-22.310],[28.968,-22.380],[28.930,-22.441],[28.913,-22.454],
+    [28.847,-22.450],[28.817,-22.493],[28.522,-22.585],[28.459,-22.570],[28.377,-22.575],[28.302,-22.604],
+    [28.251,-22.656],[28.196,-22.672],[28.160,-22.718],[28.155,-22.772],[28.117,-22.789],[28.104,-22.817],
+    [28.047,-22.837],[28.054,-22.869],[28.037,-22.911],[27.937,-22.964],[27.946,-23.029],[27.930,-23.057],
+    [27.816,-23.105],[27.822,-23.123],[27.774,-23.125],[27.789,-23.164],[27.754,-23.221],[27.726,-23.222],
+    [27.698,-23.193],[27.647,-23.228],[27.608,-23.217],[27.563,-23.299],[27.569,-23.320],[27.549,-23.361],
+    [27.453,-23.385],[27.425,-23.413],[27.411,-23.389],[27.361,-23.422],[27.350,-23.391],[27.296,-23.452],
+    [27.203,-23.492],[27.191,-23.504],[27.206,-23.523],[27.171,-23.516],[27.157,-23.537],[27.127,-23.525],
+    [27.137,-23.570],[27.113,-23.564],[27.075,-23.611],[27.062,-23.604],[27.070,-23.656],[27.038,-23.666],
+    [27.014,-23.639],[26.967,-23.719],[26.839,-24.266],[26.693,-24.327],[26.623,-24.399],[26.531,-24.459],
+    [26.469,-24.571],[26.404,-24.633],[26.279,-24.628],[26.014,-24.705],[25.966,-24.734],[25.868,-24.748],
+    [25.877,-24.886],[25.835,-25.016],[25.695,-25.310],[25.664,-25.440],[25.587,-25.620],[25.458,-25.711],
+    [25.386,-25.744],[25.178,-25.763],[25.013,-25.743],[24.908,-25.804],[24.829,-25.826],[24.665,-25.823],
+    [24.457,-25.743],[24.389,-25.759],[24.339,-25.752],[24.183,-25.626],[24.006,-25.655],[24.009,-25.633],
+    [23.988,-25.620],[23.925,-25.629],[23.807,-25.524],[23.769,-25.507],[23.743,-25.470],[23.687,-25.454],
+    [23.497,-25.324],[23.459,-25.282],[23.381,-25.293],[23.266,-25.264],[23.216,-25.267],[23.072,-25.326],
+    [23.055,-25.303],[23.031,-25.299],[22.920,-25.390],[22.888,-25.450],[22.845,-25.481],[22.814,-25.567],
+    [22.833,-25.606],[22.811,-25.625],[22.810,-25.677],[22.740,-25.777],[22.765,-25.827],[22.709,-25.891],
+    [22.727,-25.944],[22.710,-25.997],[22.662,-26.021],[22.665,-26.051],[22.545,-26.207],[22.451,-26.210],
+    [22.343,-26.317],[22.248,-26.347],[22.197,-26.404],[22.146,-26.519],[22.058,-26.618],[21.999,-26.650],
+    [21.781,-26.678],[21.769,-26.689],[21.778,-26.768],[21.762,-26.804],[21.665,-26.863],[21.499,-26.846],
+    [21.427,-26.823],[21.122,-26.865],[20.990,-26.839],[20.908,-26.800],[20.852,-26.807],[20.691,-26.892],
+    [20.615,-26.753],[20.609,-26.686],[20.632,-26.595],[20.605,-26.548],[20.605,-26.493],[20.623,-26.428],
+    [20.753,-26.276],[20.841,-26.131],[20.804,-26.071],[20.794,-25.894],[20.756,-25.819],[20.727,-25.827],
+    [20.738,-25.799],[20.717,-25.733],[20.663,-25.685],[20.671,-25.642],[20.638,-25.620],[20.671,-25.591],
+    [20.663,-25.565],[20.619,-25.528],[20.620,-25.501],[20.657,-25.468],[20.607,-25.462],[20.612,-25.431],
+    [20.597,-25.433],[20.588,-25.404],[20.542,-25.382],[20.511,-25.312],[20.516,-25.284],[20.485,-25.263],
+    [20.482,-25.230],[20.434,-25.200],[20.445,-25.168],[20.365,-25.033],[20.236,-24.936],[20.108,-24.880],
+    [20.029,-24.815],[19.981,-24.752],[19.978,-22.001],[20.972,-22.001],[20.985,-21.964],[20.975,-18.319],
+    [21.476,-18.300],[22.981,-18.020],[23.293,-17.999],[23.334,-18.043],[23.334,-18.074],[23.396,-18.163],
+    [23.396,-18.191],[23.429,-18.189],[23.464,-18.226],[23.502,-18.237],[23.527,-18.278],[23.519,-18.294],
+    [23.561,-18.348],[23.547,-18.369],[23.579,-18.468],[23.610,-18.478],[23.716,-18.419],[23.913,-18.236],
+    [23.916,-18.201],[23.951,-18.178],[23.971,-18.184],[24.057,-18.119],[24.102,-18.109],[24.218,-18.013],
+    [24.296,-18.026],[24.351,-17.956],[24.422,-17.956],[24.506,-18.060],[24.564,-18.053],[24.731,-17.892],
+    [24.821,-17.839],[24.931,-17.811],[24.953,-17.788],[24.983,-17.820],[25.020,-17.824],[25.047,-17.807],
+    [25.057,-17.828],[25.121,-17.814],[25.154,-17.782]
   ];
 
   /* Reference points, so a dot on the screen means somewhere. */
@@ -85,7 +144,7 @@
   ];
 
   var W = 340, H = 400, PAD = 14;
-  var LNG0 = 19.8, LNG1 = 29.6, LAT0 = -17.5, LAT1 = -27.2;
+  var LNG0 = 19.90, LNG1 = 29.44, LAT0 = -17.70, LAT1 = -26.99;
 
   function x(lng) { return PAD + (lng - LNG0) / (LNG1 - LNG0) * (W - PAD * 2); }
   function y(lat) { return PAD + (lat - LAT0) / (LAT1 - LAT0) * (H - PAD * 2); }
@@ -198,6 +257,47 @@
   }
 
   /* vehicles: [{reg, state, standing_minutes, position:{lat,lng,recorded_at}, driver}] */
+  /* LABEL PLACEMENT, because a map full of names on top of each other is worse
+     than a map with no names at all.
+
+     Measured in a browser on the first version: thirteen pairs of labels were
+     sitting on each other. Serowe and Palapye are twenty kilometres apart, which
+     is five pixels on a phone, so their names printed as one smear. Worse, a
+     vehicle standing at Gaborone had its registration printed straight through
+     the word Gaborone, and the registration is the thing she is looking for.
+
+     So labels are placed in the order of how much they matter, and anything that
+     would land on something already placed is simply not drawn:
+
+       1. every vehicle, always, because that is the point of the map
+       2. the four big towns, because they are how a person orients
+       3. the smaller towns, only if there is room
+
+     A dropped name is not a loss. The DOT is still there, and two names printed
+     through each other tell nobody anything.
+
+     Widths are estimated at 0.55 of the font size per character, which is close
+     enough for a sans serif at these sizes and costs nothing. Measuring text
+     properly needs a browser, and this file has to work inside a test as well. */
+  function placer() {
+    var taken = [];
+    function box(cx, cy, text, size, toLeft) {
+      var w = String(text).length * size * 0.55;
+      return { x: toLeft ? cx - w : cx, y: cy - size, w: w, h: size + 2 };
+    }
+    return {
+      fits: function (cx, cy, text, size, toLeft) {
+        var b = box(cx, cy, text, size, toLeft);
+        for (var i = 0; i < taken.length; i++) {
+          var t = taken[i];
+          if (b.x < t.x + t.w && t.x < b.x + b.w && b.y < t.y + t.h && t.y < b.y + b.h) return false;
+        }
+        return true;
+      },
+      take: function (cx, cy, text, size, toLeft) { taken.push(box(cx, cy, text, size, toLeft)); }
+    };
+  }
+
   function draw(vehicles, opts) {
     opts = opts || {};
     vehicles = vehicles || [];
@@ -215,19 +315,119 @@
       s.push(heat(opts.heat, opts).svg);
     }
 
-    // the country
-    s.push('<path d="' + outlinePath() + '" fill="rgba(255,255,255,.05)" ' +
-      'stroke="rgba(255,255,255,.34)" stroke-width="1.5" stroke-linejoin="round"/>');
+    /* THE COUNTRY, DRAWN AS A SURFACE RATHER THAN AN OUTLINE.
 
-    // towns, quiet, so the vehicles are the loud thing
+       The old version was a five per cent white fill and a hairline, which is how
+       you draw a shape when you are not sure it is right. It read as a diagram of
+       a country. Now that the boundary is the real one it can be lit like a piece
+       of land: a gradient that is warmer in the populated south east and colder in
+       the Kalahari, a soft edge light where it meets the card, and a shadow
+       underneath so it SITS on the card instead of being printed on it.
+
+       One filter, applied once, to one path. A filter is painted on the processor,
+       so it is affordable exactly once and never on anything that moves. The
+       vehicle pulse below uses transform only, for the same reason. */
+    s.push('<defs>' +
+      '<linearGradient id="spLand" x1="0" y1="0" x2="0.4" y2="1">' +
+        '<stop offset="0" stop-color="#1B4B36" stop-opacity=".92"/>' +
+        '<stop offset="0.55" stop-color="#153D2C" stop-opacity=".92"/>' +
+        '<stop offset="1" stop-color="#1E5540" stop-opacity=".95"/>' +
+      '</linearGradient>' +
+      '<filter id="spLift" x="-12%" y="-12%" width="124%" height="124%">' +
+        '<feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity=".45"/>' +
+      '</filter>' +
+      '</defs>');
+
+    var path = outlinePath();
+    s.push('<path d="' + path + '" fill="url(#spLand)" filter="url(#spLift)"/>');
+    /* the edge light: a second stroke of the same path, brighter than the fill,
+       so the coastline of a landlocked country still catches something */
+    s.push('<path d="' + path + '" fill="none" stroke="rgba(180,230,200,.55)" ' +
+      'stroke-width="1.6" stroke-linejoin="round"/>');
+
+    /* THE A1. It is one road and it carries most of this business: Lobatse up
+       through Gaborone, Palapye and Francistown to Kasane. A map of Botswana with
+       no road on it makes every vehicle look like it is standing in a desert, and
+       the one thing the managing director wants to know at a glance is whether a
+       vehicle is ON the route or off it. */
+    if (typeof A1 !== 'undefined' && A1.length) {
+      var road = A1.map(function (c, i) {
+        return (i ? 'L' : 'M') + x(c[0]).toFixed(1) + ' ' + y(c[1]).toFixed(1);
+      }).join(' ');
+      s.push('<path d="' + road + '" fill="none" stroke="rgba(247,148,29,.30)" ' +
+        'stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>');
+      s.push('<path d="' + road + '" fill="none" stroke="rgba(247,148,29,.75)" ' +
+        'stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>');
+    }
+
+    /* Towns, all twelve named now rather than three. A dot with no name is not a
+       reference point, it is a smudge, and the whole reason the towns are here is
+       so a vehicle near one MEANS something. They stay quiet: the labels carry a
+       dark halo drawn under the letters with paint-order, which is how you keep
+       small text readable over a busy surface without putting a box behind it. */
+    var place = placer();
+
+    /* WHO GETS THEIR NAME PRINTED, AND IN WHAT ORDER.
+
+       The four big towns go first. They are the skeleton: without Gaborone,
+       Francistown, Maun and Kasane on the page a person cannot tell which part of
+       the country they are looking at, and the vehicles become dots in a void.
+       Only four names, so they cost almost nothing.
+
+       Then the vehicles, which are the POINT of the map, and they get two tries:
+       the side away from the edge first, and the other side if that is taken. A
+       label that flips is better than a label that vanishes.
+
+       Then the small towns, with whatever room is left. */
+    var sideOf = function (px) { return px > W * 0.64; };
+    TOWNS.filter(function (t) { return t.big; }).forEach(function (t) {
+      var tx = x(t.lng), ty = y(t.lat), r = sideOf(tx);
+      place.take(r ? tx - 5 : tx + 5, ty + 3.2, t.n, 8.8, r);
+    });
+
+    var vlabel = {};
+    placed.forEach(function (v) {
+      var pvx = x(v.position.lng), pvy = y(v.position.lat);
+      var state = (STATE_WORD[v.state] || v.state || 'not reporting') +
+        (v.standing_minutes ? ' ' + v.standing_minutes + 'm' : '');
+      var first = sideOf(pvx);
+      var side = first;
+      var lx = side ? pvx - 8 : pvx + 8;
+      if (!place.fits(lx, pvy - 7, v.reg, 9, side) ||
+          !place.fits(lx, pvy + 3.5, state, 7.6, side)) {
+        side = !first;
+        lx = side ? pvx - 8 : pvx + 8;
+      }
+      place.take(lx, pvy - 7, v.reg, 9, side);
+      place.take(lx, pvy + 3.5, state, 7.6, side);
+      vlabel[v.reg] = { x: lx, side: side, state: state };
+    });
+
     TOWNS.forEach(function (t) {
       var tx = x(t.lng), ty = y(t.lat);
-      s.push('<circle cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) + '" r="' +
-        (t.big ? 2.4 : 1.6) + '" fill="rgba(255,255,255,' + (t.big ? '.55' : '.32') + ')"/>');
-      if (t.big) {
-        s.push('<text x="' + (tx + 5).toFixed(1) + '" y="' + (ty + 3.2).toFixed(1) +
-          '" font-size="8.5" fill="rgba(255,255,255,.62)">' + esc(t.n) + '</text>');
+      s.push('<circle cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) +
+        '" r="' + (t.big ? 2.8 : 1.9) +
+        '" fill="rgba(255,255,255,' + (t.big ? '.78' : '.42') + ')"/>');
+      /* The label sits on whichever side has room. Francistown and Selebi Phikwe
+         are both hard against the eastern border, and a label always drawn to the
+         right ran off the card and landed on top of the other one. Past two thirds
+         across, the name goes to the LEFT of its dot and the text is anchored at
+         its end, so it grows back towards the middle of the country instead of off
+         the edge of the screen. */
+      var right = sideOf(tx);
+      var size = t.big ? 8.8 : 7.4;
+      var lx = right ? tx - 5 : tx + 5;
+      /* the big four booked their space above; everybody else asks */
+      if (!t.big) {
+        if (!place.fits(lx, ty + 3.2, t.n, size, right)) return;
+        place.take(lx, ty + 3.2, t.n, size, right);
       }
+      s.push('<text x="' + lx.toFixed(1) + '" y="' + (ty + 3.2).toFixed(1) +
+        '"' + (right ? ' text-anchor="end"' : '') +
+        ' font-size="' + size + '" font-weight="' + (t.big ? '700' : '500') +
+        '" fill="rgba(233,245,238,' + (t.big ? '.88' : '.58') + ')" ' +
+        'stroke="rgba(6,24,16,.85)" stroke-width="2.4" paint-order="stroke" ' +
+        'stroke-linejoin="round">' + esc(t.n) + '</text>');
     });
 
     // the vehicles
@@ -244,10 +444,21 @@
         esc(STATE_WORD[v.state] || v.state) + '</title></circle>');
       /* The registration AND the state, beside the dot. The state used to live in
          a tooltip, which a thumb can never open. */
-      s.push('<text x="' + (vx + 8).toFixed(1) + '" y="' + (vy - 6).toFixed(1) +
-        '" font-size="9" font-weight="700" fill="#fff">' + esc(v.reg) + '</text>');
-      s.push('<text x="' + (vx + 8).toFixed(1) + '" y="' + (vy + 3).toFixed(1) +
-        '" font-size="7.6" font-weight="700" fill="' + col + '">' +
+      /* Same edge rule as the towns, and a dark halo under both lines. A white
+         registration on a pale patch of heat was unreadable, and heat is exactly
+         where the vehicles are. */
+      var chosen = vlabel[v.reg] || { x: vx + 8, side: false };
+      var vr = chosen.side;
+      var vlx = chosen.x.toFixed(1);
+      var anchor = vr ? ' text-anchor="end"' : '';
+      s.push('<text x="' + vlx + '" y="' + (vy - 7).toFixed(1) + '"' + anchor +
+        ' font-size="9" font-weight="700" fill="#fff" ' +
+        'stroke="rgba(6,24,16,.88)" stroke-width="2.6" paint-order="stroke" ' +
+        'stroke-linejoin="round">' + esc(v.reg) + '</text>');
+      s.push('<text x="' + vlx + '" y="' + (vy + 3.5).toFixed(1) + '"' + anchor +
+        ' font-size="7.6" font-weight="700" fill="' + col + '" ' +
+        'stroke="rgba(6,24,16,.88)" stroke-width="2.4" paint-order="stroke" ' +
+        'stroke-linejoin="round">' +
         esc((STATE_WORD[v.state] || v.state || 'not reporting').toUpperCase()) +
         (v.standing_minutes ? ' ' + v.standing_minutes + 'm' : '') + '</text>');
     });
