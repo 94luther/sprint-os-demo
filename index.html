@@ -627,7 +627,7 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     var E = window.SprintExample || {};
     var people = E.people || {}, roster = E.roster || {}, cash = E.cash || {};
     var findings = (people.exposures || []).concat(roster.findings || []);
-    var veh = (window.FLEET_LIVE_EXAMPLE && window.FLEET_LIVE_EXAMPLE.vehicles) || E.vehicles || null;
+    var veh = E.vehicles || (E.fleet && E.fleet.vehicles) || null;
     return {
       source: 'demo',
       fleet: veh ? countFleet(veh) : {},
@@ -1102,7 +1102,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 </script>
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
 <script src="shared/sprint-find.js?v=ecc99b39"></script>
-<script src="shared/sprint-example.js?v=fcb344f6"></script>
+<script src="shared/sprint-example.js?v=79248e2c"></script>
 <script src="shared/sprint-attention.js?v=6c588aa8"></script>
 <script src="shared/sprint-front.js?v=209875d0"></script>
 </body>
