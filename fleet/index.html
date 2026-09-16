@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="../shared/sprint-map.js?v=5dff6bec"></script>
+<script src="../shared/sprint-map.js?v=a4b26901"></script>
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
 <link rel="stylesheet" href="../shared/sprint-view.css?v=4c6919d3">
@@ -151,6 +151,13 @@ section{margin-bottom:22px;}
 /* The map of Botswana, drawn on this machine. No tiles are fetched from anybody:
    a fleet map that calls out for images tells that company the office IP and the
    exact patch of ground being looked at, every time it is panned. */
+/* The map key. Every state on the screen, named, with what it means, because a
+   coloured dot on its own has to be learned and nobody reads a manual. */
+.sp-map-key{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.sp-map-key li{display:grid;grid-template-columns:12px 1fr;gap:8px;align-items:baseline}
+.sp-map-key i{width:10px;height:10px;border-radius:50%;display:block;margin-top:4px}
+.sp-map-key b{font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.sp-map-key small{grid-column:2;display:block;font-size:11.5px;color:#A7B5AE;line-height:1.4}
 #fleet-map{margin:2px 0 4px}
 #fleet-map .sp-map{width:100%;height:auto;max-height:52vh;display:block}
 #fleet-map .sp-map-note{font-size:11.5px;color:#A7B5AE;margin:6px 2px 0;line-height:1.45}

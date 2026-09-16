@@ -124,20 +124,72 @@
     return inside;
   }
 
+  /* Every state the system actually produces, in the words Luther uses for them.
+
+     These were drawn as coloured dots with the words only in a tooltip, which on
+     a phone means never: a thumb has nothing to hover with. So the words were
+     technically present and practically absent. They are on the screen now. */
   var STATE_COLOUR = {
+    incident: '#e0483e',
     moving: '#3AAA35',
+    en_route: '#3AAA35',
     standing: '#F7941D',
     idle: '#F7941D',
     no_signal: '#8b8b84',
-    no_trip: '#8b8b84'
+    no_trip: '#6f6f69',
+    unknown: '#6f6f69'
   };
   var STATE_WORD = {
-    moving: 'moving',
-    standing: 'standing still',
-    idle: 'standing still',
+    incident: 'incident',
+    moving: 'en route',
+    en_route: 'en route',
+    standing: 'idle',
+    idle: 'idle',
     no_signal: 'no signal',
-    no_trip: 'not on a trip'
+    no_trip: 'parked',
+    unknown: 'not reporting'
   };
+  /* What each state MEANS, because a word on its own still has to be learned.
+     Shown in the legend, so nobody has to be told what orange is. */
+  var STATE_MEANS = {
+    incident: 'something has gone wrong and somebody should look now',
+    moving: 'on a trip and moving',
+    en_route: 'on a trip and moving',
+    standing: 'on a trip but not moving',
+    idle: 'on a trip but not moving',
+    no_signal: 'has not reported in, usually a flat phone or no coverage',
+    no_trip: 'no trip open, so nothing is expected from it',
+    unknown: 'the vehicle reported no state at all, which is a fault in the app'
+  };
+  /* Incident first, then what is working, then what is quiet. A legend in
+     alphabetical order teaches nothing; a legend in order of urgency does. */
+  var STATE_ORDER = ['incident', 'standing', 'idle', 'moving', 'en_route', 'no_signal', 'no_trip', 'unknown'];
+
+  /* The legend, built from what is ACTUALLY on the screen. It never lists a
+     state nobody has today, because teaching a reader about a condition they
+     cannot see is how a legend becomes wallpaper. */
+  function legend(vehicles) {
+    var seen = {}, order = [];
+    (vehicles || []).forEach(function (v) {
+      var k = v.state || 'unknown';
+      if (!STATE_WORD[k]) k = 'unknown';
+      if (!seen[k]) { seen[k] = 0; order.push(k); }
+      seen[k]++;
+    });
+    if (!order.length) return '';
+    order.sort(function (a, b) { return STATE_ORDER.indexOf(a) - STATE_ORDER.indexOf(b); });
+    /* en route and moving are the same state under two names; never show both. */
+    var used = {}, rows = [];
+    order.forEach(function (k) {
+      var word = STATE_WORD[k];
+      if (used[word]) { return; }
+      used[word] = true;
+      rows.push('<li><i style="background:' + STATE_COLOUR[k] + '"></i>' +
+        '<b>' + seen[k] + ' ' + esc(word) + '</b>' +
+        '<small>' + esc(STATE_MEANS[k]) + '</small></li>');
+    });
+    return '<ul class="sp-map-key">' + rows.join('') + '</ul>';
+  }
 
   function outlinePath() {
     return OUTLINE.map(function (p, i) {
@@ -190,11 +242,18 @@
       s.push('<circle cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="5" fill="' + col +
         '" stroke="rgba(0,0,0,.45)" stroke-width="1"><title>' + esc(v.reg) + ', ' +
         esc(STATE_WORD[v.state] || v.state) + '</title></circle>');
+      /* The registration AND the state, beside the dot. The state used to live in
+         a tooltip, which a thumb can never open. */
       s.push('<text x="' + (vx + 8).toFixed(1) + '" y="' + (vy - 6).toFixed(1) +
         '" font-size="9" font-weight="700" fill="#fff">' + esc(v.reg) + '</text>');
+      s.push('<text x="' + (vx + 8).toFixed(1) + '" y="' + (vy + 3).toFixed(1) +
+        '" font-size="7.6" font-weight="700" fill="' + col + '">' +
+        esc((STATE_WORD[v.state] || v.state || 'not reporting').toUpperCase()) +
+        (v.standing_minutes ? ' ' + v.standing_minutes + 'm' : '') + '</text>');
     });
 
     s.push('</svg>');
+    s.push(legend(vehicles));
 
     // Never a bare map with nothing on it and no explanation.
     if (!vehicles.length) {
@@ -334,7 +393,7 @@
     };
   }
 
-  var API = { draw: draw, heat: heat, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
+  var API = { draw: draw, heat: heat, legend: legend, STATE_WORD: STATE_WORD, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
   if (typeof module === 'object' && module.exports) module.exports = API;
   root.SprintMap = API;
 })(typeof self !== 'undefined' ? self : this);
