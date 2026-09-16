@@ -315,6 +315,21 @@
       s.push(heat(opts.heat, opts).svg);
     }
 
+    /* The map carries its own style, inside its own SVG, so every page that draws
+       it gets the pulse and the touch targets without being told. A style element
+       inside an SVG applies to that SVG and nothing else. */
+    s.push('<style>' +
+      '.sp-pulse{animation:spPulse 2.4s cubic-bezier(.4,0,.6,1) infinite}' +
+      '@keyframes spPulse{' +
+        '0%{transform:scale(.62);opacity:.42}' +
+        '55%{transform:scale(1.35);opacity:.06}' +
+        '100%{transform:scale(.62);opacity:.42}}' +
+      '.sp-town-hit{cursor:pointer}' +
+      '.sp-town-hit:focus{outline:2px solid #F7941D;outline-offset:2px}' +
+      '@media (prefers-reduced-motion: reduce){' +
+        '.sp-pulse{animation:none;opacity:.24}}' +
+      '</style>');
+
     /* THE COUNTRY, FLAT, AND NOT GREEN. Rewritten the same night it was built.
 
        The first version lit the land like a surface: a green gradient, an edge
@@ -400,9 +415,27 @@
 
     TOWNS.forEach(function (t) {
       var tx = x(t.lng), ty = y(t.lat);
+      /* EVERY TOWN IS A BUTTON NOW.
+
+         Luther: "when my mom is clicking on the map, it would be nice if she could
+         just like maybe click on any like branch and then see something about it."
+
+         A 2.8 pixel dot is not a target, so the dot keeps its size and gets an
+         INVISIBLE 22 pixel disc over it, which clears the 44 pixel floor once the
+         card is drawn at real width. The name is clickable too, because a person
+         aims at the word before they aim at the dot.
+
+         The map itself knows nothing about the business, and that is deliberate:
+         it emits data-town and the page that owns the data answers. This file
+         stays a drawing. */
       s.push('<circle cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) +
         '" r="' + (t.big ? 2.8 : 1.9) +
         '" fill="rgba(255,255,255,' + (t.big ? '.78' : '.42') + ')"/>');
+      s.push('<circle class="sp-town-hit" data-town="' + esc(t.n) + '" ' +
+        'cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) + '" r="11" ' +
+        'fill="transparent" role="button" tabindex="0" ' +
+        'aria-label="' + esc(t.n) + ', tap to see what is there">' +
+        '<title>' + esc(t.n) + '</title></circle>');
       /* The label sits on whichever side has room. Francistown and Selebi Phikwe
          are both hard against the eastern border, and a label always drawn to the
          right ran off the card and landed on top of the other one. Past two thirds
@@ -422,7 +455,8 @@
         ' font-size="' + size + '" font-weight="' + (t.big ? '700' : '500') +
         '" fill="rgba(233,245,238,' + (t.big ? '.88' : '.58') + ')" ' +
         'stroke="rgba(10,14,18,.88)" stroke-width="2.4" paint-order="stroke" ' +
-        'stroke-linejoin="round">' + esc(t.n) + '</text>');
+        'stroke-linejoin="round" class="sp-town-hit" data-town="' + esc(t.n) + '">' +
+        esc(t.n) + '</text>');
     });
 
     // the vehicles
@@ -430,9 +464,34 @@
       var vx = x(v.position.lng), vy = y(v.position.lat);
       var col = STATE_COLOUR[v.state] || '#8b8b84';
       var stale = v.state === 'no_signal' || v.state === 'no_trip';
+      /* THE PULSE, and it is not decoration.
+
+         Luther: "it's fine if it looks stationary as long as there's some kind of
+         flashing thing that shows that it's in motion."
+
+         He is answering the real problem with this map, which Gemini put in
+         numbers: a country a thousand kilometres long on a four hundred pixel
+         canvas means one pixel is two and a half kilometres, so a van at ninety
+         kilometres an hour moves one pixel every ninety seconds. It IS moving. It
+         just cannot look like it. A still dot and a broken tracker look identical,
+         and the whole trust of the screen rests on telling those apart.
+
+         So a vehicle that is moving breathes, and a vehicle that is not, does not.
+         The ring is the only thing animated and it animates with transform and
+         opacity alone, which the graphics chip does without waking the processor.
+         A phone can run this all day. A standing vehicle gets a STILL ring instead
+         of no ring, so the pair read as the same object in two states rather than
+         two different objects.
+
+         Reduced motion is honoured in the stylesheet: the ring stops and the dot
+         stays, because somebody who has asked their phone to stop moving things
+         has asked for a reason. */
       if (!stale) {
-        s.push('<circle cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) +
-          '" r="11" fill="' + col + '" opacity=".16"/>');
+        var pulsing = v.state === 'moving';
+        s.push('<circle class="sp-veh-ring' + (pulsing ? ' sp-pulse' : '') + '" ' +
+          'cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) +
+          '" r="11" fill="' + col + '" opacity="' + (pulsing ? '.28' : '.16') + '" ' +
+          'style="transform-origin:' + vx.toFixed(1) + 'px ' + vy.toFixed(1) + 'px"/>');
       }
       s.push('<circle cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="5" fill="' + col +
         '" stroke="rgba(0,0,0,.45)" stroke-width="1"><title>' + esc(v.reg) + ', ' +
@@ -701,7 +760,16 @@
     };
   }
 
-  var API = { draw: draw, heat: heat, legend: legend, whereIs: whereIs, onA1: onA1, nearestStop: nearestStop, STATE_WORD: STATE_WORD, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
+  /* A page that owns the data needs the coordinates of the town somebody tapped,
+     and it must not have to keep its own copy of this list. One list, one file. */
+  function townAt(name) {
+    for (var i = 0; i < TOWNS.length; i++) {
+      if (TOWNS[i].n === name) return TOWNS[i];
+    }
+    return null;
+  }
+
+  var API = { draw: draw, heat: heat, townAt: townAt, TOWNS: TOWNS, legend: legend, whereIs: whereIs, onA1: onA1, nearestStop: nearestStop, STATE_WORD: STATE_WORD, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
   if (typeof module === 'object' && module.exports) module.exports = API;
   root.SprintMap = API;
 })(typeof self !== 'undefined' ? self : this);

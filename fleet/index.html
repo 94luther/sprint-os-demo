@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="../shared/sprint-map.js?v=242a2eef"></script>
+<script src="../shared/sprint-map.js?v=56bbc428"></script>
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
 <link rel="stylesheet" href="../shared/sprint-view.css?v=4c6919d3">
@@ -153,6 +153,35 @@ section{margin-bottom:22px;}
    exact patch of ground being looked at, every time it is panned. */
 /* The map key. Every state on the screen, named, with what it means, because a
    coloured dot on its own has to be learned and nobody reads a manual. */
+.town-list{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 2px}
+.town-row{min-height:44px;padding:0 14px;border-radius:999px;
+  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.16);
+  color:inherit;font:inherit;font-size:13px;font-weight:700;
+  display:inline-flex;align-items:center}
+/* The town sheet. Same shape as every other sheet in this app: it comes up from
+   the bottom, and the Done button, the swipe and the backdrop are all down there
+   with the thumb. */
+.tw-back{position:fixed;inset:0;z-index:90;background:rgba(4,20,14,.62);opacity:0;
+  transition:opacity .2s ease;display:flex;align-items:flex-end;justify-content:center}
+.tw-back.in{opacity:1}
+.tw-back.in .tw-sheet{transform:translateY(0)}
+.tw-sheet{width:100%;max-width:520px;transform:translateY(100%);
+  transition:transform .26s cubic-bezier(.22,.61,.36,1);
+  background:rgba(12,40,28,.96);border:2px solid rgba(255,255,255,.18);border-bottom:none;
+  border-radius:26px 26px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom,0px));
+  max-height:82vh;overflow-y:auto}
+.tw-grip{display:block;width:42px;height:5px;border-radius:999px;margin:0 auto 10px;
+  background:rgba(255,255,255,.34)}
+.tw-sheet h3{margin:2px 0 12px;font-size:20px;font-weight:800;letter-spacing:-.2px}
+.tw-h{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+  color:#A7B5AE;margin:14px 0 6px}
+.tw-row{display:flex;gap:12px;align-items:baseline;padding:9px 12px;margin-bottom:6px;
+  background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.12);border-radius:14px}
+.tw-row b{font-size:15px;font-weight:800;flex:none}
+.tw-row span{font-size:12.5px;line-height:1.45;color:#D9E3DE}
+.tw-done{width:100%;min-height:52px;margin-top:14px;background:#F7941D;color:#0A2417;
+  border:none;border-radius:16px;font:inherit;font-size:15.5px;font-weight:800}
+@media (prefers-reduced-motion: reduce){.tw-back,.tw-sheet{transition:none}}
 .sp-map-key{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
 .sp-map-key li{display:grid;grid-template-columns:12px 1fr;gap:8px;align-items:baseline}
 .sp-map-key i{width:10px;height:10px;border-radius:50%;display:block;margin-top:4px}
@@ -193,6 +222,19 @@ section{margin-bottom:22px;}
 <section><div class="section-head"><h2>Where every vehicle is</h2><span class="hint" id="heat-toggle" role="button" tabindex="0">show where the hours go</span></div>
 <div id="fleet-map"></div>
 <div class="fleet-live-note" id="fleet-heat-note"></div>
+<!-- EVERY TOWN, AS A ROW A THUMB CAN ACTUALLY HIT.
+
+     The dots on the map are eleven units across, which renders at 23 pixels, and
+     the floor in this app is 44. They cannot simply be made bigger: Serowe and
+     Palapye are twenty kilometres apart, which is five pixels on this canvas, so
+     forty four pixel discs would overlap and a tap would reliably open the WRONG
+     town. A target you cannot miss is worse than a small one if it opens the wrong
+     thing.
+
+     So the dots stay a convenience for a steady hand, and this list is the route
+     that is guaranteed to work. It is built from the map's own town list, so the
+     two can never drift apart. -->
+<div class="town-list" id="town-list" aria-label="Every town on the map"></div>
 <div id="fleet-live"></div>
 <div class="fleet-live-note" id="fleet-live-note"></div></section>
 <main id="app"><div style="padding:40px 4px; color:var(--dim); font-size:13px;">Loading the fleet and fuel view...</div></main>
@@ -699,6 +741,43 @@ function renderMap(payload, isLive){
 
   /* Anything worth interrupting somebody about, in words, with its own threshold
      stated so a number that feels wrong can be argued with rather than believed. */
+  /* TAP A TOWN AND SEE WHAT IS THERE.
+
+     Luther: "when my mom is clicking on the map, it would be nice if she could
+     just like maybe click on any like branch and then see something about it."
+
+     The map draws an invisible eleven unit disc over every town and emits
+     data-town. It knows nothing about the business and never should; this page
+     owns the vehicles and the position history, so this page answers.
+
+     It answers with what it actually has and says plainly what it does not, which
+     is the rule everywhere else in this system. A town with nothing near it says
+     so rather than showing an empty panel that looks broken. */
+  var list = document.getElementById('town-list');
+  if (list && !list.childElementCount && window.SprintMap.TOWNS) {
+    list.innerHTML = window.SprintMap.TOWNS.map(function (t) {
+      return '<button type="button" class="town-row" data-town="' + t.n + '">' +
+        '<span>' + t.n + '</span></button>';
+    }).join('');
+    list.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('[data-town]') : null;
+      if (b) showTown(b.getAttribute('data-town'), vehicles, trail);
+    });
+  }
+
+  box.addEventListener('click', function (e) {
+    var hit = e.target && e.target.closest ? e.target.closest('[data-town]') : null;
+    if (!hit) return;
+    showTown(hit.getAttribute('data-town'), vehicles, trail);
+  });
+  box.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var hit = e.target && e.target.closest ? e.target.closest('[data-town]') : null;
+    if (!hit) return;
+    e.preventDefault();
+    showTown(hit.getAttribute('data-town'), vehicles, trail);
+  });
+
   var raised = window.SprintMap.alerts(vehicles);
   if (raised.length) {
     box.insertAdjacentHTML('beforeend', '<div class="fleet-live-note">' + raised.map(function (a) {
@@ -755,6 +834,7 @@ function renderFleetLive(payload, isLive){
 <script src="../shared/sprint-notify.js?v=c8c7be6b"></script>
 <script src="../shared/sprint-patterns.js?v=32067fd0"></script>
 <script src="../shared/sprint-chrome.js?v=955d59ff"></script>
+<script src="../shared/sprint-reach.js?v=f4d04a26"></script>
 
 <script>
 /* Its own tag, on purpose. This was first written inside
@@ -762,12 +842,97 @@ function renderFleetLive(payload, isLive){
    attribute IGNORES its inline content completely, so the toggle was dead on
    the page while looking perfectly correct in the file. Clicking it did
    nothing and the text never changed, which is how it was caught. */
-/* The heat toggle. Off by default: heat is a question somebody chooses to ask,
-   not the first thing an ops person should see when a vehicle is standing. */
+/* The town sheet. One tap, one card, every number carrying where it came from. */
+function showTown(name, vehicles, trail) {
+  if (!name || !window.SprintMap) return;
+  var t = window.SprintMap.townAt(name);
+  if (!t) return;
+  var KM = 25;   // a vehicle within 25 km of a town is AT that town on this map
+
+  function km(a, b) {
+    var R = 6371, d1 = (b.lat - a.lat) * Math.PI / 180, d2 = (b.lng - a.lng) * Math.PI / 180;
+    var la = a.lat * Math.PI / 180, lb = b.lat * Math.PI / 180;
+    var h = Math.sin(d1 / 2) * Math.sin(d1 / 2) +
+      Math.sin(d2 / 2) * Math.sin(d2 / 2) * Math.cos(la) * Math.cos(lb);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+
+  var here = (vehicles || []).filter(function (v) {
+    return v.position && km(v.position, t) <= KM;
+  });
+  var visits = (trail || []).filter(function (p) { return km(p, t) <= KM; }).length;
+
+  var rows = [];
+  if (here.length) {
+    rows.push('<div class="tw-h">Here now</div>');
+    here.forEach(function (v) {
+      var word = window.SprintMap.STATE_WORD[v.state] || v.state || 'not reporting';
+      rows.push('<div class="tw-row"><b>' + v.reg + '</b><span>' + word +
+        (v.standing_minutes ? ', ' + v.standing_minutes + ' minutes' : '') + '</span></div>');
+    });
+  } else {
+    rows.push('<div class="tw-h">Here now</div><div class="tw-row"><span>No vehicle is ' +
+      'within ' + KM + ' km of here at this moment.</span></div>');
+  }
+
+  rows.push('<div class="tw-h">Time spent here</div>');
+  rows.push(visits
+    ? '<div class="tw-row"><b>' + visits + '</b><span>position' + (visits === 1 ? '' : 's') +
+      ' recorded within ' + KM + ' km, across the history this page holds</span></div>'
+    : '<div class="tw-row"><span>No vehicle has ever reported a position within ' + KM +
+      ' km of here. That is either a place Sprint does not go, or a place it goes ' +
+      'without a trip open.</span></div>');
+
+  rows.push('<div class="tw-h">What this card cannot tell you yet</div>');
+  rows.push('<div class="tw-row"><span>Deliveries to this town, what they earned and ' +
+    'which customers are here. The hub holds all three; this card is drawn from ' +
+    'positions only. That is the next thing to wire.</span></div>');
+
+  var back = document.createElement('div');
+  back.className = 'tw-back';
+  back.innerHTML = '<div class="tw-sheet" role="dialog" aria-label="' + name + '">' +
+    '<i class="tw-grip"></i><h3>' + name + '</h3>' + rows.join('') +
+    '<button type="button" class="tw-done">Done</button></div>';
+  document.body.appendChild(back);
+  var sheet = back.firstElementChild;
+  function shut() {
+    sheet.style.transform = 'translateY(100%)'; back.style.opacity = '0';
+    setTimeout(function () { if (back.parentNode) back.parentNode.removeChild(back); }, 200);
+    document.removeEventListener('keydown', esc);
+  }
+  function esc(e) { if (e.key === 'Escape') shut(); }
+  document.addEventListener('keydown', esc);
+  back.querySelector('.tw-done').addEventListener('click', shut);
+  back.addEventListener('click', function (e) { if (e.target === back) shut(); });
+  if (window.SprintReach) window.SprintReach.wire(sheet, { axis: 'y', close: shut });
+  requestAnimationFrame(function () { back.classList.add('in'); });
+}
+
+/* THE HEAT TOGGLE, AND WHY IT NOW STARTS ON.
+
+   Luther asked why the map cannot do the thing he showed me on Snapchat. It
+   already could. It has done it since the day he asked for it, and he had never
+   seen it, because the previous line of this file said heat was a question
+   somebody chooses to ask and started it OFF, behind a small underlined phrase
+   near a heading.
+
+   That was my reasoning, not his, and it was wrong for the reason Snapchat is
+   right: the heat IS the map. Nobody opens that screen and thinks to go looking
+   for a second view. A control that has to be discovered before the best thing on
+   the page appears is a control that hides the best thing on the page.
+
+   So it starts on, and the toggle now turns it OFF for the one person who wants
+   plain dots. The default is the interesting answer and the option is the plain
+   one, which is the right way round. */
 (function () {
   var t = document.getElementById('heat-toggle');
   var box = document.getElementById('fleet-map');
   if (!t || !box) return;
+  if (!box.getAttribute('data-heat')) {
+    box.setAttribute('data-heat', 'on');
+    t.setAttribute('aria-pressed', 'true');
+    t.textContent = 'hide where the hours go';
+  }
   function flip() {
     var on = box.getAttribute('data-heat') === 'on';
     box.setAttribute('data-heat', on ? 'off' : 'on');
