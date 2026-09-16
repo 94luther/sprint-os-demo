@@ -567,7 +567,18 @@ body::before{
      code and not four dashboards. Every number comes from a source this page already
      had; nothing here is invented, and anything unknown says so rather than showing
      a zero that looks like a measurement. */
-  try {
+  /* IT HAS TO WAIT FOR THE FACTS, AND THIS IS THE SECOND TIME TONIGHT.
+
+     This block runs while the page is still parsing, and apps/shared/sprint-example.js
+     is loaded near the bottom, so window.SprintExample did not exist yet. The three
+     numbers, the action card and the four shortcuts all rendered EMPTY, which looks
+     exactly like a company with nothing happening rather than like a script that ran
+     too early. The money bar did the identical thing an hour ago.
+
+     Once is a mistake; twice is a pattern, so it is written down here rather than
+     just fixed: anything on this page that reads SprintExample must wait for the
+     document, because that file loads last on purpose and two tests police where. */
+  function drawCockpit() {
     var E = window.SprintExample || {};
     var role = 'manager';
     try { role = (window.SprintRoles && window.SprintRoles.current && window.SprintRoles.current()) || role; } catch (e) {}
@@ -655,13 +666,19 @@ body::before{
     }
 
     var va = document.getElementById('viewAll');
-    if (va) {
+    if (va && !va.dataset.wired) {
+      va.dataset.wired = '1';
       va.addEventListener('click', function () {
         var f = document.getElementById('front');
         var open = f.classList.toggle('all');
         va.textContent = open ? 'Show less' : 'View all activity';
       });
     }
+  }
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', drawCockpit);
+    } else { drawCockpit(); }
   } catch (e) {}
 
   var KEY = 'sprintos_glare_v1';
