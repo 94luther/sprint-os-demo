@@ -328,6 +328,9 @@
         '0%{transform:scale(.55);opacity:.55}' +
         '80%{transform:scale(2.1);opacity:0}' +
         '100%{transform:scale(2.1);opacity:0}}' +
+      '.sp-veh{transform-box:view-box}' +
+      '.sp-dim{opacity:.26;transition:opacity .22s ease}' +
+      '.sp-picked{opacity:1}' +
       '.sp-veh-hit{cursor:pointer}' +
       '.sp-veh-hit:focus{outline:2px solid #F7941D;outline-offset:2px}' +
       '@keyframes spPulse{' +
@@ -338,7 +341,8 @@
       '.sp-town-hit:focus{outline:2px solid #F7941D;outline-offset:2px}' +
       '@media (prefers-reduced-motion: reduce){' +
         '.sp-pulse{animation:none;opacity:.24}' +
-        '.sp-alarm{animation:none;opacity:.42}}' +
+        '.sp-alarm{animation:none;opacity:.42}' +
+        '.sp-veh{transition:none !important}}' +
       '</style>');
 
     /* THE COUNTRY, FLAT, AND NOT GREEN. Rewritten the same night it was built.
@@ -554,6 +558,10 @@
          No incident record is created by any of this. A van stopped at a robot must
          never become a row in the incident table, and the difference between "worth
          looking at" and "confirmed incident" is a person deciding, not a timer. */
+      /* Each vehicle becomes a GROUP, which is what makes the rest possible: a group
+         can be moved with one transform, and one transform is the only way to move
+         anything on a phone without repainting the whole map. */
+      s.push('<g class="sp-veh" data-veh-g="' + esc(v.reg) + '">');
       var limit = opts.standing_limit || 20;
       var tooLong = v.state === 'standing' && (v.standing_minutes || 0) >= limit;
       if (tooLong) col = '#E0483E';
@@ -593,6 +601,7 @@
         'stroke-linejoin="round">' +
         esc((STATE_WORD[v.state] || v.state || 'not reporting').toUpperCase()) +
         (v.standing_minutes ? ' ' + v.standing_minutes + 'm' : '') + '</text>');
+      s.push('</g>');
     });
 
     s.push('</svg>');
@@ -816,12 +825,24 @@
 
     var cw = (W - PAD * 2) / cells, ch = (H - PAD * 2) / cells;
     var rad = Math.max(cw, ch) * 1.15;
+    /* DENSITY, BLENDED, the way a heat layer is supposed to read.
+
+       It used to be three colours: green, orange, red, each patch a hard choice
+       between them, so a busy area looked like a sticker rather than like heat. Four
+       stops now, green through yellow and orange to red, every patch soft edged and
+       drawn with screen blending so overlapping patches ADD rather than cover each
+       other. That addition is the whole idea: heat is what happens where many quiet
+       patches sit on top of one another.
+
+       Opacity is low on purpose. The vehicles have to stay readable ON TOP of it,
+       and a heat layer that hides the fleet is decoration. */
     var parts = ['<defs>'];
-    var ramp = ['58,170,53', '247,148,29', '224,72,62'];
+    var ramp = ['58,170,53', '214,196,44', '247,148,29', '224,72,62'];
     ramp.forEach(function (rgb, i) {
       parts.push('<radialGradient id="sp-heat-' + i + '">' +
-        '<stop offset="0%" stop-color="rgb(' + rgb + ')" stop-opacity=".85"/>' +
-        '<stop offset="55%" stop-color="rgb(' + rgb + ')" stop-opacity=".28"/>' +
+        '<stop offset="0%" stop-color="rgb(' + rgb + ')" stop-opacity=".62"/>' +
+        '<stop offset="38%" stop-color="rgb(' + rgb + ')" stop-opacity=".30"/>' +
+        '<stop offset="72%" stop-color="rgb(' + rgb + ')" stop-opacity=".10"/>' +
         '<stop offset="100%" stop-color="rgb(' + rgb + ')" stop-opacity="0"/></radialGradient>');
     });
     parts.push('</defs>');
@@ -830,12 +851,15 @@
     Object.keys(grid).forEach(function (k) {
       var bits = k.split(':');
       var weight = Math.sqrt(grid[k] / peak);
-      var band = weight > 0.72 ? 2 : (weight > 0.34 ? 1 : 0);
+      /* Four bands now, not three, and the thresholds are even so the colour climbs
+         with the density instead of jumping. The ramp gained a yellow, and a band
+         calculation that still stopped at 2 would simply never have reached red. */
+      var band = weight > 0.75 ? 3 : weight > 0.52 ? 2 : weight > 0.28 ? 1 : 0;
       var px = PAD + (Number(bits[0]) + 0.5) * cw;
       var py = PAD + (Number(bits[1]) + 0.5) * ch;
       parts.push('<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="' +
         (rad * (0.55 + weight * 0.75)).toFixed(1) + '" fill="url(#sp-heat-' + band + ')" opacity="' +
-        Math.min(0.9, 0.25 + weight * 0.65).toFixed(2) + '"/>');
+        Math.min(0.78, 0.20 + weight * 0.55).toFixed(2) + '" style="mix-blend-mode:screen"/>');
       drawn++;
     });
 
@@ -853,6 +877,74 @@
     };
   }
 
+  /* THEY TRAVEL NOW, INSTEAD OF TELEPORTING.
+
+     A driver phone reports every sixty seconds while a trip is open. Until tonight
+     the map simply redrew, so a van jumped from where it was to where it is, once a
+     minute, and the screen read as a diagram that occasionally changed rather than
+     as a fleet anybody was watching.
+
+     THE TRICK IS TO DRAW THE TRUTH AND THEN LIE ABOUT THE PAST. The dot is always
+     painted at the position that actually arrived. Then, before the browser shows
+     the frame, the whole vehicle group is pushed BACK to where it was a minute ago
+     and allowed to slide forward to where it belongs. Nothing false is ever left on
+     screen: the animation ends exactly on the reported coordinate.
+
+     Two and a half seconds, and eased, because a courier van is not a cursor. Only
+     transform is touched, so the graphics chip carries it and the processor never
+     wakes, which is what lets fifty of them move at once on a telephone.
+
+     A vehicle seen for the first time does NOT slide in from nowhere. It appears
+     where it is, because sliding it from the last van's position would be inventing
+     a journey that did not happen. */
+  var lastSeen = {};
+
+  function settle(root) {
+    if (!root || !root.querySelectorAll) return;
+    var groups = root.querySelectorAll('[data-veh-g]');
+    var moved = 0;
+    for (var i = 0; i < groups.length; i++) {
+      var g = groups[i];
+      var reg = g.getAttribute('data-veh-g');
+      var dot = g.querySelector('.sp-veh-hit');
+      if (!dot) continue;
+      var now = { x: Number(dot.getAttribute('cx')), y: Number(dot.getAttribute('cy')) };
+      var was = lastSeen[reg];
+      lastSeen[reg] = now;
+      if (!was) continue;                       // first sighting, no journey to draw
+      var dx = was.x - now.x, dy = was.y - now.y;
+      if (Math.abs(dx) < 0.4 && Math.abs(dy) < 0.4) continue;   // it did not move
+      g.style.transition = 'none';
+      g.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      moved++;
+    }
+    if (!moved) return;
+    /* Two frames, not one. A single frame is not reliably enough for the browser to
+       have taken the starting transform as a fact, and a transition applied in the
+       same frame as its starting value simply does not run. */
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        for (var j = 0; j < groups.length; j++) {
+          groups[j].style.transition = 'transform 2.4s cubic-bezier(.33,.66,.4,1)';
+          groups[j].style.transform = 'translate(0,0)';
+        }
+      });
+    });
+  }
+
+  /* Selecting one vehicle dims the rest. With fifty dots on a national map, the
+     answer to "where is that one" is not a brighter dot, it is a quieter everything
+     else. */
+  function select(root, reg) {
+    if (!root || !root.querySelectorAll) return;
+    var groups = root.querySelectorAll('[data-veh-g]');
+    for (var i = 0; i < groups.length; i++) {
+      var on = !reg || groups[i].getAttribute('data-veh-g') === reg;
+      groups[i].classList.toggle('sp-dim', !on);
+      groups[i].classList.toggle('sp-picked', !!reg && on);
+    }
+  }
+
   /* A page that owns the data needs the coordinates of the town somebody tapped,
      and it must not have to keep its own copy of this list. One list, one file. */
   function townAt(name) {
@@ -862,7 +954,7 @@
     return null;
   }
 
-  var API = { draw: draw, heat: heat, townAt: townAt, TOWNS: TOWNS, legend: legend, whereIs: whereIs, onA1: onA1, nearestStop: nearestStop, STATE_WORD: STATE_WORD, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
+  var API = { draw: draw, heat: heat, settle: settle, select: select, townAt: townAt, TOWNS: TOWNS, legend: legend, whereIs: whereIs, onA1: onA1, nearestStop: nearestStop, STATE_WORD: STATE_WORD, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
   if (typeof module === 'object' && module.exports) module.exports = API;
   root.SprintMap = API;
 })(typeof self !== 'undefined' ? self : this);

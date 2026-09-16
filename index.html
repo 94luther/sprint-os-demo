@@ -392,7 +392,10 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
   border-radius:22px;background:linear-gradient(135deg,rgba(247,148,29,.22),rgba(247,148,29,.10));
   border:2px solid rgba(247,148,29,.45)}
 .donow .lab{font-size:10.5px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;
-  color:#FFC478}
+  color:#FFC478;display:flex;gap:8px;align-items:center}
+.donow .qn{font-weight:800;letter-spacing:.04em;text-transform:none;font-size:10.5px;
+  padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.14);color:#EAF3EE}
+.donow .h .in{color:#FFC478}
 .donow .h{font-size:16px;font-weight:800;line-height:1.3;margin:6px 0 4px;letter-spacing:-.2px}
 /* The brief asked for 110 to 145 px and the first build measured 186, because the
    instruction sentence from the engine can be three lines long. Two lines, then it
@@ -628,6 +631,15 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     return {
       source: 'demo',
       fleet: veh ? countFleet(veh) : {},
+      people_findings: people.exposures || [],
+      roster_findings: roster.findings || [],
+      weather: (E.weather_exposure && E.weather_exposure.groups) || [],
+      tenders: (typeof E.tenders === 'function' ? E.tenders() : []).map(function (t) {
+        return { id: t.id, title: t.title, closes_in_minutes: t.closes_in_minutes,
+                 reference: t.reference };
+      }),
+      incidents: [],
+      cash: cash,
       loaded: !!(E.people && E.roster && E.cash),
       jobs: people.total_deliveries == null ? null : people.total_deliveries,
       attention: findings.length,
@@ -658,6 +670,10 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     return {
       source: 'live',
       fleet: fleet,
+      people_findings: (people && people.exposures) || [],
+      roster_findings: (roster && roster.findings) || [],
+      weather: [], tenders: [], incidents: [],
+      cash: null,
       loaded: !!(people && roster),
       jobs: people && people.total_deliveries != null ? people.total_deliveries : null,
       attention: (people || roster) ? findings.length : null,
@@ -704,29 +720,35 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
       }).join('');
     }
 
+    /* THE ACTION CARD ASKS THE QUEUE.
+
+       It used to sort people exposures against roster findings and nothing else, so
+       a driver needing a rest could sit on the most valuable card on the screen while
+       a vehicle was in an incident, and its Open button went to the same page whatever
+       it was about. One queue now, ranked by severity MULTIPLIED by urgency, and every
+       row carries its own destination. */
     var dn = document.getElementById('doNow');
     if (!dn) return;
-    var top = state.findings.slice().sort(function (a, b) {
-      return (a.level === 'high' ? 0 : 1) - (b.level === 'high' ? 0 : 1);
-    })[0];
+    var A = window.SprintAttention;
+    var pick = A ? A.first({
+      people: state.people_findings || [],
+      roster: state.roster_findings || [],
+      incidents: state.incidents || [],
+      tenders: state.tenders || [],
+      weather: state.weather || [],
+      cash: state.cash || null
+    }, { loaded: state.loaded }) : null;
 
-    if (!state.loaded) {
-      dn.innerHTML = '<div class="lab">Do this now</div>' +
-        '<div class="h">Waiting for data.</div>' +
-        '<div class="sub">This card cannot say whether anything needs you, because ' +
-        'nothing has loaded. That is not the same as a quiet morning.</div>' +
-        '<span class="go">Try Insights</span>';
-      return;
-    }
-    dn.innerHTML = top
-      ? '<div class="lab">Do this now</div>' +
-        '<div class="h">' + esc(String(top.say || '').replace(/^EXAMPLE /, '')) + '</div>' +
-        '<div class="sub">' + esc(top.do_this || '') + '</div>' +
-        '<span class="go">Open</span>'
-      : '<div class="lab">Do this now</div>' +
-        '<div class="h">Nothing needs you this morning.</div>' +
-        '<div class="sub">Every source answered and none of them raised anything.</div>' +
-        '<span class="go">See the detail</span>';
+    if (!pick) { dn.innerHTML = ''; return; }
+    dn.setAttribute('href', pick.destination || 'insights/index.html');
+    var when = pick.minutes_left != null && pick.minutes_left >= 0 && pick.minutes_left <= 240
+      ? ' <b class="in">in ' + pick.minutes_left + ' min</b>' : '';
+    dn.innerHTML = '<div class="lab">Do this now' +
+        (pick.queue_length > 1 ? ' <span class="qn">' + (pick.queue_length - 1) + ' more</span>' : '') +
+      '</div>' +
+      '<div class="h">' + esc(String(pick.title || '').replace(/^EXAMPLE /, '')) + when + '</div>' +
+      '<div class="sub">' + esc(pick.instruction || '') + '</div>' +
+      '<span class="go">' + (pick.empty || !pick.known ? 'See the detail' : 'Open') + '</span>';
   }
 
   /* Four shortcuts, for a role that actually exists. */
@@ -1081,6 +1103,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
 <script src="shared/sprint-find.js?v=ecc99b39"></script>
 <script src="shared/sprint-example.js?v=fcb344f6"></script>
+<script src="shared/sprint-attention.js?v=6c588aa8"></script>
 <script src="shared/sprint-front.js?v=209875d0"></script>
 </body>
 </html>
