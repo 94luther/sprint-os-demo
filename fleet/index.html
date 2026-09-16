@@ -98,10 +98,26 @@ section{margin-bottom:22px;}
 .item-name{font-weight:700; flex:1; min-width:0;}
 .item-sub{font-size:11px; color:var(--dim); margin-top:2px;}
 
-.veh-card{border-bottom:1px solid var(--line); padding:10px 0;}
+/* The fleet row, readable at a glance. The dot carries the state, the word carries
+   it again for anybody the colour fails, and the driver is the first thing after the
+   registration because a vehicle is a person doing a job. */
+.veh-card{border-bottom:1px solid var(--line); padding:13px 0;}
+.vdot{width:11px;height:11px;border-radius:50%;flex:none;display:inline-block}
+.vdot.go{background:#3AAA35;box-shadow:0 0 0 3px rgba(58,170,53,.20)}
+.vdot.wait{background:#F7941D;box-shadow:0 0 0 3px rgba(247,148,29,.20)}
+.vdot.bad{background:#E0483E;box-shadow:0 0 0 3px rgba(224,72,62,.20)}
+.vdot.off{background:#8B9A93}
+.vreg{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vstate{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;flex:none}
+.vstate.go{background:rgba(58,170,53,.20);color:#8FE08A}
+.vstate.wait{background:rgba(247,148,29,.20);color:#FFC478}
+.vstate.bad{background:rgba(224,72,62,.20);color:#FF9E96}
+.vstate.off{background:rgba(255,255,255,.10);color:#B9C6BF}
+.vunk{opacity:.72;font-style:italic}
 .veh-card:last-child{border-bottom:none;}
-.veh-top{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; font-weight:700;}
-.veh-sub{font-size:11px; color:var(--dim); margin-top:3px;}
+.veh-top{display:flex; gap:10px; align-items:center; font-size:14px; font-weight:800;}
+.veh-sub{font-size:11.5px; color:var(--dim); margin-top:5px; line-height:1.45;}
 
 .login-wrap{max-width:320px; margin:18vh auto 0; padding:0 20px;}
 .login-wrap h1{font-size:22px; margin-bottom:4px;}
@@ -467,10 +483,41 @@ function render(){
   const vehicles = DATA.vehicles||[];
   if(!vehicles.length) html.push('<div class="empty-note">No vehicles recorded.</div>');
   vehicles.forEach(v=>{
-    html.push('<div class="veh-card"><div class="veh-top"><span>'+esc(v.reg)+'</span><span style="color:var(--dim); font-weight:400; font-size:11px;">'+esc(v.type||'')+'</span></div>'+
-      '<div class="veh-sub">'+(v.last_odometer===null||v.last_odometer===undefined ? 'No odometer reading recorded yet.' : v.last_odometer+' km, as of '+localDT(v.last_odometer_at))+
-      (v.tank_litres ? ' &middot; '+v.tank_litres+' litre tank' : ' &middot; tank size not recorded')+
-    '</div></div>');
+    /* THE ROW A PERSON ACTUALLY READS.
+
+       It used to say a registration, a body type, an odometer reading and a tank
+       size. Not one of those answers the question somebody opens this page with,
+       which is: is that van working right now, who is in it, and is it drinking.
+
+       So the row leads with a COLOURED DOT and the driver's name, because the fleet
+       health is meant to be readable at a glance without reading. Green is moving,
+       amber is standing, red is an incident, grey is not reporting, and the WORD is
+       beside the dot as well, because red washes out in Botswana sun and on a screen
+       dimmed to save battery, and colour alone is unreadable to a good number of
+       people anyway.
+
+       Fuel is the third column and it is honestly empty: the fuel table holds no
+       rows, so it says so rather than printing a zero that looks like a measurement. */
+    var live = (window.FLEET_LIVE_EXAMPLE || []).filter(function (x) { return x.reg === v.reg; })[0] || {};
+    var state = live.state || 'unknown';
+    var word = (window.SprintMap && window.SprintMap.STATE_WORD[state]) || 'not reporting';
+    var dot = state === 'moving' ? 'go' : state === 'standing' ? 'wait'
+            : state === 'incident' ? 'bad' : 'off';
+    var kpl = (v.km_per_litre === null || v.km_per_litre === undefined)
+      ? '<span class="vunk">fuel not logged</span>'
+      : '<b>' + v.km_per_litre + '</b> km per litre';
+    html.push('<div class="veh-card">' +
+      '<div class="veh-top"><i class="vdot ' + dot + '"></i>' +
+        '<span class="vreg">' + esc(v.reg) + '</span>' +
+        '<span class="vstate ' + dot + '">' + esc(word) +
+          (live.standing_minutes ? ' ' + live.standing_minutes + 'm' : '') + '</span></div>' +
+      '<div class="veh-sub">' +
+        (live.driver ? '<b>' + esc(live.driver) + '</b> &middot; ' : '<span class="vunk">no driver on this vehicle right now</span> &middot; ') +
+        kpl +
+        (v.last_odometer === null || v.last_odometer === undefined
+          ? ' &middot; <span class="vunk">no odometer reading</span>'
+          : ' &middot; ' + v.last_odometer + ' km') +
+      '</div></div>');
   });
   html.push('</div></section>');
 

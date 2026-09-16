@@ -56,9 +56,18 @@
       '50%{transform:translate3d(-17%,13%,0) scale(1.22);opacity:1}' +
       '100%{transform:translate3d(11%,-9%,0) scale(1.05);opacity:.64}}' +
     '@media (prefers-reduced-motion: reduce){.rc.money::after{animation:none}}' +
-    '/* 16 Sep 2026: the drifting circle was painting OVER the words, because an
-       ::after with no z-index paints after its element's content. Shapes behind,
-       words in front, and the card isolated so the numbers stay local. */
+    /* 16 Sep 2026: the drifting circle was painting OVER the words, because an
+       ::after with no z index paints after its element content. Shapes behind,
+       words in front, and the card isolated so the numbers stay local.
+
+       AND THIS COMMENT BROKE THE WHOLE FILE FOR A DAY. It was written INSIDE the
+       string concatenation with a leading quote, so a single quoted string ran off
+       the end of its line and everything after it stopped being JavaScript. The
+       home page rail, the filters and the live feed have not rendered since. Not
+       one of five hundred tests noticed, because none of them parses this file, and
+       the page fails silently: a script that throws leaves the container it was
+       going to fill exactly as the HTML left it, which looks like a quiet morning
+       rather than like a fault. */
     '.rc{isolation:isolate}' +
     '.rc.money::after{z-index:0}' +
     '.rc > *{position:relative;z-index:1}' +
@@ -79,7 +88,20 @@
     '.filters button.on{background:#fff;color:#0E2F22;border-color:#fff}' +
     '.filters button b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--orange,#F7941D);color:#0E2F22;font-size:11px}' +
     /* the feed */
-    '.feed{display:flex;flex-direction:column;gap:10px}' +
+        /* A TIMELINE, NOT A STACK OF CARDS.
+
+       The rows were correct and read as a wall: same size, same spacing, no sense
+       that one thing happened after another. A single grey line down the left, with
+       each avatar sitting ON it, turns a list into a heartbeat, and it costs one
+       pseudo element and no markup at all.
+
+       The line stops short at the top and bottom so it does not look like it runs
+       off the page into something that is not there. */
+    '.feed{display:flex;flex-direction:column;gap:14px;position:relative}' +
+    '.feed::before{content:"";position:absolute;left:31px;top:14px;bottom:14px;width:2px;' +
+      'background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.18) 8%,' +
+      'rgba(255,255,255,.18) 92%,rgba(255,255,255,0));pointer-events:none}' +
+    '.feed .fi{position:relative}' +
     '.fi{display:flex;gap:12px;align-items:flex-start;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.22);border-radius:22px;padding:12px 14px;' +
       'backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65);min-height:64px}' +
     /* Brick 95: an urgent row must not depend on colour. Red washes out in
