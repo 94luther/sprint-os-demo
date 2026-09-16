@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="../shared/sprint-map.js?v=5dff6bec"></script>
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
 <link rel="stylesheet" href="../shared/sprint-view.css?v=4c6919d3">
@@ -147,6 +148,14 @@ section{margin-bottom:22px;}
 .vlive .chip.warn{background:rgba(247,148,29,.18);color:#FDBE74;border-color:rgba(247,148,29,.5)}
 .vlive .chip.bad{background:rgba(255,107,97,.18);color:#FFB3AD;border-color:rgba(255,107,97,.5)}
 .vlive .chip.ok{background:rgba(58,170,53,.16);color:#8FE08A;border-color:rgba(58,170,53,.4)}
+/* The map of Botswana, drawn on this machine. No tiles are fetched from anybody:
+   a fleet map that calls out for images tells that company the office IP and the
+   exact patch of ground being looked at, every time it is panned. */
+#fleet-map{margin:2px 0 4px}
+#fleet-map .sp-map{width:100%;height:auto;max-height:52vh;display:block}
+#fleet-map .sp-map-note{font-size:11.5px;color:#A7B5AE;margin:6px 2px 0;line-height:1.45}
+.section-head .hint#heat-toggle{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.section-head .hint#heat-toggle[aria-pressed="true"]{color:var(--orange)}
 .fleet-live-note{font-size:11.5px;color:#A7B5AE;margin:2px 2px 16px}
 
 /* Brick 61: the bell, same on every page */
@@ -173,7 +182,10 @@ section{margin-bottom:22px;}
   <div class="detail" id="map-detail"></div>
 </div>
 <div class="fleetbar" id="fleetbar"></div>
-<section><div class="section-head"><h2>Where every vehicle is</h2></div><div id="fleet-live"></div>
+<section><div class="section-head"><h2>Where every vehicle is</h2><span class="hint" id="heat-toggle" role="button" tabindex="0">show where the hours go</span></div>
+<div id="fleet-map"></div>
+<div class="fleet-live-note" id="fleet-heat-note"></div>
+<div id="fleet-live"></div>
 <div class="fleet-live-note" id="fleet-live-note"></div></section>
 <main id="app"><div style="padding:40px 4px; color:var(--dim); font-size:13px;">Loading the fleet and fuel view...</div></main>
 
@@ -682,6 +694,26 @@ function renderFleetLive(payload, isLive){
     var sorted = vehicles.slice().sort(function(a, b){ return order[dotClass(a)] - order[dotClass(b)]; });
     list.innerHTML = sorted.length ? sorted.map(vehicleCard).join('') : '<div class="empty-note">No vehicles recorded on the hub yet.</div>';
   }
+  /* THE MAP. Drawn from the same vehicles the list below is drawn from, so the
+     two can never disagree, which is the lesson from the tender dates applied
+     before it could bite here. */
+  var mapBox = document.getElementById('fleet-map');
+  if (mapBox && window.SprintMap) {
+    var heatOn = mapBox.getAttribute('data-heat') === 'on';
+    var trail = (window.__fleetPositions || []).filter(Boolean);
+    mapBox.innerHTML = window.SprintMap.draw(vehicles, heatOn ? { heat: trail } : {});
+    var hNote = document.getElementById('fleet-heat-note');
+    if (hNote) hNote.textContent = heatOn ? window.SprintMap.heat(trail).say : '';
+    /* Anything worth interrupting somebody about, said in words, with the
+       threshold stated so a number that feels wrong can be argued with. */
+    var raised = window.SprintMap.alerts(vehicles);
+    if (raised.length) {
+      mapBox.insertAdjacentHTML('beforeend',
+        '<div class="fleet-live-note">' + raised.map(function (a) {
+          return '<div><b>' + a.say + '</b> ' + a.why + '</div>';
+        }).join('') + '</div>');
+    }
+  }
   var note = document.getElementById('fleet-live-note');
   if (note) note.textContent = isLive ? 'Positions come from the driver app every minute while a trip is open. A vehicle with no driver app on board cannot appear here.' : 'Example fleet. On the office system this reads the drivers\u2019 phones every minute while their trips are open.';
 }
@@ -701,6 +733,25 @@ function renderFleetLive(payload, isLive){
 </script>
 <script src="../shared/sprint-notify.js?v=c8c7be6b"></script>
 <script src="../shared/sprint-patterns.js?v=32067fd0"></script>
-<script src="../shared/sprint-chrome.js?v=955d59ff"></script>
+<script src="../shared/sprint-chrome.js?v=955d59ff">
+/* The heat toggle. Off by default: heat is a question somebody chooses to ask,
+   not the first thing an ops person should see when a vehicle is standing. */
+(function () {
+  var t = document.getElementById('heat-toggle');
+  var box = document.getElementById('fleet-map');
+  if (!t || !box) return;
+  function flip() {
+    var on = box.getAttribute('data-heat') === 'on';
+    box.setAttribute('data-heat', on ? 'off' : 'on');
+    t.setAttribute('aria-pressed', on ? 'false' : 'true');
+    t.textContent = on ? 'show where the hours go' : 'hide where the hours go';
+    if (typeof window.__fleetRedraw === 'function') window.__fleetRedraw();
+  }
+  t.addEventListener('click', flip);
+  t.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+  });
+})();
+</script>
 </body>
 </html>
