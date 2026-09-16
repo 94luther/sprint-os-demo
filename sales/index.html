@@ -51,7 +51,7 @@ header .titles{flex:1; min-width:0;}
 header h1{font-size:15px; line-height:1.1;}
 header .who{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .sync-badge{
-  font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line);
+  font-size:10px; padding:4px 8px; border-radius:20px; border:2px solid var(--line);
   color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;
 }
 .sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
@@ -61,11 +61,11 @@ header .who{font-size:11px; color:var(--dim); margin-top:2px; white-space:nowrap
 main{max-width:720px; margin:0 auto; padding:12px 14px 40px;}
 
 .banner-example{
-  background:rgba(247,148,29,0.12); border:1px solid var(--orange); color:var(--orange);
+  background:rgba(247,148,29,0.12); border:2px solid var(--orange); color:var(--orange);
   font-size:12px; font-weight:600; padding:8px 12px; border-radius:8px; margin-bottom:12px;
 }
 .banner-guard{
-  background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--green);
+  background:var(--panel); border:2px solid var(--line); border-left:3px solid var(--green);
   font-size:12px; color:var(--dim); padding:8px 12px; border-radius:6px; margin-bottom:14px;
 }
 .banner-guard b{color:var(--bone); font-weight:600;}
@@ -77,7 +77,7 @@ section{margin-bottom:22px;}
 
 /* bars */
 .stage-row{
-  display:block; width:100%; text-align:left; background:var(--panel); border:1px solid var(--line);
+  display:block; width:100%; text-align:left; background:var(--panel); border:2px solid var(--line);
   border-radius:8px; padding:10px 12px; margin-bottom:6px; cursor:pointer;
 }
 .stage-row.open{border-color:var(--orange);}
@@ -103,7 +103,7 @@ section{margin-bottom:22px;}
 
 /* today panel */
 .today-card{
-  background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+  background:var(--panel); border:2px solid var(--line); border-radius:8px; padding:10px 12px;
   margin-bottom:8px; cursor:pointer;
 }
 .today-card .row1{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
@@ -128,7 +128,7 @@ section{margin-bottom:22px;}
 }
 .drawer.show{transform:translateX(0);}
 .drawer-close{
-  background:none; border:1px solid var(--line); color:var(--bone); border-radius:6px;
+  background:none; border:2px solid var(--line); color:var(--bone); border-radius:6px;
   padding:6px 10px; font-size:12px; float:right; cursor:pointer;
 }
 .drawer h2{font-size:20px; margin:6px 0 2px; clear:both;}
@@ -136,7 +136,7 @@ section{margin-bottom:22px;}
 .field-label{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; margin:14px 0 6px;}
 .stage-btns{display:flex; flex-wrap:wrap; gap:6px;}
 .stage-btn{
-  background:var(--ink); border:1px solid var(--line); color:var(--dim); font-size:11px;
+  background:var(--ink); border:2px solid var(--line); color:var(--dim); font-size:11px;
   padding:7px 10px; border-radius:20px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em;
 }
 .stage-btn.current{background:var(--green); border-color:var(--green); color:var(--ink); font-weight:700;}
@@ -149,7 +149,7 @@ section{margin-bottom:22px;}
 form.debrief{display:flex; flex-direction:column; gap:8px; margin-top:8px;}
 .rowfields{display:flex; gap:8px;}
 select,input[type=text],textarea{
-  background:var(--ink); border:1px solid var(--line); color:var(--bone); border-radius:6px;
+  background:var(--ink); border:2px solid var(--line); color:var(--bone); border-radius:6px;
   padding:8px 10px; font-size:13px; font-family:inherit; width:100%;
 }
 textarea{min-height:60px; resize:vertical;}
@@ -158,7 +158,7 @@ textarea{min-height:60px; resize:vertical;}
   padding:10px 12px; font-size:13px; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em;
 }
 .btn.orange{background:var(--orange);}
-.btn.ghost{background:none; border:1px solid var(--line); color:var(--bone);}
+.btn.ghost{background:none; border:2px solid var(--line); color:var(--bone);}
 .btn:disabled{opacity:0.5; cursor:default;}
 .guard-flag{display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--orange); margin-top:6px;}
 
@@ -175,7 +175,7 @@ textarea{min-height:60px; resize:vertical;}
 }
 
 /* Brick 58, the pipeline funnel: docs/DESIGN-LANGUAGE.md, quantities drawn as space */
-.funnel-card{border-radius:22px;padding:15px 16px 13px;margin:12px 0 14px;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
+.funnel-card{border-radius:22px;padding:15px 16px 13px;margin:12px 0 14px;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
 .funnel-card .fh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .funnel-card .ft{font-size:15px;font-weight:800;color:#F4F7F5}
 .funnel-card .fv{font-size:12px;color:#C9D6CF}
@@ -186,22 +186,22 @@ textarea{min-height:60px; resize:vertical;}
 .funnel-sub{font-size:12px;color:#C9D6CF;line-height:1.35;margin-top:5px}
 .funnel-act{display:inline-flex;align-items:center;gap:9px;margin-top:11px;background:#F7941D;color:#fff;border:0;border-radius:999px;font-weight:800;font-size:13px;padding:10px 17px;cursor:pointer;box-shadow:0 10px 24px -10px rgba(247,148,29,.9);text-align:left}
 .funnel-act svg{width:15px;height:15px;margin:0;stroke:#fff;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.funnel-quiet{display:inline-block;margin-top:11px;font-size:12px;font-weight:800;color:#8FE08A;background:rgba(58,170,53,.16);border:1px solid rgba(58,170,53,.4);border-radius:999px;padding:8px 15px}
+.funnel-quiet{display:inline-block;margin-top:11px;font-size:12px;font-weight:800;color:#8FE08A;background:rgba(58,170,53,.16);border:2px solid rgba(58,170,53,.4);border-radius:999px;padding:8px 15px}
 .funnel-foot{font-size:11.2px;color:#A7B5AE;margin-top:9px;line-height:1.35}
 .cold{margin-top:12px}
 .cold .ch{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#C9D6CF;margin-bottom:6px}
 .cold-row{display:flex;align-items:center;gap:9px;padding:6px 0;cursor:pointer}
 .cold-row .cn{font-size:12.8px;font-weight:700;color:#F4F7F5;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cold-row .cs{font-size:11px;font-weight:800;color:#C9D6CF;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:3px 9px;flex:none}
+.cold-row .cs{font-size:11px;font-weight:800;color:#C9D6CF;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.16);border-radius:999px;padding:3px 9px;flex:none}
 .cold-row .cd{font-size:11.5px;font-weight:800;width:74px;text-align:right;flex:none}
 .cold-row .cd.warm{color:#C9D6CF} .cold-row .cd.cool{color:#FDBE74} .cold-row .cd.cold{color:#FFB3AD}
 
 /* Brick 60: why a deal was lost */
-.lostbox{margin-top:10px;padding:12px 13px;border-radius:16px;background:rgba(255,107,97,.12);border:1px solid rgba(255,107,97,.42)}
+.lostbox{margin-top:10px;padding:12px 13px;border-radius:16px;background:rgba(255,107,97,.12);border:2px solid rgba(255,107,97,.42)}
 .lostbox .lt{font-size:13px;font-weight:800;color:#FFB3AD}
 .lostbox .lw{font-size:11.6px;color:#C9D6CF;margin-top:3px}
 .lostbox .lr{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
-.lostbox .lr button{background:rgba(255,255,255,.10);color:#F4F7F5;border:1px solid rgba(255,255,255,.22);border-radius:999px;font-weight:800;font-size:11.5px;padding:6px 12px;cursor:pointer;width:auto}
+.lostbox .lr button{background:rgba(255,255,255,.10);color:#F4F7F5;border:2px solid rgba(255,255,255,.22);border-radius:999px;font-weight:800;font-size:11.5px;padding:6px 12px;cursor:pointer;width:auto}
 .lostbox .lr button:hover{background:rgba(255,255,255,.18)}
 .lostbox .cancel{margin-top:9px;font-size:11.5px;color:#A7B5AE;cursor:pointer;text-decoration:underline}
 .whylost{margin-top:11px}
@@ -213,10 +213,10 @@ textarea{min-height:60px; resize:vertical;}
 .whylost .wc{font-size:11.5px;font-weight:800;color:#C9D6CF;width:22px;text-align:right;flex:none}
 
 /* Brick 61: the bell, same on every page */
-.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
 .hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style>
-<link rel="stylesheet" href="../shared/sprint-theme.css?v=d22384bc">
+<link rel="stylesheet" href="../shared/sprint-theme.css?v=89818cf5">
 </head>
 <body>
 

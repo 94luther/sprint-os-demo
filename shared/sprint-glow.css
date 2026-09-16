@@ -74,7 +74,7 @@ html[data-glow="on"] body::after {
 html[data-glow="on"] .card,
 html[data-glow="on"] .drawer {
   background: linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .012));
-  border: 1px solid rgba(255, 255, 255, .09);
+  border: 2px solid rgba(255, 255, 255, .09);
   border-radius: 18px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .13),
@@ -197,7 +197,7 @@ html[data-glow="on"] .btn-mini,
 html[data-glow="on"] .drawer-close {
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
-  border: 1px solid rgba(255, 255, 255, .13);
+  border: 2px solid rgba(255, 255, 255, .13);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 2px 8px rgba(0, 0, 0, .45);
 }
 html[data-glow="on"] .btn-mini:active,

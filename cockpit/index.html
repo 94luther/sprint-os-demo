@@ -45,7 +45,7 @@ header{
 }
 header img{width:26px; height:26px; object-fit:contain; flex:none;}
 header h1{font-size:15px; flex:1;}
-.sync-badge{font-size:10px; padding:4px 8px; border-radius:20px; border:1px solid var(--line); color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;}
+.sync-badge{font-size:10px; padding:4px 8px; border-radius:20px; border:2px solid var(--line); color:var(--dim); flex:none; display:flex; align-items:center; gap:5px; white-space:nowrap;}
 .sync-dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex:none;}
 .sync-badge.offline{color:var(--orange); border-color:var(--orange);}
 .sync-badge.offline .sync-dot{background:var(--orange);}
@@ -58,7 +58,7 @@ header h1{font-size:15px; flex:1;}
   grid-template-columns: 1.15fr 1fr 1fr;
   grid-template-rows: auto auto auto auto auto;
 }
-.panel{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; min-width:0; display:flex; flex-direction:column;}
+.panel{background:var(--panel); border:2px solid var(--line); border-radius:8px; padding:10px 12px; min-width:0; display:flex; flex-direction:column;}
 .panel h2{font-size:11px; color:var(--dim); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:8px; flex:none;}
 .panel-scroll{overflow-y:auto;}
 
@@ -78,9 +78,9 @@ header h1{font-size:15px; flex:1;}
 .big-sub{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px;}
 
 .verdict{font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.03em; padding:1px 7px; border-radius:20px; display:inline-block;}
-.verdict.green{color:var(--green); border:1px solid var(--green);}
-.verdict.orange{color:var(--orange); border:1px solid var(--orange);}
-.verdict.red{color:var(--red); border:1px solid var(--red);}
+.verdict.green{color:var(--green); border:2px solid var(--green);}
+.verdict.orange{color:var(--orange); border:2px solid var(--orange);}
+.verdict.red{color:var(--red); border:2px solid var(--red);}
 
 .stack-bar{display:flex; height:26px; border-radius:4px; overflow:hidden; background:var(--line); margin-bottom:6px;}
 .stack-seg{height:100%;}
@@ -111,7 +111,7 @@ header h1{font-size:15px; flex:1;}
 }
 
 /* Brick 57, the score ring: docs/DESIGN-LANGUAGE.md, the one thing she reads first */
-.ring-card{grid-column:1 / -1;display:flex;gap:20px;align-items:center;flex-wrap:wrap;border-radius:22px;padding:16px 18px;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
+.ring-card{grid-column:1 / -1;display:flex;gap:20px;align-items:center;flex-wrap:wrap;border-radius:22px;padding:16px 18px;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
 .ring-wrap{position:relative;width:196px;height:196px;flex:none}
 .ring-wrap svg{display:block;width:196px;height:196px}
 .ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
@@ -133,17 +133,17 @@ header h1{font-size:15px; flex:1;}
 .rr-say{font-size:11.8px;color:#C9D6CF;margin:0 0 4px 102px;line-height:1.3}
 .ring-act{display:inline-flex;align-items:center;gap:9px;margin-top:12px;background:#F7941D;color:#fff;border:0;border-radius:999px;font-weight:800;font-size:13px;padding:10px 17px;cursor:pointer;text-decoration:none;box-shadow:0 10px 24px -10px rgba(247,148,29,.9)}
 .ring-act svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.ring-quiet{display:inline-block;margin-top:12px;font-size:12px;font-weight:800;color:#8FE08A;background:rgba(58,170,53,.16);border:1px solid rgba(58,170,53,.4);border-radius:999px;padding:8px 15px}
+.ring-quiet{display:inline-block;margin-top:12px;font-size:12px;font-weight:800;color:#8FE08A;background:rgba(58,170,53,.16);border:2px solid rgba(58,170,53,.4);border-radius:999px;padding:8px 15px}
 .ring-foot{font-size:11.2px;color:#A7B5AE;margin-top:9px}
 @media (max-width:720px){ .ring-card{gap:14px;justify-content:center} .ring-side{min-width:100%} .rr .rl{width:78px} .rr-say{margin-left:88px} }
 
 /* Brick 61: the bell, same on every page */
-.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
+.hdr-bell{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;flex:none;margin-left:8px}
 .hdr-bell svg{width:18px;height:18px;stroke:#F4F7F5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ---------- the four bands of the MD contract, brick 79 (md-console SKILL.md) ---------- */
 .grid{display:block;padding:10px}
-.band{border-radius:22px;padding:14px 16px;margin:0 0 12px;background:rgba(8,28,20,.40);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
+.band{border-radius:22px;padding:14px 16px;margin:0 0 12px;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12)}
 .band-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
 .band-head h2{font-size:15px;font-weight:800;color:#F4F7F5;text-transform:none;letter-spacing:-.2px;margin:0}
 .band-note{font-size:11px;font-weight:700;color:#FDBE74;text-align:right}
@@ -153,7 +153,7 @@ header h1{font-size:15px; flex:1;}
 
 .oh{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 @media(min-width:700px){.oh{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.oh-tile{display:block;min-width:0;text-decoration:none;color:inherit;border-radius:16px;padding:10px 12px;min-height:88px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)}
+.oh-tile{display:block;min-width:0;text-decoration:none;color:inherit;border-radius:16px;padding:10px 12px;min-height:88px;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.14)}
 .oh-k{font-size:11px;font-weight:800;letter-spacing:.3px;color:#A7B5AE;text-transform:uppercase}
 .oh-v{font-size:clamp(18px,6vw,24px);font-weight:800;letter-spacing:-.6px;color:#F4F7F5;line-height:1.1;margin-top:4px;overflow-wrap:anywhere}
 .oh-v.none{font-size:13px;color:#A7B5AE;font-weight:700;margin-top:8px}
@@ -168,7 +168,7 @@ header h1{font-size:15px; flex:1;}
 .nx-ask{font-size:15px;font-weight:700;color:#F4F7F5;margin-top:2px;line-height:1.35}
 .nx-because{font-size:13px;color:#C9D6CF;line-height:1.4}
 .nx-acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.nx-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:999px;font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;font-family:inherit;background:rgba(255,255,255,.08);color:#F4F7F5;border:1px solid rgba(255,255,255,.26)}
+.nx-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:999px;font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;font-family:inherit;background:rgba(255,255,255,.08);color:#F4F7F5;border:2px solid rgba(255,255,255,.26)}
 .nx-btn.primary{background:#fff;color:#0E2F22;border-color:#fff}
 
 .wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
@@ -179,7 +179,7 @@ header h1{font-size:15px; flex:1;}
 .wk-it{display:block;text-decoration:none;color:#F4F7F5;font-size:10px;line-height:1.25;border-radius:8px;padding:6px 4px;margin-top:4px;min-height:44px;background:rgba(58,170,53,.22)}
 .wk-it.amber{background:rgba(247,148,29,.22)} .wk-it.red{background:rgba(255,107,97,.22)}
 
-.co-mapcard{display:block;text-decoration:none;color:inherit;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
+.co-mapcard{display:block;text-decoration:none;color:inherit;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12)}
 .co-map{display:block;width:100%;height:auto}
 .co-say{font-size:12px;color:#C9D6CF;padding:8px 12px 10px;line-height:1.4}
 .co-people{display:grid;grid-template-columns:1fr;gap:6px;margin-top:10px}
@@ -197,12 +197,12 @@ header h1{font-size:15px; flex:1;}
 
 .pl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 @media(min-width:700px){.pl{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.pl-chip{display:block;min-width:0;text-decoration:none;color:inherit;border-radius:14px;padding:10px 12px;min-height:44px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)}
+.pl-chip{display:block;min-width:0;text-decoration:none;color:inherit;border-radius:14px;padding:10px 12px;min-height:44px;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.14)}
 .pl-n{font-size:22px;font-weight:800;color:#F4F7F5;line-height:1}
 .pl-l{font-size:12px;font-weight:800;color:#FDBE74;margin-top:2px}
 .pl-v{font-size:11px;color:#C9D6CF;margin-top:4px;line-height:1.35;overflow-wrap:anywhere}
 </style>
-<link rel="stylesheet" href="../shared/sprint-theme.css?v=d22384bc">
+<link rel="stylesheet" href="../shared/sprint-theme.css?v=89818cf5">
 </head>
 <body>
 <header>
