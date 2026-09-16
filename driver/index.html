@@ -11,6 +11,7 @@
 } } catch (e) {} })();
 </script>
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
+<script src="../shared/sprint-once.js?v=21f9360e"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
 <link rel="stylesheet" href="../shared/sprint-view.css?v=4c6919d3">
 <script src="../shared/sprint-motion.js?v=9677b8ce" defer></script>
@@ -435,7 +436,15 @@ function uid() {
 }
 
 /* ---------- api ---------- */
-async function apiFetch(url, opts) {
+async function apiFetch(url, opts, idemKey) {
+  /* THE KEY TRAVELS AS A HEADER, from here, so no caller can forget it and nobody has
+     to remember what the header is called. A request without one is left alone: most
+     of what goes through here is a read. */
+  opts = opts || {};
+  if (idemKey) {
+    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {},
+      { 'Idempotency-Key': idemKey });
+  }
   const res = await fetch(url, Object.assign({ credentials: 'include', headers: { 'Content-Type': 'application/json' } }, opts));
   let json;
   try { json = await res.json(); } catch (e) { json = { ok: false, error: 'Bad response' }; }
