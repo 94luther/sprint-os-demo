@@ -469,8 +469,53 @@
     say: 'What each customer is WORTH can be shown. What they COST cannot, yet, because the fuel table holds 0 rows. Until that changes, no margin on this page is real, and it is better to say so than to print a confident wrong one.'
   };
 
+  /* THE DECISION LOG, as example figures.
+
+     The demonstration copy has to show the one thing that makes this worth having,
+     which is NOT the diary. It is the row that comes back: somebody marked a licence
+     renewal booked nine days ago and the date in the system has not moved.
+
+     That row is the only thing in this product that holds a person to something they
+     said, so the example carries one of each: a decision that was carried out and
+     went quiet, a decision that cannot be checked by software and is waiting to be
+     closed by hand, and the one that did not happen. */
+  var decisions = {
+    known: true,
+    unkept: [
+      { decision_id: 'EXAMPLE dec_4471', action_id: 'set_renewal', days_ago: 9,
+        level: 'high', checkable: true, decided_at: '2026-09-07',
+        say: 'You marked this renewal booked 9 days ago and the licence date has not moved. Either it was booked and nobody wrote the new date down, or it was not booked. From here those look the same and they end the same way.',
+        why: 'This says what the system can see and nothing more: the licence expiry date moves further out has not happened. The commonest reason is that it was done and nobody came back to write it down, which is worth two minutes to fix either way.',
+        do_this: 'Do it now, or write down what happened instead.',
+        actions: [
+          { id: 'set_licence', label: 'Put the new date in now', primary: true, sends: false,
+            does: 'Takes the expiry off the renewed licence and puts it in, which closes this and stops it coming back.',
+            needs: ['date'] },
+          { id: 'close_by_hand', label: 'It was handled another way', sends: false,
+            does: 'Closes this row with a note saying what actually happened, for the ones no software can check.' }
+        ] },
+      { decision_id: 'EXAMPLE dec_4462', action_id: 'spread_round', days_ago: 12,
+        level: 'watch', checkable: false, decided_at: '2026-09-04',
+        say: 'A decision made 12 days ago has not shown up in the system.',
+        why: 'This one cannot be checked automatically, so it is here until somebody says what happened rather than quietly disappearing.',
+        do_this: 'This one cannot be checked automatically. Close it by hand if it is done.',
+        actions: [
+          { id: 'close_by_hand', label: 'Close it with a note', primary: true, sends: false,
+            does: 'Records what actually happened so this row stops asking and the answer is still here in a month.' }
+        ] }
+    ],
+    history: [
+      { action_id: 'book_rest', note: 'Book them a day off, 2026-09-18', decided_at: '2026-09-16', done: false },
+      { action_id: 'fix_addresses', note: 'Look at the addresses first', decided_at: '2026-09-15', done: true },
+      { action_id: 'set_return', note: 'Set an expected date, 2026-09-22', decided_at: '2026-09-14', done: true },
+      { action_id: 'ask_first', note: 'Write the question first', decided_at: '2026-09-12', done: true }
+    ],
+    say: '2 decisions made more than 7 days ago that nothing in the system can confirm happened.'
+  };
+
   var API = {
     NOW: NOW,
+    decisions: decisions,
     people: people,
     roster: roster,
     worth: worth,

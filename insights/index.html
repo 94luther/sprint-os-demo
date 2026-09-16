@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover">
 <script src="../shared/sprint-roles.js?v=daf3ad52"></script>
-<script src="../shared/sprint-example.js?v=0d8c9b07"></script>
+<script src="../shared/sprint-example.js?v=8105c041"></script>
 <link rel="stylesheet" href="../shared/sprint-allowed.css?v=c6953555">
 <link rel="stylesheet" href="../shared/sprint-view.css?v=4c6919d3">
 <script src="../shared/sprint-motion.js?v=9677b8ce" defer></script>
@@ -109,6 +109,17 @@ h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
 .didrow.skip .x::before{content:"SKIPPED ";font-weight:800;color:#FDBE74;letter-spacing:.4px;font-size:11px}
 .didrow .w{display:block;font-size:11px;color:#93A29B;margin-top:2px}
 .didfoot{font-size:11.2px;color:#93A29B;padding:10px 0 6px;line-height:1.4}
+/* The decision diary. Deliberately quieter than everything above it: the rows that
+   MATTER are the chases drawn as risk cards, and this is the receipt underneath. */
+.dlog{display:grid;gap:5px;margin:10px 0 8px}
+.drow{display:flex;align-items:center;gap:10px;padding:9px 12px;
+  background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.10);border-radius:13px}
+.drow i{width:9px;height:9px;border-radius:50%;flex:none}
+.drow i.ok{background:#3AAA35}
+.drow i.wait{background:#F7941D}
+.dwhat{flex:1;min-width:0;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dwhen{font-size:11.5px;color:#A7B5AE;font-weight:700;flex:none}
+
 /* The action buttons and the one sheet they all open. Forty four pixels of height
    on every one, because these are the most tapped controls on the page after the
    Copy buttons in Do this now. */
@@ -234,6 +245,13 @@ h2{font-size:12px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
        vehicles. This one is about the four people who actually move the work, and
        it sits directly under the money because that is the honest order of what
        this company is made of. -->
+  <!-- WHAT YOU DECIDED. It sits directly under Do this now, which is deliberate:
+       the band above asks you to do things and this one asks whether the things you
+       said you would do actually happened. Without it the page can nag forever and
+       never notice it has been obeyed, or ignored. -->
+  <h2>What you decided</h2>
+  <div id="decisions"></div>
+
   <h2>Your people</h2>
   <div id="people"></div>
 
@@ -320,7 +338,7 @@ function renderKnow(items){
 
 /* ---------- money, drawn as space ---------- */
 function renderMoney(){
-  try { drawPeople(); drawRoster(); drawWorth(); } catch (e) {}
+  try { drawDecisions(); drawPeople(); drawRoster(); drawWorth(); } catch (e) {}
   var root = document.getElementById('money'); root.innerHTML='';
   var owed = metric('money_owed');
   if (owed && owed.known) {
@@ -600,7 +618,7 @@ function openAction(a, finding, key) {
       } catch (e) {}
     }
     shut();
-    setTimeout(function () { try { drawPeople(); drawRoster(); drawWorth(); } catch (e) {} }, 220);
+    setTimeout(function () { try { drawDecisions(); drawPeople(); drawRoster(); drawWorth(); } catch (e) {} }, 220);
   });
 
   if (window.SprintReach) window.SprintReach.wire(sheet, { axis: 'y', close: shut });
@@ -629,6 +647,39 @@ document.addEventListener('click', function (ev) {
   if (!finding || !finding.actions || !finding.actions[idx]) return;
   openAction(finding.actions[idx], finding, key);
 });
+
+function drawDecisions() {
+  var box = document.getElementById('decisions');
+  var d = P('decisions');
+  if (!box) return;
+  if (!d || !d.known) {
+    box.innerHTML = '<div class="unknown"><b>Not known yet.</b> Nothing has been ' +
+      'decided on this console. The moment somebody presses a button on a finding, ' +
+      'it appears here.</div>';
+    return;
+  }
+  /* THE UNKEPT ONES GO FIRST and they are the whole reason this band exists. A list
+     of what somebody decided is a diary. A list of what they decided and did NOT do
+     is the only thing in this product that holds anybody to anything. */
+  var chase = drawExposures((d.unkept || []).map(function (u) {
+    return {
+      level: u.level, kind: 'unkept', who: u.decision_id,
+      say: u.say, why: u.why, do_this: u.do_this, actions: u.actions
+    };
+  }));
+
+  var hist = (d.history || []).length
+    ? '<div class="dlog">' + d.history.map(function (h) {
+        return '<div class="drow"><i class="' + (h.done ? 'ok' : 'wait') + '"></i>' +
+          '<span class="dwhat">' + esc(h.note || h.action_id) + '</span>' +
+          '<b class="dwhen">' + esc(h.decided_at) + '</b></div>';
+      }).join('') + '</div>'
+    : '';
+
+  box.innerHTML = chase + hist +
+    '<div class="basis">' + esc(d.say) + ' A decision that was carried out goes quiet. ' +
+    'One that did not comes back with the date you said it was handled.</div>';
+}
 
 function drawPeople() {
   var box = document.getElementById('people');
