@@ -177,7 +177,6 @@ section{margin-bottom:22px;}
 <div class="mapcard" id="mapcard">
   <div class="cap">Fleet, last known</div>
   <span class="pill quiet" id="map-pill">reading</span>
-  <svg id="map-svg" viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" aria-label="Where every vehicle last reported"></svg>
   <div class="legend"><span><i style="background:#3AAA35"></i>moving</span><span><i style="background:#F7941D"></i>standing</span><span><i style="background:#9DAAA4"></i>no signal or no trip</span><span><i style="background:#FF6B61"></i>in an incident</span></div>
   <div class="detail" id="map-detail"></div>
 </div>
@@ -215,6 +214,37 @@ const CACHE_KEY='sprintos_fleet_cache_v1';
 // response, and the numbers mirror what hub/db/seed.js's own EXAMPLE fleet
 // and fuel data actually produces, so this screen tells the same story
 // online or off.
+/* Positions for the example fleet, 16 Sep 2026. Checked against the drawn
+   outline before use: all four land inside Botswana.
+
+   These are read ONLY by loadFallback(), the path taken when there is no hub to
+   ask. On the office machine the hub answers and the real database is read, and
+   it still says honestly that no vehicle has ever reported a position. The demo
+   fills in; the office system keeps telling the truth. */
+const EXAMPLE_POSITIONS = {
+  'veh_example_1': { lat: -24.6282, lng: 25.9231, recorded_at: null, state: 'standing', standing_minutes: 47, driver: 'EXAMPLE Driver One' },
+  'veh_example_2': { lat: -21.1736, lng: 27.5125, recorded_at: null, state: 'moving', driver: 'EXAMPLE Driver Two' },
+  'veh_example_3': { lat: -19.9833, lng: 23.4167, recorded_at: null, state: 'moving', driver: 'EXAMPLE Driver Three' }
+};
+
+/* A week of a plausible operation, not random noise: heavy at the Gaborone
+   depot, a spur down the Lobatse road, and the long haul north. Random dots
+   would draw a pretty picture that means nothing, which is worse than an empty
+   map. Deterministic, so the demo looks the same every time it is opened. */
+function examplePositionTrail() {
+  var out = [], seed = 7;
+  function rnd() { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }
+  function spread(lat, lng, n, dLat, dLng) {
+    for (var i = 0; i < n; i++) out.push({ lat: lat + (rnd() - 0.5) * dLat, lng: lng + (rnd() - 0.5) * dLng });
+  }
+  spread(-24.6282, 25.9231, 620, 0.16, 0.16);   // the depot, where the hours really go
+  spread(-25.05, 25.80, 180, 0.34, 0.20);       // the Lobatse road
+  spread(-22.55, 27.13, 120, 1.10, 0.60);       // the run north through Palapye
+  spread(-21.1736, 27.5125, 90, 0.22, 0.22);    // Francistown
+  spread(-19.9833, 23.4167, 60, 0.20, 0.20);    // Maun
+  return out;
+}
+
 const EXAMPLE = {
   example: true,
   vehicles: [
@@ -301,6 +331,17 @@ function loadFallback(){
     try{ const parsed=JSON.parse(cached); DATA=Object.assign({live:false, cached:true}, parsed.data); SYNCED_AT=parsed.at; render(); return; }catch(e){}
   }
   DATA = Object.assign({}, EXAMPLE);
+  /* The example vehicles get their positions here rather than in the EXAMPLE
+     object itself, so it is obvious at a glance that this is the no hub path. */
+  DATA.vehicles = (EXAMPLE.vehicles || []).map(function (v) {
+    var p = EXAMPLE_POSITIONS[v.id];
+    if (!p) return v;
+    return Object.assign({}, v, {
+      state: p.state, standing_minutes: p.standing_minutes, driver: p.driver,
+      position: { lat: p.lat, lng: p.lng, recorded_at: p.recorded_at }
+    });
+  });
+  window.__fleetPositions = examplePositionTrail();
   SYNCED_AT = null;
   render();
 }
@@ -522,7 +563,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
 <script>
 
 /* ---------- Brick 56: where every vehicle is ---------- */
-var FLEET_LIVE_EXAMPLE = {"generated_at": "2026-09-12T21:21:24.000Z", "vehicles": [{"vehicle_id": "veh_example_3", "reg": "EXAMPLE-B789ABC", "type": "van (cold chain)", "state": "moving", "standing_minutes": 0, "position": {"lat": -24.05, "lng": 26.25, "accuracy_m": 12, "recorded_at": "2026-09-12T21:19:24.000Z", "age_minutes": 2}, "trip": {"id": "trp_example_2", "departed_at": "2026-09-12T18:11:24.000Z", "driver_name": "EXAMPLE Driver Two", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 145, "minutes_on_trip": 190, "deliveries_today": 2}, "documents": {"permit_expires_on": "2027-04-01", "insurance_expires_on": "2027-04-10", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": null, "last_odometer": 5000}, "note": null}, {"vehicle_id": "veh_example_2", "reg": "EXAMPLE-B456ABC", "type": "truck", "state": "standing", "standing_minutes": 32, "position": {"lat": -23.12, "lng": 26.8, "accuracy_m": 9, "recorded_at": "2026-09-12T21:20:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_example_5", "departed_at": "2026-09-12T17:41:24.000Z", "driver_name": "EXAMPLE Driver Three", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 95, "minutes_on_trip": 220, "deliveries_today": 3}, "documents": {"permit_expires_on": "2027-02-28", "insurance_expires_on": "2026-10-05", "roadworthy_expires_on": "2026-09-08", "service_due_at": null, "service_due_km": 69000, "last_odometer": 68720}, "note": null}, {"vehicle_id": "veh_example_1", "reg": "EXAMPLE-B123ABC", "type": "van", "state": "no_trip", "standing_minutes": null, "position": null, "trip": null, "utilisation_today": {"minutes_moving": 0, "minutes_on_trip": 0, "deliveries_today": 0}, "documents": {"permit_expires_on": "2027-03-31", "insurance_expires_on": "2027-01-15", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": 13500, "last_odometer": 12880}, "note": "No trip open, and no position ever recorded for this vehicle."}]};
+var FLEET_LIVE_EXAMPLE = {"generated_at": "2026-09-12T21:21:24.000Z", "vehicles": [{"vehicle_id": "veh_example_3", "reg": "EXAMPLE-B789ABC", "type": "van (cold chain)", "state": "moving", "standing_minutes": 0, "position": {"lat": -19.9833, "lng": 23.4167, "accuracy_m": 11, "recorded_at": "2026-09-12T21:21:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_veh_example_3", "departed_at": "2026-09-12T21:21:24.000Z", "driver_name": "EXAMPLE Driver Three", "route_label": "Francistown to Maun"}, "utilisation_today": {"minutes_moving": 145, "minutes_on_trip": 190, "deliveries_today": 2}, "documents": {"permit_expires_on": "2027-04-01", "insurance_expires_on": "2027-04-10", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": null, "last_odometer": 5000}, "note": null}, {"vehicle_id": "veh_example_2", "reg": "EXAMPLE-B456ABC", "type": "truck", "state": "moving", "standing_minutes": 0, "position": {"lat": -21.1736, "lng": 27.5125, "accuracy_m": 11, "recorded_at": "2026-09-12T21:21:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_veh_example_2", "departed_at": "2026-09-12T21:21:24.000Z", "driver_name": "EXAMPLE Driver Two", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 95, "minutes_on_trip": 220, "deliveries_today": 3}, "documents": {"permit_expires_on": "2027-02-28", "insurance_expires_on": "2026-10-05", "roadworthy_expires_on": "2026-09-08", "service_due_at": null, "service_due_km": 69000, "last_odometer": 68720}, "note": null}, {"vehicle_id": "veh_example_1", "reg": "EXAMPLE-B123ABC", "type": "van", "state": "standing", "standing_minutes": 47, "position": {"lat": -24.6282, "lng": 25.9231, "accuracy_m": 11, "recorded_at": "2026-09-12T21:21:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_veh_example_1", "departed_at": "2026-09-12T21:21:24.000Z", "driver_name": "EXAMPLE Driver One", "route_label": "Gaborone depot"}, "utilisation_today": {"minutes_moving": 0, "minutes_on_trip": 0, "deliveries_today": 0}, "documents": {"permit_expires_on": "2027-03-31", "insurance_expires_on": "2027-01-15", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": 13500, "last_odometer": 12880}, "note": null}, {"vehicle_id": "veh_example_4", "reg": "EXAMPLE-B321ABC", "type": "van", "state": "standing", "standing_minutes": 18, "position": {"lat": -22.55, "lng": 27.1333, "accuracy_m": 14, "recorded_at": "2026-09-12T21:21:24.000Z", "age_minutes": 2}, "trip": {"id": "trp_example_4", "departed_at": "2026-09-12T21:21:24.000Z", "driver_name": "EXAMPLE Driver Four", "route_label": "Palapye run"}, "utilisation_today": {"minutes_moving": 120, "minutes_on_trip": 168, "deliveries_today": 4}, "documents": {"permit_expires_on": "2027-01-20", "insurance_expires_on": "2026-11-02", "roadworthy_expires_on": "2027-03-14", "service_due_at": null, "service_due_km": 42000, "last_odometer": 40180}, "note": null}, {"vehicle_id": "veh_example_5", "reg": "EXAMPLE-B654ABC", "type": "van", "state": "no_trip", "standing_minutes": null, "position": null, "trip": null, "utilisation_today": {"minutes_moving": 0, "minutes_on_trip": 0, "deliveries_today": 0}, "documents": {"permit_expires_on": "2027-05-30", "insurance_expires_on": "2027-02-11", "roadworthy_expires_on": "2026-10-22", "service_due_at": null, "service_due_km": 21000, "last_odometer": 19440}, "note": "No trip open, and no position ever recorded for this vehicle."}]};
 // TODO(human): the two numbers that turn a fact into a worry. A vehicle standing
 // longer than standing_min is drawn as the orange item on its card; a trip with
 // no signal longer than quiet_min likewise. expiry_days is how far ahead the
@@ -625,48 +666,36 @@ function fleetFocus(id){
   var mc = document.getElementById('mapcard'); if (mc && mc.scrollIntoView) mc.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function renderMap(payload, isLive){
-  var svg = document.getElementById('map-svg'); if (!svg) return;
-  while (svg.firstChild) svg.removeChild(svg.firstChild);
-  var pts = MAP_TOWNS.map(function(t){ return mapXY(t.lat, t.lng); });
-  var d = 'M ' + pts[0].x + ' ' + pts[0].y + ' C ' + (pts[0].x + 70) + ' ' + (pts[0].y - 20) + ', ' + (pts[1].x - 60) + ' ' + (pts[1].y + 30) + ', ' + pts[1].x + ' ' + pts[1].y +
-          ' S ' + (pts[2].x - 30) + ' ' + (pts[2].y + 10) + ', ' + pts[2].x + ' ' + pts[2].y + ' S ' + (pts[3].x - 40) + ' ' + (pts[3].y + 20) + ', ' + pts[3].x + ' ' + pts[3].y;
-  svg.appendChild(mapEl('path', { d: d, fill: 'none', stroke: 'rgba(255,255,255,.28)', 'stroke-width': 5, 'stroke-linecap': 'round' }));
-  svg.appendChild(mapEl('path', { d: 'M ' + (pts[0].x + 10) + ' ' + (pts[0].y - 6) + ' q 60 -70 150 -60', fill: 'none', stroke: 'rgba(255,255,255,.12)', 'stroke-width': 3, 'stroke-linecap': 'round' }));
-  svg.appendChild(mapEl('path', { d: 'M ' + pts[1].x + ' ' + pts[1].y + ' q 40 60 120 50', fill: 'none', stroke: 'rgba(255,255,255,.12)', 'stroke-width': 3, 'stroke-linecap': 'round' }));
-  MAP_TOWNS.forEach(function(t, i){
-    var p = pts[i];
-    svg.appendChild(mapEl('circle', { cx: p.x, cy: p.y, r: 4, fill: '#C9D6CF' }));
-    svg.appendChild(mapEl('text', { x: p.x, y: p.y - 10, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 700, fill: '#C9D6CF' }, t.n));
-  });
+  /* 16 Sep 2026: this drew a 600 by 230 strip covering longitude 25.55 to 27.85,
+     the Gaborone to Francistown corridor, with four towns and no country outline.
+     Maun sits at 23.4 and fell off the left edge; Kasane was never on it. The
+     page had a map of one road, which is exactly why it did not look like a map
+     of Botswana. It now draws the whole country from shared/sprint-map.js, which
+     is geometry in a file rather than tiles fetched from anybody. */
   var vehicles = (payload && payload.vehicles) || [];
-  var moving = 0, parked = 0, depot = pts[0];
-  vehicles.forEach(function(v){
-    var col = v.state === 'moving' ? '#3AAA35' : v.state === 'standing' ? '#F7941D' : v.state === 'incident' ? '#FF6B61' : '#9DAAA4';
-    var at;
-    if (v.position && typeof v.position.lat === 'number') at = mapXY(v.position.lat, v.position.lng);
-    else { at = { x: depot.x + 22 + parked * 20, y: depot.y + 18 }; parked++; }
-    if (v.state === 'moving') moving++;
-    // The vehicle on the MD's car tracker is what she taps. The dot stays small so the map
-    // reads, but a clear circle behind it is the real target: r 40 in a 600 wide viewBox is
-    // about 44 px across on a phone. role=button lets hub/tests/touch-targets measure it.
-    var g = mapEl('g', { class: 'mapdot', role: 'button', tabindex: '0',
-                         'aria-label': (v.reg || 'vehicle').replace('EXAMPLE-', 'EX ') + ', ' + (v.state || '') });
-    g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 40, fill: 'rgba(0,0,0,0.001)' }));
-    if (v.state === 'moving') g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 14, fill: 'rgba(58,170,53,.25)' }));
-    g.appendChild(mapEl('circle', { cx: at.x, cy: at.y, r: 8, fill: col, stroke: 'rgba(8,28,20,.8)', 'stroke-width': 2 }));
-    g.appendChild(mapEl('text', { x: at.x, y: at.y + 20, 'text-anchor': 'middle' }, (v.reg || '').replace('EXAMPLE-', 'EX ')));
-    g.addEventListener('click', function(){ showMapDetail(v); });
-    g.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMapDetail(v); } });
-    svg.appendChild(g);
-  });
-  var pill = document.getElementById('map-pill');
-  if (pill) {
-    if (!vehicles.length) { pill.textContent = 'no vehicles yet'; pill.className = 'pill quiet'; }
-    else if (moving) { pill.textContent = moving + ' in transit'; pill.className = 'pill'; }
-    else { pill.textContent = 'nothing moving'; pill.className = 'pill quiet'; }
+  var box = document.getElementById('fleet-map');
+  if (!box || !window.SprintMap) return;
+
+  /* With no hub this is the example week; on the office system it becomes the
+     real position history, and the same code draws it. */
+  if (!isLive && !window.__fleetPositions && typeof examplePositionTrail === 'function') {
+    window.__fleetPositions = examplePositionTrail();
   }
-  var cap = document.querySelector('#mapcard .cap');
-  if (cap) cap.textContent = isLive ? 'Fleet, live' : 'Fleet, example';
+  var heatOn = box.getAttribute('data-heat') === 'on';
+  var trail = window.__fleetPositions || [];
+  box.innerHTML = window.SprintMap.draw(vehicles, heatOn ? { heat: trail } : {});
+
+  var hNote = document.getElementById('fleet-heat-note');
+  if (hNote) hNote.textContent = (heatOn && trail.length) ? window.SprintMap.heat(trail).say : '';
+
+  /* Anything worth interrupting somebody about, in words, with its own threshold
+     stated so a number that feels wrong can be argued with rather than believed. */
+  var raised = window.SprintMap.alerts(vehicles);
+  if (raised.length) {
+    box.insertAdjacentHTML('beforeend', '<div class="fleet-live-note">' + raised.map(function (a) {
+      return '<div><b>' + a.say + '</b> ' + a.why + '</div>';
+    }).join('') + '</div>');
+  }
 }
 function showMapDetail(v){
   var el = document.getElementById('map-detail'); if (!el) return;
@@ -676,6 +705,9 @@ function showMapDetail(v){
 }
 function renderFleetLive(payload, isLive){
   FLEET_LIVE_LAST = payload;
+  /* So the heat toggle can redraw the map by itself, with no reload and
+     without touching anything else on the page. */
+  window.__fleetRedraw = function(){ try { renderMap(payload, isLive); } catch (e) {} };
   renderMap(payload, isLive);
   var vehicles = (payload && payload.vehicles) || [];
   var counts = { moving: 0, standing: 0, incident: 0, quiet: 0 };
@@ -693,26 +725,6 @@ function renderFleetLive(payload, isLive){
     var order = { incident: 0, standing: 1, moving: 2, quiet: 3 };
     var sorted = vehicles.slice().sort(function(a, b){ return order[dotClass(a)] - order[dotClass(b)]; });
     list.innerHTML = sorted.length ? sorted.map(vehicleCard).join('') : '<div class="empty-note">No vehicles recorded on the hub yet.</div>';
-  }
-  /* THE MAP. Drawn from the same vehicles the list below is drawn from, so the
-     two can never disagree, which is the lesson from the tender dates applied
-     before it could bite here. */
-  var mapBox = document.getElementById('fleet-map');
-  if (mapBox && window.SprintMap) {
-    var heatOn = mapBox.getAttribute('data-heat') === 'on';
-    var trail = (window.__fleetPositions || []).filter(Boolean);
-    mapBox.innerHTML = window.SprintMap.draw(vehicles, heatOn ? { heat: trail } : {});
-    var hNote = document.getElementById('fleet-heat-note');
-    if (hNote) hNote.textContent = heatOn ? window.SprintMap.heat(trail).say : '';
-    /* Anything worth interrupting somebody about, said in words, with the
-       threshold stated so a number that feels wrong can be argued with. */
-    var raised = window.SprintMap.alerts(vehicles);
-    if (raised.length) {
-      mapBox.insertAdjacentHTML('beforeend',
-        '<div class="fleet-live-note">' + raised.map(function (a) {
-          return '<div><b>' + a.say + '</b> ' + a.why + '</div>';
-        }).join('') + '</div>');
-    }
   }
   var note = document.getElementById('fleet-live-note');
   if (note) note.textContent = isLive ? 'Positions come from the driver app every minute while a trip is open. A vehicle with no driver app on board cannot appear here.' : 'Example fleet. On the office system this reads the drivers\u2019 phones every minute while their trips are open.';
@@ -733,7 +745,14 @@ function renderFleetLive(payload, isLive){
 </script>
 <script src="../shared/sprint-notify.js?v=c8c7be6b"></script>
 <script src="../shared/sprint-patterns.js?v=32067fd0"></script>
-<script src="../shared/sprint-chrome.js?v=955d59ff">
+<script src="../shared/sprint-chrome.js?v=955d59ff"></script>
+
+<script>
+/* Its own tag, on purpose. This was first written inside
+   <script src="../shared/sprint-chrome.js?v=955d59ff">, and a script tag carrying a src
+   attribute IGNORES its inline content completely, so the toggle was dead on
+   the page while looking perfectly correct in the file. Clicking it did
+   nothing and the text never changed, which is how it was caught. */
 /* The heat toggle. Off by default: heat is a question somebody chooses to ask,
    not the first thing an ops person should see when a vehicle is standing. */
 (function () {
