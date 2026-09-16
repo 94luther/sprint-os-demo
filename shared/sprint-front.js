@@ -88,20 +88,7 @@
     '.filters button.on{background:#fff;color:#0E2F22;border-color:#fff}' +
     '.filters button b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--orange,#F7941D);color:#0E2F22;font-size:11px}' +
     /* the feed */
-        /* A TIMELINE, NOT A STACK OF CARDS.
-
-       The rows were correct and read as a wall: same size, same spacing, no sense
-       that one thing happened after another. A single grey line down the left, with
-       each avatar sitting ON it, turns a list into a heartbeat, and it costs one
-       pseudo element and no markup at all.
-
-       The line stops short at the top and bottom so it does not look like it runs
-       off the page into something that is not there. */
-    '.feed{display:flex;flex-direction:column;gap:14px;position:relative}' +
-    '.feed::before{content:"";position:absolute;left:31px;top:14px;bottom:14px;width:2px;' +
-      'background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.18) 8%,' +
-      'rgba(255,255,255,.18) 92%,rgba(255,255,255,0));pointer-events:none}' +
-    '.feed .fi{position:relative}' +
+        '.feed{display:flex;flex-direction:column;gap:10px}' +
     '.fi{display:flex;gap:12px;align-items:flex-start;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.22);border-radius:22px;padding:12px 14px;' +
       'backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 54px -24px rgba(0,0,0,.65);min-height:64px}' +
     /* Brick 95: an urgent row must not depend on colour. Red washes out in

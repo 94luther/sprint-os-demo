@@ -48,12 +48,7 @@ a{color:inherit;text-decoration:none}
 .hello{display:flex;align-items:center;gap:12px;padding:22px 0 8px}
 .avatar{width:46px;height:46px;border-radius:50%;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}
 .avatar img{width:30px;height:30px;object-fit:contain}
-/* THE GREETING, LOCKED. The greeting and the date were two block elements in a box
-   that only knew how to be one column wide, so Wednesday September 17th pushed the
-   whole header about while Monday the 1st did not. A flex column holds it whatever
-   the day is called, and the gap keeps the two lines tight rather than floating. */
-.hello .t{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;
-  align-items:flex-start;gap:2px}
+.hello .t{flex:1;min-width:0}
 .hello .t small{display:block;font-size:12.5px;color:var(--ink-3);font-weight:600}
 .hello .t b{display:block;font-size:19px;font-weight:800;letter-spacing:-.2px}
 .bell{width:42px;height:42px;border-radius:50%;background:rgba(8,28,20,.40);border:2px solid rgba(255,255,255,.26);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;flex:none;position:relative}
@@ -64,20 +59,6 @@ a{color:inherit;text-decoration:none}
   display:block;margin-top:12px;border-radius:28px;padding:22px 20px 20px;position:relative;overflow:hidden;
   background:linear-gradient(135deg,rgba(20,70,45,.58),rgba(42,140,60,.42) 60%,rgba(70,190,90,.34));backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);border:2px solid rgba(255,255,255,.18);box-shadow:var(--shadow-lg);color:#fff;
 }
-/* THE ONE CARD THAT SHOULD PULL THE EYE. It was a flat orange on dark green and it
-   sank into the page. Two changes, both cheap: a gradient, because a flat fill reads
-   as paper and a gradient reads as a lit surface; and a shadow in the card's OWN
-   colour rather than black, which is what makes something look like it is glowing
-   instead of like it is casting. The shadow is on the static card and never
-   animates, so it is painted once. */
-.hero{background:linear-gradient(135deg,#FF7A00 0%,#FF5200 100%) !important;
-  box-shadow:0 8px 20px rgba(255,82,0,.35),0 22px 54px -24px rgba(0,0,0,.55) !important;
-  border:none !important;color:#fff}
-.hero .eyebrow,.hero h1,.hero p,.hero .cta{color:#fff}
-.hero .eyebrow{opacity:.92}
-.hero p{opacity:.95}
-html[data-glare="on"] .hero{background:#D64500 !important;box-shadow:none !important}
-
 /* Brick 101, corrected 16 Sep 2026: the shapes behind the morning card.
 
    They were on 34 and 47 second loops, which is slower than a minute hand moves
@@ -260,7 +241,7 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:168px;point
 .hello .pills.under .pill.mode{background:#fff;color:#0E2F22}
 .hello .pills.under .pill.when{background:rgba(255,255,255,.12);color:#D9E3DE}
 .hello .t{min-width:0}
-.hello .t b{font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hello .t b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hello .t small{white-space:nowrap}
 
 .hello .avatar{display:none}
@@ -374,25 +355,6 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
   html:not([data-glare="off"]) .hero p,
   html:not([data-glare="off"]) .note{color:#EAF3EE;font-weight:700}
 }
-
-/* The money bar. Two quantities drawn against each other, never two chips. */
-.moneybar{display:block;text-decoration:none;color:inherit;margin:0 0 14px;
-  padding:14px 16px;border-radius:22px;background:rgba(8,28,20,.40);
-  border:2px solid rgba(255,255,255,.22);
-  backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
-.moneybar .mh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
-.moneybar .mh b{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#A7B5AE}
-.moneybar .mh i{font-style:normal;font-size:11.5px;color:#A7B5AE}
-.mrow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin-bottom:9px}
-.mrow:last-of-type{margin-bottom:0}
-.mrow .k{font-size:12.5px;color:#D9E3DE}
-.mrow .v{font-size:15px;font-weight:800;text-align:right}
-.mrow .bar{grid-column:1 / -1;height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
-.mrow .bar i{display:block;height:100%;border-radius:99px}
-.mrow.in .bar i{background:#3AAA35}
-.mrow.owed .bar i{background:#F7941D}
-.mrow.over .bar i{background:#E0483E}
-html[data-glare="on"] .moneybar{background:#123723;backdrop-filter:none;-webkit-backdrop-filter:none}
 
 /* SETTINGS, the sheet behind the greeting.
 
@@ -569,14 +531,6 @@ body::before{
     <span class="cta"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg></span>Open Insights<span class="arr">&rsaquo;&rsaquo;&rsaquo;</span></span>
   </a>
 
-  <!-- THE MONEY, WITHOUT A SECOND TAP.
-
-       It was behind a tile behind a section. An owner opening this once in the
-       morning should not have to hunt for whether the company made money, so the two
-       figures that answer that are here, drawn against each other rather than
-       listed: what came in, and what is still owed. The bar IS the quantity. -->
-  <a class="moneybar" href="accounts/index.html" id="moneyBar" aria-label="Money, open accounts"></a>
-
   <!-- Brick 93: the rail, the filters and the feed land here. The box carries its
        own height so nothing below it moves when they do. -->
   <div id="front" aria-live="polite"></div>
@@ -638,7 +592,7 @@ body::before{
   <a href="fleet/index.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>Fleet</a>
   <a class="plus" id="report" href="incidents/index.html" aria-label="Report something" title="Report something"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></a>
   <a href="insights/index.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="3.5"/></svg>Insights</a>
-  <a href="accounts/index.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v12H3z"/><path d="M3 11h18"/><circle cx="8" cy="15" r="1.4"/></svg>Money</a>
+  <a href="cockpit/index.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a8 8 0 1 1 16 0"/><path d="M12 14l4-4"/></svg>Cockpit</a>
 </div></nav>
 
 <script>
@@ -764,47 +718,6 @@ body::before{
 // still gets everything else on this page.
 (function () {
   'use strict';
-  /* THE MONEY BAR. Reads the one set of shared facts, so it can never disagree with
-     the Accounts screen it links to. That disagreement is exactly what four screens
-     were doing about this number until tonight. */
-  /* IT HAS TO WAIT FOR THE FACTS.
-
-     This block runs while the page is still being parsed and the shared facts file
-     is loaded near the bottom, so window.SprintExample did not exist yet and the bar
-     drew nothing at all. It looked exactly like a money bar with no money in it,
-     which is the most misleading possible failure for this particular widget.
-
-     Moving the script tag would have been the other fix, and it is the wrong one:
-     two existing tests police where that file loads and why. Waiting is correct and
-     costs nothing, because the bar is below the fold anyway. */
-  function drawMoney() {
-    var el = document.getElementById('moneyBar');
-    var c = window.SprintExample && window.SprintExample.cash;
-    if (el && c) {
-      var pula = function (t) {
-        return 'P' + (Math.round(Number(t) || 0) / 100).toFixed(2)
-          .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-      };
-      var top = Math.max(c.paid_30d_thebe || 0, c.owed_thebe || 0, 1);
-      var w = function (v) { return Math.max(4, Math.round((v || 0) / top * 100)); };
-      el.innerHTML =
-        '<div class="mh"><b>Money</b><i>last 30 days, tap for the detail</i></div>' +
-        '<div class="mrow in"><span class="k">Came in</span>' +
-          '<span class="v">' + pula(c.paid_30d_thebe) + '</span>' +
-          '<span class="bar"><i style="width:' + w(c.paid_30d_thebe) + '%"></i></span></div>' +
-        '<div class="mrow owed"><span class="k">Still owed to Sprint</span>' +
-          '<span class="v">' + pula(c.owed_thebe) + '</span>' +
-          '<span class="bar"><i style="width:' + w(c.owed_thebe) + '%"></i></span></div>' +
-        '<div class="mrow over"><span class="k">Of that, past its due date</span>' +
-          '<span class="v">' + pula(c.overdue_thebe) + '</span>' +
-          '<span class="bar"><i style="width:' + w(c.overdue_thebe) + '%"></i></span></div>';
-    }
-  }
-  try {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', drawMoney);
-    } else { drawMoney(); }
-  } catch (e) {}
   try {
     /* The high contrast switch moved into Settings on 16 September. It used to sit
        in the header beside the wordmark, and Luther's question was the right one:
@@ -846,6 +759,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
 <script src="shared/sprint-find.js?v=ecc99b39"></script>
 <script src="shared/sprint-example.js?v=fcb344f6"></script>
-<script src="shared/sprint-front.js?v=bc1c0502"></script>
+<script src="shared/sprint-front.js?v=209875d0"></script>
 </body>
 </html>
