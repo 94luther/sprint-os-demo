@@ -373,6 +373,81 @@ html[data-glare="on"] .glare-toggle svg{stroke:#FFA733}
   box-shadow:0 16px 34px -10px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .find-fab:active{transform:scale(.94)}
 html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
+
+/* THE GREETING IS THE HEADER NOW. 16 Sep 2026, Luther and Sam.
+
+   Sticky, 10 px down from the top rather than flush against it, so it reads as
+   a card floating over the page rather than something jammed into the edge of
+   the screen. It carries the logo, the greeting, the mode and the bell, which
+   is everything the removed top bar was holding plus the controls it never had. */
+.hello{
+  position:sticky;
+  top:calc(env(safe-area-inset-top,0px) + 10px);
+  z-index:40;
+  isolation:isolate;
+  gap:10px;
+  padding:8px 12px 8px 0 !important;
+  margin:calc(env(safe-area-inset-top,0px) + 10px) -4px 12px;
+  border-radius:26px;
+  border:2px solid rgba(255,255,255,.26);
+  background:rgba(8,28,20,.52);
+  backdrop-filter:blur(22px) saturate(150%);
+  -webkit-backdrop-filter:blur(22px) saturate(150%);
+  box-shadow:0 18px 40px -16px rgba(0,0,0,.6);
+  overflow:hidden}
+
+/* The wordmark, full bleed: it touches the top and bottom of the header rather
+   than floating inside padding. */
+.brandmark{
+  position:relative;
+  align-self:stretch;
+  flex:none;
+  display:flex;
+  align-items:center;
+  padding-left:14px;
+  margin:-8px 0;
+  overflow:hidden}
+.brandmark img{
+  position:relative;
+  z-index:1;
+  height:100%;
+  width:auto;
+  max-height:46px;
+  object-fit:contain;
+  object-position:left center;
+  display:block}
+
+/* Sam's gradient, and it is the right fix for a real problem. The wordmark
+   carries 616 opaque white pixels between its letters, measured from the file.
+   On a dark card those read as holes. A white wash behind the mark gives them
+   something to belong to: the white stops being a gap and becomes part of a lit
+   surface. Left to right, not top to bottom, because the wordmark is a
+   horizontal object: light across it is a sheen, light down it is a fold. */
+.brandmark::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  background:linear-gradient(90deg,
+    rgba(255,255,255,.30) 0%,
+    rgba(255,255,255,.17) 42%,
+    rgba(255,255,255,.05) 74%,
+    rgba(255,255,255,0) 100%);
+  pointer-events:none}
+
+/* The feather at the top, the same one as the bottom, mirrored. There was a
+   blur up here but no fade, so content met the header at a hard line: the same
+   fault Sam caught at the bottom of the page. */
+body::before{
+  content:"";
+  position:fixed;left:0;right:0;top:0;
+  height:calc(env(safe-area-inset-top,0px) + 96px);
+  pointer-events:none;z-index:14;
+  backdrop-filter:blur(6px) saturate(125%);
+  -webkit-backdrop-filter:blur(6px) saturate(125%);
+  -webkit-mask-image:linear-gradient(to top,transparent 0%,rgba(0,0,0,.10) 34%,rgba(0,0,0,.34) 58%,rgba(0,0,0,.72) 80%,#000 100%);
+  mask-image:linear-gradient(to top,transparent 0%,rgba(0,0,0,.10) 34%,rgba(0,0,0,.34) 58%,rgba(0,0,0,.72) 80%,#000 100%);
+  background:linear-gradient(to top,rgba(11,61,46,0),rgba(11,61,46,.16) 55%,rgba(11,61,46,.46))}
 </style>
 <!-- Brick 81: loaded here, blocking, before <body> exists, so data-role is
      already correct on <html> before the tiles below are ever parsed. See
@@ -417,9 +492,9 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
 <body>
 <div class="wrap">
   <div class="hello">
-    <div class="avatar"><img src="shared/logo-mark.png" alt=""></div>
+    <div class="brandmark"><img src="shared/logo-mark.png" alt="Sprint Couriers"></div>
     <div class="t" id="hello" role="button" title="Tap to tell the app your name"><small id="greet">Good morning</small><b id="today">Sprint Couriers</b></div>
-    <div class="pills under"><span class="pill when" id="topWhen">example</span><span class="pill mode" id="topMode">EXAMPLE</span></div>
+    <div class="pills under"><span class="pill mode" id="topMode">EXAMPLE</span></div>
     <div class="bell" id="bell" role="button" title="What needs you"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><i></i></div>
     <button type="button" class="glare-toggle" id="glareToggle" aria-pressed="false" title="Switch to high contrast for bright sun"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v3M12 18.5v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2.5 12h3M18.5 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
   </div>
