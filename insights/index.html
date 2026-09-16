@@ -633,7 +633,17 @@ document.addEventListener('click', function (ev) {
   var card = b.closest('.expo');
   var key = b.getAttribute('data-key');
   var idx = Number(b.getAttribute('data-act'));
+  /* The decision chases have to be in here too. They are drawn by the same card
+     renderer as every other finding, so their buttons look identical, and for one
+     build they did nothing at all: this lookup only searched people, roster and
+     worth, found nothing, and returned before opening the sheet. Caught by pressing
+     the button on the live page rather than by reading the code. */
+  var chases = ((P('decisions') && P('decisions').unkept) || []).map(function (u) {
+    return { kind: 'unkept', who: u.decision_id, say: u.say, why: u.why,
+             do_this: u.do_this, actions: u.actions };
+  });
   var all = [].concat(
+    chases,
     (P('people') && P('people').exposures) || [],
     (P('roster') && P('roster').findings) || [],
     (P('worth') && P('worth').findings) || []
