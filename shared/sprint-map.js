@@ -315,35 +315,32 @@
       s.push(heat(opts.heat, opts).svg);
     }
 
-    /* THE COUNTRY, DRAWN AS A SURFACE RATHER THAN AN OUTLINE.
+    /* THE COUNTRY, FLAT, AND NOT GREEN. Rewritten the same night it was built.
 
-       The old version was a five per cent white fill and a hairline, which is how
-       you draw a shape when you are not sure it is right. It read as a diagram of
-       a country. Now that the boundary is the real one it can be lit like a piece
-       of land: a gradient that is warmer in the populated south east and colder in
-       the Kalahari, a soft edge light where it meets the card, and a shadow
-       underneath so it SITS on the card instead of being printed on it.
+       The first version lit the land like a surface: a green gradient, an edge
+       light and a drop shadow so it sat on the card. Gemini took it apart in one
+       line and was right twice.
 
-       One filter, applied once, to one path. A filter is painted on the processor,
-       so it is affordable exactly once and never on anything that moves. The
-       vehicle pulse below uses transform only, for the same reason. */
-    s.push('<defs>' +
-      '<linearGradient id="spLand" x1="0" y1="0" x2="0.4" y2="1">' +
-        '<stop offset="0" stop-color="#1B4B36" stop-opacity=".92"/>' +
-        '<stop offset="0.55" stop-color="#153D2C" stop-opacity=".92"/>' +
-        '<stop offset="1" stop-color="#1E5540" stop-opacity=".95"/>' +
-      '</linearGradient>' +
-      '<filter id="spLift" x="-12%" y="-12%" width="124%" height="124%">' +
-        '<feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity=".45"/>' +
-      '</filter>' +
-      '</defs>');
+       COLOUR FIRST, because it was not a taste problem, it was an operational one:
+       "On a phone screen in the African sun, contrast drops to near zero. Your
+       moving vehicles are actively camouflaged against the country. Furthermore,
+       your standing vehicles are orange, and your main road is orange. A standing
+       vehicle on the main road will vanish entirely."
 
+       That is the whole job of this screen failing. A vehicle that has been
+       standing on the A1 for forty minutes is EXACTLY the thing she opened the app
+       to find, and it was the one thing the palette hid. So the land is now a
+       muted slate, which is nobody's alert colour, and green and orange belong to
+       the vehicles alone. The road is a thin pale line, not orange.
+
+       THEN THE DECORATION: "This is exactly what makes it look amateur.
+       Professional data visualization is flat. If the rule is informs or goes, the
+       gradient and shadow must go. They provide zero telemetry." Gone. The shadow
+       was costing something real as well: an SVG filter is rasterised every time
+       the map redraws, and this map redraws whenever a vehicle moves. */
     var path = outlinePath();
-    s.push('<path d="' + path + '" fill="url(#spLand)" filter="url(#spLift)"/>');
-    /* the edge light: a second stroke of the same path, brighter than the fill,
-       so the coastline of a landlocked country still catches something */
-    s.push('<path d="' + path + '" fill="none" stroke="rgba(180,230,200,.55)" ' +
-      'stroke-width="1.6" stroke-linejoin="round"/>');
+    s.push('<path d="' + path + '" fill="#2A3138" fill-opacity=".92" ' +
+      'stroke="rgba(190,205,215,.42)" stroke-width="1.4" stroke-linejoin="round"/>');
 
     /* THE A1. It is one road and it carries most of this business: Lobatse up
        through Gaborone, Palapye and Francistown to Kasane. A map of Botswana with
@@ -354,10 +351,8 @@
       var road = A1.map(function (c, i) {
         return (i ? 'L' : 'M') + x(c[0]).toFixed(1) + ' ' + y(c[1]).toFixed(1);
       }).join(' ');
-      s.push('<path d="' + road + '" fill="none" stroke="rgba(247,148,29,.30)" ' +
-        'stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>');
-      s.push('<path d="' + road + '" fill="none" stroke="rgba(247,148,29,.75)" ' +
-        'stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>');
+      s.push('<path d="' + road + '" fill="none" stroke="rgba(226,236,244,.50)" ' +
+        'stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>');
     }
 
     /* Towns, all twelve named now rather than three. A dot with no name is not a
@@ -426,7 +421,7 @@
         '"' + (right ? ' text-anchor="end"' : '') +
         ' font-size="' + size + '" font-weight="' + (t.big ? '700' : '500') +
         '" fill="rgba(233,245,238,' + (t.big ? '.88' : '.58') + ')" ' +
-        'stroke="rgba(6,24,16,.85)" stroke-width="2.4" paint-order="stroke" ' +
+        'stroke="rgba(10,14,18,.88)" stroke-width="2.4" paint-order="stroke" ' +
         'stroke-linejoin="round">' + esc(t.n) + '</text>');
     });
 
@@ -453,11 +448,11 @@
       var anchor = vr ? ' text-anchor="end"' : '';
       s.push('<text x="' + vlx + '" y="' + (vy - 7).toFixed(1) + '"' + anchor +
         ' font-size="9" font-weight="700" fill="#fff" ' +
-        'stroke="rgba(6,24,16,.88)" stroke-width="2.6" paint-order="stroke" ' +
+        'stroke="rgba(10,14,18,.90)" stroke-width="2.6" paint-order="stroke" ' +
         'stroke-linejoin="round">' + esc(v.reg) + '</text>');
       s.push('<text x="' + vlx + '" y="' + (vy + 3.5).toFixed(1) + '"' + anchor +
         ' font-size="7.6" font-weight="700" fill="' + col + '" ' +
-        'stroke="rgba(6,24,16,.88)" stroke-width="2.4" paint-order="stroke" ' +
+        'stroke="rgba(10,14,18,.90)" stroke-width="2.4" paint-order="stroke" ' +
         'stroke-linejoin="round">' +
         esc((STATE_WORD[v.state] || v.state || 'not reporting').toUpperCase()) +
         (v.standing_minutes ? ' ' + v.standing_minutes + 'm' : '') + '</text>');

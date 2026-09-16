@@ -728,6 +728,15 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
     h.push('</div></section>');
     return h.join('');
   }
+  /* Hide the red alert for THIS pair of hands only. Nothing reaches the hub,
+     because nothing has been decided, and the next refresh brings it straight
+     back. See the button that calls it for why it exists. */
+  function triStepAway(){
+    var el = document.getElementById('redAlert');
+    if (el) el.style.display = 'none';
+  }
+  window.triStepAway = triStepAway;
+
   function redAlertHtml(){
     var T = TRIAGE; if (!T) return '';
     var open = T.level3.filter(function(i){ return !i.acknowledged_at; });
@@ -760,6 +769,19 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
              '<button class="ack" style="margin:0" onclick="triAssist(\'' + i.id + '\',\'ping\')">Ping whoever it is with, and show me their number</button>' +
              (p.pin ? '<a class="ack" style="margin:0;display:block;text-align:center;line-height:58px;text-decoration:none" href="../fleet/index.html">See where the vehicle was last</a>' : '') +
              '<button class="ack" style="margin:0" onclick="triAssist(\'' + i.id + '\',\'note\')">Write down what I know</button>' +
+             /* A PERSON WHO CANNOT ACKNOWLEDGE MUST STILL BE ABLE TO PUT IT DOWN.
+                A guard went looking for a way out of every full screen overlay in
+                the app and found this one had none for anybody below a manager.
+                Somebody who opened it was held on a red screen with no route back
+                to their work, and that is not urgency, it is a trap. The next
+                thing a person does with a trap is force quit the application, and
+                then they see nothing at all.
+                This does NOT acknowledge and does NOT clear anything. The alert
+                stays open, the ladder keeps climbing to the next name, and it is
+                back on the next refresh. It lets one pair of hands go back to
+                work, and the button says exactly that so nobody can mistake it
+                for having dealt with the thing. */
+             '<button class="ack" style="margin:0;background:rgba(255,255,255,.14);color:#fff" onclick="triStepAway()">Put this down. It stays open for the Ops Manager.</button>' +
              '</div>') +
       (open.length > 1 ? '<div class="who">' + (open.length - 1) + ' more red alert' + (open.length > 2 ? 's' : '') + ' behind this one.</div>' : '') +
       '</div></div>';
@@ -808,5 +830,6 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js?v=de92
 </script>
 <script src="../shared/sprint-example.js?v=be27bd61"></script>
 <script src="../shared/sprint-horizon.js?v=744eaf6e"></script>
+<script src="../shared/sprint-reach.js?v=f4d04a26"></script>
 </body>
 </html>
