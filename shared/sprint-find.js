@@ -108,6 +108,50 @@
     var timer = null;
     input.addEventListener('input', function(){ clearTimeout(timer); timer = setTimeout(run, 320); });
     input.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); if (e.key === 'Enter') { clearTimeout(timer); run(); } });
+
+    /* SWIPE DOWN TO CLOSE. Luther, on the phone: "It doesn't close when I try to
+       close it."
+
+       Three ways out already existed and every one of them is a THUMB PROBLEM on
+       a phone. The X sits at the top of a full height sheet, which is the one
+       place a thumb cannot reach. The backdrop tap needs a gap around the sheet,
+       and the sheet covers the screen. Escape was bound to the INPUT, and a phone
+       has no escape key at all. So on a desktop it closed three ways and on the
+       device he was holding it closed none.
+
+       Down is the gesture every phone already teaches. The only real trap is that
+       a downward drag inside a scrolled list must SCROLL, not close, so this only
+       arms when the results are already at the top.
+
+       90 px is the threshold, which is roughly a thumb's comfortable travel and
+       is the same measurement brick 69 landed on when the notification swipe was
+       capped at a thumb's reach rather than a third of the screen. */
+    var box = wrap.querySelector('#findBox');
+    var scroller = wrap.querySelector('#findOut');
+    var startY = null, dy = 0;
+    box.addEventListener('touchstart', function(e){
+      if (e.touches.length !== 1) { startY = null; return; }
+      if (scroller && scroller.scrollTop > 0) { startY = null; return; }
+      startY = e.touches[0].clientY; dy = 0;
+      box.style.transition = 'none';
+    }, { passive: true });
+    box.addEventListener('touchmove', function(e){
+      if (startY === null) return;
+      dy = e.touches[0].clientY - startY;
+      if (dy <= 0) { dy = 0; box.style.transform = ''; return; }
+      /* transform and opacity only, so the drag never costs a repaint */
+      box.style.transform = 'translateY(' + dy + 'px)';
+      box.style.opacity = String(Math.max(0.35, 1 - dy / 420));
+    }, { passive: true });
+    box.addEventListener('touchend', function(){
+      if (startY === null) return;
+      var far = dy > 90;
+      startY = null;
+      box.style.transition = 'transform .22s cubic-bezier(.22,.61,.36,1), opacity .22s ease';
+      box.style.transform = ''; box.style.opacity = '';
+      if (far) close();
+    });
+
   }
   function draw(html){ out.innerHTML = html; }
   async function run(){
@@ -172,5 +216,8 @@
   root.SprintFind = { open: open, close: close, run: run };
   document.addEventListener('keydown', function(e){
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); open(); }
+    /* Escape lived on the search input, so it only worked while the cursor was
+       sitting in it. Click a result and the key did nothing. It belongs here. */
+    if (e.key === 'Escape' && wrap && wrap.classList.contains('show')) close();
   });
 })(typeof window !== 'undefined' ? window : this);
