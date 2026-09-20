@@ -388,7 +388,21 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
 /* The verdict card is the only loud thing on the screen. Its colour is carried by
    a stripe down the leading edge rather than by a filled panel, because a filled
    panel fights the glass behind it and a stripe does not. */
-.md-state{padding:18px 18px 16px}
+.md-state{padding:0}
+.md-body{padding:18px 18px 16px}
+/* THE MAP IS THE TOP OF THE CARD. It keeps the country's own proportions rather
+   than being squeezed to a band, because a squashed Botswana is worse than no
+   Botswana, and it is capped so the verdict underneath still clears the fold on
+   a small phone. The dark wash under it is what makes a pale road and a bright
+   vehicle read against the glass behind. */
+.md-sky{position:relative;background:rgba(4,18,12,.46);border-bottom:2px solid rgba(255,255,255,.14);
+  max-height:290px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.md-sky svg{display:block;width:100%;height:auto;max-height:290px}
+/* the country fades into the words rather than stopping at a hard edge */
+.md-sky::after{content:"";position:absolute;left:0;right:0;bottom:0;height:56px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(8,28,20,0),rgba(8,28,20,.55))}
+.md-day .md-bar{margin-top:11px}
+.md-day .md-go{margin-top:10px}
 .md-state::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--teal)}
 .md-state.v-bad::before{background:#E0483E}
 .md-state.v-warn::before{background:var(--orange)}
@@ -704,7 +718,7 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
 <script src="shared/sprint-roles.js?v=daf3ad52"></script>
 <link rel="stylesheet" href="shared/sprint-allowed.css?v=c6953555">
 <link rel="stylesheet" href="shared/sprint-view.css?v=4c6919d3">
-<script src="shared/sprint-motion.js?v=9677b8ce" defer></script>
+<script src="shared/sprint-motion.js?v=3c13b124" defer></script>
 <script>
 // Brick 82: the glare mode flag itself, read and applied the same way and
 // for the same reason as the role above, so a phone that chose high
@@ -961,15 +975,39 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
        and directly beneath it the fleet drawn as one bar, so the words and the
        shape arrive in the same glance. */
     var day = dayFrom(state.vehicles);
+
+    /* THE COUNTRY, FIRST, BEFORE ANY WORDS.
+
+       Two rebuilds of this screen both opened with typography: a small
+       letterspaced word, a sentence, then bars. Careful, correct, and nothing on
+       it ever made anybody stop. The answer was never a better arrangement of
+       cards.
+
+       A shape of Botswana with your own vans moving on it is instantly, physically
+       obvious in a way no sentence is. That is the country. Those are our vehicles.
+       That red one is a problem. Nobody has to be taught how to read it, and the
+       moving ones pulse so the screen is visibly alive rather than merely current.
+
+       The map fills the top of the verdict card rather than sitting in a card of
+       its own, so the state of the business is written ON the picture of it. */
     out.push('<a class="md-card md-state v-' + v[1] + '" href="' +
       esc((pick && pick.destination) || 'insights/index.html') + '">');
+    if (state.vehicles && state.vehicles.length) {
+      out.push('<div class="md-sky" id="mdSky"></div>');
+    }
+    out.push('<div class="md-body">');
     out.push('<div class="md-head"><span class="md-word">' + esc(v[0]) + '</span>' +
              '<span class="md-when">as at ' + esc(clock) + '</span></div>');
     out.push('<p class="md-say">' + esc(headline(pick)) + '</p>');
     if (pick && pick.instruction) {
       out.push('<p class="md-sub">' + esc(pick.instruction) + '</p>');
     }
+    out.push('</div></a>');
+
+    /* The day, in a card of its own now that the hero carries the map. */
     if (day) {
+      out.push('<div class="md-card md-day">');
+      out.push('<div class="md-lab">The fleet right now</div>');
       out.push(bar([
         ['s-move', day.moving, day.moving + ' moving'],
         ['s-stand', day.standing, day.standing + ' standing'],
@@ -987,10 +1025,9 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
           (day.drops_known ? ', and delivered <b>' + day.drops + '</b> times' : '') + '.'
         : 'No vehicle has reported its running time today, so how much of the day ' +
           'was spent moving cannot be said yet.') + '</p>');
+      out.push('<a class="md-go" href="fleet/index.html">Open the fleet</a>');
+      out.push('</div>');
     }
-    out.push('<span class="md-go">' +
-      ((pick && (pick.empty || !pick.known)) ? 'See the detail' : 'Open this') + '</span>');
-    out.push('</a>');
 
     /* --------------------------------------------------------------- THE MONEY.
        ONE bar, not two. Billed against collected, and owed against overdue, are
@@ -1097,6 +1134,17 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
 
     md.innerHTML = out.join('');
     countUp(md);
+
+    /* Painted after the band is in the document, because the map measures itself.
+       Wrapped, because a map that fails must never take the verdict down with it:
+       the words are the part that matters and the picture is the part that sells. */
+    try {
+      var sky = document.getElementById('mdSky');
+      if (sky && window.SprintMap && state.vehicles) {
+        sky.innerHTML = window.SprintMap.draw(state.vehicles, { standing_limit: 20 });
+        window.SprintMap.settle(sky);
+      }
+    } catch (e) {}
   }
 
   /* THE FIGURES COUNT UP, BECAUSE THE QUANTITY IS ACCUMULATING.
@@ -1268,7 +1316,8 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
        because a director reads a shape in a second and a number in four. Every bar
        sits inside something she can open, because a number nobody can open is a
        poster. -->
-  <section class="md" id="md" aria-label="The state of the business right now"></section>
+  <section class="md" id="md" data-no-motion
+           aria-label="The state of the business right now"></section>
 
   <div class="sec"><h2>Quick access</h2><span id="qaRole">tap to open</span></div>
   <div class="quick" id="quick"></div>
@@ -1516,6 +1565,11 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 </script>
 <script src="shared/sprint-chrome.js?v=955d59ff"></script>
 <script src="shared/sprint-find.js?v=ecc99b39"></script>
+<!-- THE MAP IS THE GROUND. The standing specification for anything a director
+     looks at has said so since 5 September: "The map is the ground, never a
+     slide. Where the assets are is zero clicks away, always." It was two taps
+     away, on the one page whose job is to be looked at first. -->
+<script src="shared/sprint-map.js?v=053110aa"></script>
 <script src="shared/sprint-example.js?v=79248e2c"></script>
 <script src="shared/sprint-attention.js?v=6c588aa8"></script>
 <script src="shared/sprint-front.js?v=209875d0"></script>

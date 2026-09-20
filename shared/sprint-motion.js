@@ -399,6 +399,141 @@
     });
   }
 
+  /* THE PAGE ENTRANCE, and it is the same one on all twelve pages.
+
+     Read off linear.app's own stylesheet on 20 September 2026 rather than guessed
+     at: their house curve is cubic-bezier(0.32, 0.72, 0, 1), fast off the mark,
+     a long glide, landing dead flat rather than bouncing. That flat landing is
+     the difference between expensive and cheap. A bounce says look at me. A flat
+     landing says the thing has arrived.
+
+     Only transform and opacity move. They are the only two properties a graphics
+     chip carries on its own; everything else makes the processor repaint, and a
+     repainting page on a telephone is the stutter people call cheap.
+
+     THE STAGGER IS A READING ORDER, not decoration. Things arriving in sequence
+     tell the eye what to read first, second and third, without making any of it
+     bigger. That is the whole reason it is worth the code.
+
+     FIVE THINGS IT REFUSES TO TOUCH, each learned the hard way:
+
+       a fixed or sticky element, because a transform on an ancestor becomes the
+       containing block for everything fixed inside it, which is exactly how a
+       rescue bar ended up 255 pixels off the screen;
+
+       anything a page already animates itself, so the front page's own band is
+       not animated twice and nested;
+
+       anything marked data-no-motion, which is how a page opts a region out;
+
+       anything not actually on screen, because animating a hidden thing in and
+       then revealing it later plays the entrance to nobody;
+
+       and everything, under prefers-reduced-motion. That is not a courtesy. A
+       moving screen is genuinely unusable for some people, and a phone in a
+       moving vehicle is the worst place on earth for something to slide. */
+  var ENTER_CSS =
+    '@keyframes spEnter{from{opacity:0;transform:translateY(14px)}' +
+      'to{opacity:1;transform:translateY(0)}}' +
+    '@keyframes spWipe{from{transform:scaleX(0)}to{transform:scaleX(1)}}' +
+    /* backwards, never both. backwards holds the START state through the delay and
+       then hands the element back to its natural state, so taps and hovers still
+       work afterwards. both would pin the end state permanently and quietly kill
+       every press on every card on the page. */
+    '[data-sp-enter]{animation:spEnter .52s cubic-bezier(.32,.72,0,1) backwards}' +
+    '@media (prefers-reduced-motion: reduce){[data-sp-enter]{animation:none}}';
+
+  function enter(root0) {
+    if (still()) return 0;
+    try {
+      if (!document.getElementById('sp-enter-css')) {
+        var st = document.createElement('style');
+        st.id = 'sp-enter-css';
+        st.textContent = ENTER_CSS;
+        document.head.appendChild(st);
+      }
+    } catch (e) { return 0; }
+
+    var host = root0 || document.querySelector('[data-motion-root]') ||
+               document.querySelector('main') || document.querySelector('.wrap') ||
+               document.body;
+    if (!host) return 0;
+
+    var kids = pick(host);
+
+    /* ONE LEVEL DOWN WHEN THE PAGE IS ONE BOX.
+
+       Several department pages put a header, a single content div and a bottom
+       bar straight into the body, so the honest answer at the top level is one
+       animatable block and the entrance degrades into a single fade. Where the
+       top level has almost nothing in it and the one real child has a list of
+       its own, the stagger descends into that child exactly once.
+
+       Once, and never further. Recursing until something looks right is how an
+       animation ends up crawling over every paragraph on a page, and a screen
+       where everything moves is a screen where nothing is being pointed at. */
+    if (kids.length <= 3) {
+      var deepest = null, best = 0;
+      for (var k = 0; k < kids.length; k++) {
+        var n = pick(kids[k]).length;
+        if (n > best) { best = n; deepest = kids[k]; }
+      }
+      if (deepest && best >= 4) kids = pick(deepest);
+    }
+    if (!kids.length) return 0;
+    return stagger(kids);
+  }
+
+  /* At module scope, not inside enter(). It was declared in enter() and read in
+     pick(), which is a sibling rather than a nested function, so pick threw a
+     ReferenceError and the entrance silently did nothing on every page. The call
+     sits inside a try, so nothing looked broken. Same lesson as every other time:
+     a script that throws leaves the page exactly as the HTML left it. */
+  var SKIP = { SCRIPT: 1, STYLE: 1, TEMPLATE: 1, NOSCRIPT: 1, LINK: 1, META: 1 };
+
+  function pick(host) {
+    var kids = [], all = host.children;
+    for (var i = 0; i < all.length && kids.length < 12; i++) {
+      var el = all[i];
+      if (SKIP[el.tagName]) continue;
+      if (el.hasAttribute('data-no-motion') || el.hasAttribute('data-sp-enter')) continue;
+      var cs;
+      try { cs = getComputedStyle(el); } catch (e) { continue; }
+      if (!cs || cs.display === 'none' || cs.visibility === 'hidden') continue;
+      /* a transform on an ancestor becomes the containing block for anything fixed
+         inside it, so a fixed bar would ride off the screen for half a second */
+      if (cs.position === 'fixed' || cs.position === 'sticky') continue;
+      if (cs.animationName && cs.animationName !== 'none') continue;
+      kids.push(el);
+    }
+    return kids;
+  }
+
+  function stagger(kids) {
+    /* The step shrinks as the list grows so a long page still finishes inside
+       about three quarters of a second. A stagger that outlives the reader's
+       patience has stopped being a reading order and become a wait. */
+    var step = Math.min(70, Math.max(28, Math.round(700 / kids.length)));
+    for (var j = 0; j < kids.length; j++) {
+      kids[j].setAttribute('data-sp-enter', '');
+      kids[j].style.animationDelay = (0.02 + j * step / 1000).toFixed(3) + 's';
+    }
+    return kids.length;
+  }
+
+  /* Once, on its own, as soon as there is something to move. A page that wants to
+     drive it by hand marks its container and calls enter() itself. */
+  function autoEnter() {
+    if (root.__spEntered) return;
+    root.__spEntered = true;
+    try { enter(null); } catch (e) {}
+  }
+  try {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', autoEnter);
+    } else { autoEnter(); }
+  } catch (e) {}
+
   root.SprintMotion = {
     morphList: morphList, flip: flip,
     originFrom: originFrom, originClose: originClose,
@@ -406,6 +541,7 @@
     ambient: ambient, wake: wake,
     optimistic: optimistic,
     reducedMotion: still,
+    enter: enter,
     css: css
   };
 })(window);
