@@ -144,6 +144,59 @@
   ];
 
   var W = 340, H = 400, PAD = 14;
+
+  /* Ten minutes. A driver phone reports every sixty seconds while a trip is open,
+     so ten missed reports is not a blip, it is a phone that is off, out of signal
+     or in a pocket. Short enough to notice, long enough that one lost minute in a
+     valley does not make the whole fleet look dead. */
+  var FRESH_MINUTES = 10;
+
+  /* How old a position is, in minutes, or null when that cannot be known. Never
+     zero: a fix with no timestamp is not a fresh fix, it is an unknown one, and
+     this application does not print an unproven zero. */
+  function ageOf(pos) {
+    if (!pos) return null;
+    /* THE TIMESTAMP FIRST, ALWAYS, and age_minutes only when there is no
+       timestamp at all. age_minutes is a number somebody worked out at the
+       moment the record was written and it has been wrong ever since: the
+       example fleet carried age_minutes of 1 beside a recorded_at from eight
+       days earlier, so a map trusting the number would have reported the whole
+       fleet as one minute old forever. A derived figure cannot age. A timestamp
+       cannot do anything else. */
+    if (pos.recorded_at) {
+      var t = Date.parse(pos.recorded_at);
+      if (!isNaN(t)) return Math.max(0, (Date.now() - t) / 60000);
+    }
+    if (pos.age_minutes != null && !isNaN(Number(pos.age_minutes))) return Number(pos.age_minutes);
+    return null;
+  }
+
+  /* What the page says out loud under the map. The age of the DATA, never the age
+     of the redraw. Confusing those two is how a screen that refreshes every twenty
+     seconds convinces somebody it knows where a van is. */
+  function freshness(vehicles, opts) {
+    opts = opts || {};
+    var limit = opts.fresh_minutes || FRESH_MINUTES;
+    var ages = [], never = 0, old = 0;
+    (vehicles || []).forEach(function (v) {
+      var a = ageOf(v.position);
+      if (a == null) { never++; return; }
+      ages.push(a);
+      if (a > limit) old++;
+    });
+    var oldest = ages.length ? Math.max.apply(null, ages) : null;
+    var say;
+    if (!ages.length) {
+      say = never ? 'No vehicle has reported a position yet.' : 'No vehicles to report on.';
+    } else {
+      var m = Math.round(oldest);
+      say = 'Oldest fix ' + (m < 1 ? 'under a minute' : m + (m === 1 ? ' minute' : ' minutes')) + ' old.';
+      if (old) say += ' ' + old + (old === 1 ? ' vehicle has' : ' vehicles have') +
+        ' not reported in ' + limit + ' minutes.';
+      if (never) say += ' ' + never + (never === 1 ? ' has' : ' have') + ' never reported at all.';
+    }
+    return { oldest_minutes: oldest, reporting: ages.length, stale: old, never: never, say: say };
+  }
   var LNG0 = 19.90, LNG1 = 29.44, LAT0 = -17.70, LAT1 = -26.99;
 
   function x(lng) { return PAD + (lng - LNG0) / (LNG1 - LNG0) * (W - PAD * 2); }
@@ -516,7 +569,14 @@
     placed.forEach(function (v) {
       var vx = x(v.position.lng), vy = y(v.position.lat);
       var col = STATE_COLOUR[v.state] || '#8b8b84';
-      var stale = v.state === 'no_signal' || v.state === 'no_trip';
+      /* AND HOW OLD THE FIX IS, which this line did not ask until 20 September
+         2026. A vehicle whose state still reads moving, because nothing has told
+         the database otherwise, pulsed exactly like one reporting every sixty
+         seconds. The pulse is what says "this is live", so it may only ever be
+         spent on a position that actually is. */
+      var fixAge = ageOf(v.position);
+      var oldFix = fixAge == null || fixAge > (opts.fresh_minutes || FRESH_MINUTES);
+      var stale = v.state === 'no_signal' || v.state === 'no_trip' || oldFix;
       /* THE PULSE, and it is not decoration.
 
          Luther: "it's fine if it looks stationary as long as there's some kind of
@@ -575,8 +635,16 @@
       /* The dot is the target. It carries the registration so the page that owns the
          data can answer, and an invisible 13 unit disc over it so a thumb can hit it,
          for the same reason the town dots have one. */
-      s.push('<circle cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="5" fill="' + col +
-        '" stroke="rgba(0,0,0,.45)" stroke-width="1"/>');
+      /* A STALE DOT IS HOLLOW. Stopping the pulse is not enough on its own: a
+         still dot and a pulsing dot look identical in the half second the eye
+         spends on a map, and the whole point is that she can tell at a glance
+         which of these the system actually knows about right now. */
+      s.push(oldFix
+        ? '<circle cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="5" ' +
+          'fill="rgba(0,0,0,.35)" stroke="' + col + '" stroke-width="2" ' +
+          'stroke-dasharray="2.6 2.2"/>'
+        : '<circle cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="5" fill="' + col +
+          '" stroke="rgba(0,0,0,.45)" stroke-width="1"/>');
       s.push('<circle class="sp-veh-hit" data-veh="' + esc(v.reg) + '" ' +
         'cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="13" fill="transparent" ' +
         'role="button" tabindex="0" aria-label="' + esc(v.reg) + ', ' +
@@ -954,7 +1022,7 @@
     return null;
   }
 
-  var API = { draw: draw, heat: heat, settle: settle, select: select, townAt: townAt, TOWNS: TOWNS, legend: legend, whereIs: whereIs, onA1: onA1, nearestStop: nearestStop, STATE_WORD: STATE_WORD, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
+  var API = { draw: draw, heat: heat, settle: settle, select: select, freshness: freshness, ageOf: ageOf, townAt: townAt, TOWNS: TOWNS, legend: legend, whereIs: whereIs, onA1: onA1, nearestStop: nearestStop, STATE_WORD: STATE_WORD, alerts: alerts, onMap: onMap, TOWNS: TOWNS, bounds: { LNG0: LNG0, LNG1: LNG1, LAT0: LAT0, LAT1: LAT1 } };
   if (typeof module === 'object' && module.exports) module.exports = API;
   root.SprintMap = API;
 })(typeof self !== 'undefined' ? self : this);

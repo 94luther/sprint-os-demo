@@ -520,6 +520,25 @@
      shape as the four screens that disagreed about money. */
   var fleet = {"generated_at": "2026-09-12T21:21:24.000Z", "vehicles": [{"vehicle_id": "veh_example_3", "reg": "EXAMPLE-B789ABC", "type": "van (cold chain)", "state": "moving", "standing_minutes": 0, "position": {"lat": -19.9833, "lng": 23.4167, "accuracy_m": 11, "recorded_at": "2026-09-12T21:21:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_example_2", "departed_at": "2026-09-12T21:21:24.000Z", "driver_name": "EXAMPLE Driver Three", "route_label": "Francistown to Maun"}, "utilisation_today": {"minutes_moving": 145, "minutes_on_trip": 190, "deliveries_today": 2}, "documents": {"permit_expires_on": "2027-04-01", "insurance_expires_on": "2027-04-10", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": null, "last_odometer": 5000}, "note": null}, {"vehicle_id": "veh_example_2", "reg": "EXAMPLE-B456ABC", "type": "truck", "state": "moving", "standing_minutes": 0, "position": {"lat": -21.1736, "lng": 27.5125, "accuracy_m": 11, "recorded_at": "2026-09-12T21:21:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_example_5", "departed_at": "2026-09-12T21:21:24.000Z", "driver_name": "EXAMPLE Driver Two", "route_label": "Gaborone to Francistown"}, "utilisation_today": {"minutes_moving": 95, "minutes_on_trip": 220, "deliveries_today": 3}, "documents": {"permit_expires_on": "2027-02-28", "insurance_expires_on": "2026-10-05", "roadworthy_expires_on": "2026-09-08", "service_due_at": null, "service_due_km": 69000, "last_odometer": 68720}, "note": null}, {"vehicle_id": "veh_example_1", "reg": "EXAMPLE-B123ABC", "type": "van", "state": "standing", "standing_minutes": 47, "position": {"lat": -24.6282, "lng": 25.9231, "accuracy_m": 11, "recorded_at": "2026-09-12T21:21:24.000Z", "age_minutes": 1}, "trip": {"id": "trp_example_1", "departed_at": "2026-09-12T21:21:24.000Z", "driver_name": "EXAMPLE Driver One", "route_label": "Gaborone depot"}, "utilisation_today": {"minutes_moving": 0, "minutes_on_trip": 0, "deliveries_today": 0}, "documents": {"permit_expires_on": "2027-03-31", "insurance_expires_on": "2027-01-15", "roadworthy_expires_on": "2026-12-01", "service_due_at": null, "service_due_km": 13500, "last_odometer": 12880}, "note": null}, {"vehicle_id": "veh_example_4", "reg": "EXAMPLE-B321ABC", "type": "van", "state": "standing", "standing_minutes": 18, "position": {"lat": -22.55, "lng": 27.1333, "accuracy_m": 14, "recorded_at": "2026-09-12T21:21:24.000Z", "age_minutes": 2}, "trip": {"id": "trp_example_4", "departed_at": "2026-09-12T21:21:24.000Z", "driver_name": "EXAMPLE Driver Four", "route_label": "Palapye run"}, "utilisation_today": {"minutes_moving": 120, "minutes_on_trip": 168, "deliveries_today": 4}, "documents": {"permit_expires_on": "2027-01-20", "insurance_expires_on": "2026-11-02", "roadworthy_expires_on": "2027-03-14", "service_due_at": null, "service_due_km": 42000, "last_odometer": 40180}, "note": null}, {"vehicle_id": "veh_example_5", "reg": "EXAMPLE-B654ABC", "type": "van", "state": "no_trip", "standing_minutes": null, "position": null, "trip": null, "utilisation_today": {"minutes_moving": 0, "minutes_on_trip": 0, "deliveries_today": 0}, "documents": {"permit_expires_on": "2027-05-30", "insurance_expires_on": "2027-02-11", "roadworthy_expires_on": "2026-10-22", "service_due_at": null, "service_due_km": 21000, "last_odometer": 19440}, "note": "No trip open, and no position ever recorded for this vehicle."}]};
 
+  /* THE EXAMPLE POSITIONS ARE STAMPED RELATIVE TO NOW, not frozen.
+
+     They were written on 12 September 2026 with a fixed recorded_at and an
+     age_minutes of 1 beside it. By tonight that pair says the fix is both one
+     minute old and eight days old, and the freshness line added this evening
+     would have read "oldest fix under a minute" on a demonstration that had not
+     moved since the twelfth.
+
+     A demonstration is allowed to be invented. It is not allowed to be
+     internally inconsistent, because the inconsistency is what teaches somebody
+     to stop believing the parts that are true. Each position keeps the AGE it
+     was written with and gets a timestamp that actually means it. */
+  fleet.vehicles.forEach(function (v) {
+    if (!v.position) return;
+    var mins = v.position.age_minutes == null ? 1 : Number(v.position.age_minutes);
+    v.position.recorded_at = new Date(NOW - mins * 60000).toISOString();
+  });
+  fleet.generated_at = new Date(NOW).toISOString();
+
   var API = {
     NOW: NOW,
     fleet: fleet,

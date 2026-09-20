@@ -401,6 +401,9 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
 /* the country fades into the words rather than stopping at a hard edge */
 .md-sky::after{content:"";position:absolute;left:0;right:0;bottom:0;height:56px;pointer-events:none;
   background:linear-gradient(180deg,rgba(8,28,20,0),rgba(8,28,20,.55))}
+.md-age{position:absolute;left:0;right:0;bottom:0;padding:7px 14px 8px;font-size:11px;
+  font-weight:700;color:var(--ink-3);text-align:center;letter-spacing:.2px;
+  background:linear-gradient(180deg,rgba(8,28,20,0),rgba(6,22,16,.72));pointer-events:none}
 .md-day .md-bar{margin-top:11px}
 .md-day .md-go{margin-top:10px}
 .md-state::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--teal)}
@@ -818,7 +821,11 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     if (!people && !roster && !over) throw new Error('the hub answered nothing');
     var fleet = {}, vehicles = null;
     try {
-      var fl = await window.apiFetch('/api/fleet').catch(function () { return null; });
+      /* THE LIGHT ONE. This asked /api/fleet, the full report that assembles fuel
+         anomalies and service schedules on every call. Fine once. Pointed at a
+         twenty second tick it is a small denial of service aimed at our own hub.
+         /api/fleet/live has answered exactly this since bricks 16 and 17. */
+      var fl = await window.apiFetch('/api/fleet/live').catch(function () { return null; });
       if (fl && fl.vehicles) { fleet = countFleet(fl.vehicles); vehicles = fl.vehicles; }
     } catch (e) {}
     var findings = ((people && people.exposures) || []).concat((roster && roster.findings) || []);
@@ -994,6 +1001,7 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
       esc((pick && pick.destination) || 'insights/index.html') + '">');
     if (state.vehicles && state.vehicles.length) {
       out.push('<div class="md-sky" id="mdSky"></div>');
+      out.push('<div class="md-age" id="mdAge"></div>');
     }
     out.push('<div class="md-body">');
     out.push('<div class="md-head"><span class="md-word">' + esc(v[0]) + '</span>' +
@@ -1143,6 +1151,14 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
       if (sky && window.SprintMap && state.vehicles) {
         sky.innerHTML = window.SprintMap.draw(state.vehicles, { standing_limit: 20 });
         window.SprintMap.settle(sky);
+        /* THE AGE OF THE DATA, SAID OUT LOUD, under the picture of it. Not the
+           age of the redraw. A screen that refreshes every twenty seconds tells
+           you nothing whatever about whether the position it drew was recorded
+           two minutes ago or two hours ago, and only one of those is a fact
+           about where the van is. */
+        var fr = window.SprintMap.freshness(state.vehicles);
+        var age = document.getElementById('mdAge');
+        if (age) age.textContent = fr.say;
       }
     } catch (e) {}
   }
@@ -1259,6 +1275,22 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
 
     /* The hub tells the app who this person really is AFTER the first paint, so a
        page that renders once keeps showing whatever it guessed. Subscribe, redraw. */
+    /* THE TICK. Twenty seconds, one timer, and it stops dead behind a hidden tab
+       and fires the instant the tab comes back, so the first thing she sees on
+       returning to this page is current rather than whatever was frozen on it
+       when she left. It redraws from whatever the source says NOW; where the
+       source has not changed, nothing on screen moves, which is the correct and
+       honest outcome rather than a failure. */
+    if (!window.__homeTick && window.SprintLive) {
+      window.__homeTick = window.SprintLive.every(20000, function () {
+        return (async function () {
+          var next;
+          try { next = await fromHub(); } catch (e) { next = fromDemo(); }
+          render(next);
+        })();
+      }, { immediate: false });
+    }
+
     try {
       if (window.SprintRoles && window.SprintRoles.subscribe && !window.__cockpitSubscribed) {
         window.__cockpitSubscribed = true;
@@ -1569,8 +1601,9 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
      looks at has said so since 5 September: "The map is the ground, never a
      slide. Where the assets are is zero clicks away, always." It was two taps
      away, on the one page whose job is to be looked at first. -->
-<script src="shared/sprint-map.js?v=053110aa"></script>
-<script src="shared/sprint-example.js?v=79248e2c"></script>
+<script src="shared/sprint-map.js?v=3ddc8c70"></script>
+<script src="shared/sprint-live.js?v=3b2b0dd4"></script>
+<script src="shared/sprint-example.js?v=6cb7f85c"></script>
 <script src="shared/sprint-attention.js?v=6c588aa8"></script>
 <script src="shared/sprint-front.js?v=209875d0"></script>
 </body>
