@@ -365,6 +365,96 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
 /* THREE NUMBERS, ONE ROW, ALWAYS. They are information and not decoration, so they
    are small, they never wrap into unusable cards, and at 320 px they shrink rather
    than stack, because a strip that becomes a column stops being a glance. */
+/* ===================== THE FIRST SCREEN =====================
+   Quantities drawn as space. Nothing here invents a visual language: the radius,
+   the 2 px stroke, the glass and the two brand colours are the ones already on
+   every other page. What is new is that a length now means an amount.
+
+   Everything is fluid. No fixed width appears anywhere below, every bar is a
+   percentage of its own container and the keys wrap, so the band holds its shape
+   from a 320 px phone to a desk. */
+.md{display:grid;gap:12px;margin:12px 0 16px}
+.md-card{display:block;border-radius:var(--r);padding:16px;background:var(--card);
+  border:2px solid var(--line);backdrop-filter:blur(22px) saturate(150%);
+  -webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:var(--shadow);
+  color:inherit;position:relative;overflow:hidden}
+.md-card:active{transform:scale(.992)}
+
+/* The verdict card is the only loud thing on the screen. Its colour is carried by
+   a stripe down the leading edge rather than by a filled panel, because a filled
+   panel fights the glass behind it and a stripe does not. */
+.md-state{padding:18px 18px 16px}
+.md-state::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--teal)}
+.md-state.v-bad::before{background:#E0483E}
+.md-state.v-warn::before{background:var(--orange)}
+.md-state.v-ok::before{background:#E9C64A}
+.md-state.v-good::before{background:var(--teal)}
+.md-state.v-wait::before{background:rgba(255,255,255,.34)}
+.md-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.md-word{font-size:11.5px;font-weight:900;letter-spacing:2.2px;text-transform:uppercase;color:var(--teal-d)}
+.v-bad .md-word{color:#FF9E96}
+.v-warn .md-word{color:var(--orange-d)}
+.v-ok .md-word{color:#F4DE8E}
+.v-wait .md-word{color:var(--ink-3)}
+.md-when{font-size:11.5px;font-weight:700;color:var(--ink-3);white-space:nowrap}
+.md-say{font-size:21px;line-height:1.24;font-weight:800;letter-spacing:-.45px;margin-top:9px}
+.md-sub{font-size:13.5px;line-height:1.45;color:var(--ink-2);margin-top:7px}
+
+/* The bar. Fourteen pixels is the smallest height at which a two per cent sliver is
+   still visible on a phone in sunlight, which is the reason a sliver is floored at
+   two per cent in the code rather than allowed to round away to nothing. */
+.md-bar{display:flex;height:14px;border-radius:9px;overflow:hidden;margin-top:13px;
+  background:rgba(0,0,0,.30);border:2px solid rgba(255,255,255,.20)}
+.md-bar span{display:block;height:100%}
+.s-move{background:linear-gradient(180deg,#63D95C,#3AAA35)}
+.s-stand{background:linear-gradient(180deg,#FFB65A,#F7941D)}
+.s-quiet{background:rgba(255,255,255,.22)}
+.s-late{background:linear-gradient(180deg,#F2685E,#D93A2F)}
+.s-onterm{background:linear-gradient(180deg,#63D95C,#3AAA35)}
+.s-c1{background:linear-gradient(180deg,#63D95C,#3AAA35)}
+.s-c2{background:linear-gradient(180deg,#8FE08A,#4FBF49)}
+.s-c3{background:linear-gradient(180deg,#FFB65A,#F7941D)}
+.s-rest{background:rgba(255,255,255,.22)}
+
+.md-keys{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:9px}
+.md-key{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--ink-2)}
+.md-key i{width:9px;height:9px;border-radius:3px;flex:none}
+.md-key i.s-quiet,.md-key i.s-rest{background:rgba(255,255,255,.34)}
+
+.md-find{font-size:13px;line-height:1.5;color:var(--ink-2);margin-top:10px}
+.md-find b{color:var(--ink);font-weight:800}
+.md-lab{font-size:11px;font-weight:900;letter-spacing:1.9px;text-transform:uppercase;color:var(--ink-3)}
+.md-fig{font-size:32px;font-weight:900;letter-spacing:-1.2px;line-height:1.05;margin-top:4px}
+.md-fig small{font-size:14px;font-weight:800;letter-spacing:0;color:var(--ink-3)}
+.md-go{display:inline-block;margin-top:12px;font-size:12.5px;font-weight:800;color:var(--teal-d)}
+.md-money .md-go{color:#FF9E96}
+.md-conc .md-go{color:var(--orange-d)}
+
+/* Then these. Rows rather than cards, because a card for every item turns a short
+   list into a long scroll, and the entire point of this band is that it is short. */
+.md-next{border-radius:var(--r);background:var(--card);border:2px solid var(--line);
+  backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+  box-shadow:var(--shadow);padding:15px 16px 6px}
+.md-row{display:flex;align-items:center;gap:11px;padding:12px 0;min-height:48px;
+  border-top:2px solid rgba(255,255,255,.12);margin-top:10px}
+.md-next .md-row:first-of-type{border-top:0;margin-top:2px}
+.md-dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--teal)}
+.md-dot.hot{background:#E0483E}
+.md-dot.warm{background:var(--orange)}
+.md-dot.cool{background:var(--teal)}
+.md-rt{flex:1;min-width:0}
+.md-rt b{display:block;font-size:14px;font-weight:700;line-height:1.3}
+.md-rt small{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.4;margin-top:2px}
+.md-row .in{font-size:11px;font-weight:900;color:var(--orange-d);white-space:nowrap}
+.md-row svg{width:17px;height:17px;flex:none;stroke:var(--ink-3)}
+.md-more{display:block;padding:12px 0;font-size:12.5px;font-weight:800;color:var(--teal-d);
+  border-top:2px solid rgba(255,255,255,.12);margin-top:10px}
+
+@media (max-width:359px){
+  .md-say{font-size:19px}
+  .md-fig{font-size:28px}
+  .md-card{padding:14px}
+}
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 12px}
 /* Every strip number is an anchor now, not a card. A number nobody can open is a
    poster, and this application is full of posters. */
@@ -631,6 +721,8 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     return {
       source: 'demo',
       fleet: veh ? countFleet(veh) : {},
+      vehicles: veh || null,
+      revenue: typeof E.concentration === 'function' ? E.concentration() : null,
       people_findings: people.exposures || [],
       roster_findings: roster.findings || [],
       weather: (E.weather_exposure && E.weather_exposure.groups) || [],
@@ -657,10 +749,10 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     ]);
     var people = out[0], roster = out[1], over = out[2];
     if (!people && !roster && !over) throw new Error('the hub answered nothing');
-    var fleet = {};
+    var fleet = {}, vehicles = null;
     try {
       var fl = await window.apiFetch('/api/fleet').catch(function () { return null; });
-      if (fl && fl.vehicles) fleet = countFleet(fl.vehicles);
+      if (fl && fl.vehicles) { fleet = countFleet(fl.vehicles); vehicles = fl.vehicles; }
     } catch (e) {}
     var findings = ((people && people.exposures) || []).concat((roster && roster.findings) || []);
     var money = null;
@@ -670,6 +762,8 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     return {
       source: 'live',
       fleet: fleet,
+      vehicles: vehicles,
+      revenue: null,
       people_findings: (people && people.exposures) || [],
       roster_findings: (roster && roster.findings) || [],
       weather: [], tenders: [], incidents: [],
@@ -682,73 +776,263 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     };
   }
 
+  /* THE DAY, COUNTED OFF THE VEHICLES THEMSELVES.
+
+     Every vehicle already carries how many minutes it moved today and how many
+     minutes it was on a trip. Nobody has ever been shown the difference between
+     those two numbers, and the difference IS the business: a van on a trip and not
+     moving is a van being paid for and not earning.
+
+     Counted, never assumed. If not one vehicle reported its minutes, the figure
+     comes back null and the card says the fleet has not reported time today,
+     because a fleet that has gone quiet and a fleet that stood still are opposite
+     problems and must never render as the same zero. */
+  function dayFrom(vehicles) {
+    if (!vehicles || !vehicles.length) return null;
+    var d = { moving: 0, standing: 0, quiet: 0, total: vehicles.length,
+              drops: 0, drops_known: false, moved: 0, out: 0, time_known: false };
+    vehicles.forEach(function (v) {
+      if (v.state === 'moving') d.moving++;
+      else if (v.state === 'standing' || v.state === 'incident') d.standing++;
+      else d.quiet++;
+      var u = v.utilisation_today;
+      if (!u) return;
+      if (u.deliveries_today != null) { d.drops += Number(u.deliveries_today); d.drops_known = true; }
+      if (u.minutes_moving != null && u.minutes_on_trip != null) {
+        d.moved += Number(u.minutes_moving); d.out += Number(u.minutes_on_trip); d.time_known = true;
+      }
+    });
+    return d;
+  }
+
+  /* Hours and minutes in the words a person says them in, never 3.63 hours. */
+  function spell(mins) {
+    if (mins == null) return UNKNOWN;
+    var h = Math.floor(mins / 60), m = Math.round(mins % 60);
+    if (!h) return m + ' minutes';
+    return (h + (h === 1 ? ' hour ' : ' hours ') + (m ? m + ' minutes' : '')).trim();
+  }
+
+  function money(t) { var p = pula(t); return p == null ? UNKNOWN : p; }
+
+  /* One bar. Segments arrive as [class, weight, label], the weights are summed here
+     rather than by the caller, and a segment worth less than two per cent is still
+     drawn at two per cent so a small real thing cannot vanish and read as nothing. */
+  function bar(segs) {
+    var total = segs.reduce(function (n, x) { return n + (Number(x[1]) || 0); }, 0);
+    if (!total) return '';
+    return '<div class="md-bar">' + segs.filter(function (x) {
+      return Number(x[1]) > 0;
+    }).map(function (x) {
+      var pc = Math.max(2, Number(x[1]) / total * 100);
+      return '<span class="' + esc(x[0]) + '" style="width:' + pc.toFixed(2) + '%" ' +
+             'title="' + esc(x[2]) + '"></span>';
+    }).join('') + '</div>';
+  }
+
+  function keys(items) {
+    return '<div class="md-keys">' + items.map(function (k) {
+      return '<span class="md-key"><i class="' + esc(k[0]) + '"></i>' + esc(k[1]) + '</span>';
+    }).join('') + '</div>';
+  }
+
+  /* WHEN, in the words a person uses out loud. */
+  function soon(mins) {
+    if (mins == null) return '';
+    if (mins < 0) return ', and the moment has already passed';
+    if (mins <= 90) return ' in ' + Math.round(mins) + ' minutes';
+    if (mins <= 1440) return ' in ' + Math.round(mins / 60) + ' hours';
+    var d = Math.round(mins / 1440);
+    return ' in ' + d + (d === 1 ? ' day' : ' days');
+  }
+
+  /* THE HEADLINE IS A SENTENCE, NEVER A NAME.
+
+     The queue's rows come from different places and only some of them arrive as
+     sentences. A people finding reads "Thato M has worked 19 days in a row", which
+     is already English. A tender row arrives as the tender's NAME, and the first
+     build of this screen put "Site to site courier, Jwaneng and Orapa" under the
+     verdict word as though that were the state of the business. It is a name. It
+     says nothing about what is happening or when.
+
+     So the rows that are names get a sentence built around them, with the clock
+     inside it, and the rows that are already sentences are left exactly alone. */
+  function headline(r) {
+    if (!r) return 'Waiting for data.';
+    var t = String(r.title || '').replace(/^EXAMPLE /, '').replace(/^RED ALERT: /, '');
+    if (r.kind === 'tender_close') return 'A tender closes' + soon(r.minutes_left) + '. ' + t;
+    if (r.kind === 'incident') return 'An incident is open. ' + t;
+    if (r.kind === 'sla_breach') return 'A promise is about to break. ' + t;
+    if (r.kind === 'uncovered_route') return 'A route has nobody on it. ' + t;
+    return t;
+  }
+
+  /* The verdict word. Taken from the ONE priority queue and never computed a second
+     way here, because two rankings on one screen is how a screen begins disagreeing
+     with itself. */
+  function verdictOf(pick) {
+    if (!pick || !pick.known) return ['Waiting', 'wait'];
+    if (pick.empty) return ['Steady', 'good'];
+    var sc = Number(pick.score) || 0;
+    if (sc >= 9) return ['Stop and look', 'bad'];
+    if (sc >= 5) return ['Tight', 'warn'];
+    return ['Watching', 'ok'];
+  }
+
   function render(state) {
     var role = 'manager';
     try { role = (window.SprintRoles && window.SprintRoles.getRole()) || role; } catch (e) {}
+    var md = document.getElementById('md');
+    if (!md) return;
 
-    var num = function (v) { return v == null ? UNKNOWN : String(v); };
-    var mon = function (v) { return pula(v) || UNKNOWN; };
-
-    /* WHAT IS HAPPENING RIGHT NOW, not what happened this month. The fleet state is
-       already in this build: every vehicle carries moving, standing, no_signal or
-       incident, and standing carries the minutes. It had never been counted. */
-    var f = state.fleet || {};
-    var SETS = {
-      driver: [
-        { v: num(f.moving), k: 'Moving', go: 'fleet/index.html#moving' },
-        { v: num(f.stopped), k: 'Stopped', cls: f.stopped ? 'warn' : '', go: 'fleet/index.html#stopped' },
-        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'bad' : '', go: 'insights/index.html' }
-      ],
-      accounts: [
-        { v: mon(state.past_due), k: 'Past due', cls: 'bad', go: 'accounts/index.html' },
-        { v: num(f.moving), k: 'Moving', go: 'fleet/index.html#moving' },
-        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'warn' : '', go: 'insights/index.html' }
-      ],
-      DEFAULT: [
-        { v: num(f.moving), k: 'Moving', go: 'fleet/index.html#moving' },
-        { v: num(f.stopped), k: 'Stopped', cls: f.stopped ? 'warn' : '', go: 'fleet/index.html#stopped' },
-        { v: num(state.attention), k: 'Need attention', cls: state.attention ? 'bad' : '', go: 'insights/index.html' }
-      ]
-    };
-    var set = SETS[role] || SETS.DEFAULT;
-    var kp = document.getElementById('kpis');
-    if (kp) {
-      kp.innerHTML = set.map(function (m) {
-        return '<a class="kpi ' + (m.cls || '') + '" href="' + esc(m.go) + '">' +
-          '<div class="v">' + esc(m.v) + '</div>' +
-          '<div class="k">' + esc(m.k) + '</div></a>';
-      }).join('');
-    }
-
-    /* THE ACTION CARD ASKS THE QUEUE.
-
-       It used to sort people exposures against roster findings and nothing else, so
-       a driver needing a rest could sit on the most valuable card on the screen while
-       a vehicle was in an incident, and its Open button went to the same page whatever
-       it was about. One queue now, ranked by severity MULTIPLIED by urgency, and every
-       row carries its own destination. */
-    var dn = document.getElementById('doNow');
-    if (!dn) return;
-    var A = window.SprintAttention;
-    var pick = A ? A.first({
+    var sources = {
       people: state.people_findings || [],
       roster: state.roster_findings || [],
       incidents: state.incidents || [],
       tenders: state.tenders || [],
       weather: state.weather || [],
       cash: state.cash || null
-    }, { loaded: state.loaded }) : null;
+    };
+    var A = window.SprintAttention;
+    var q = A ? A.build(sources) : [];
+    var pick = A ? A.first(sources, { loaded: state.loaded }) : null;
 
-    if (!pick) { dn.innerHTML = ''; return; }
-    dn.setAttribute('href', pick.destination || 'insights/index.html');
-    var when = pick.minutes_left != null && pick.minutes_left >= 0 && pick.minutes_left <= 240
-      ? ' <b class="in">in ' + pick.minutes_left + ' min</b>' : '';
-    dn.innerHTML = '<div class="lab">Do this now' +
-        (pick.queue_length > 1 ? ' <span class="qn">' + (pick.queue_length - 1) + ' more</span>' : '') +
-      '</div>' +
-      '<div class="h">' + esc(String(pick.title || '').replace(/^EXAMPLE /, '')) + when + '</div>' +
-      '<div class="sub">' + esc(pick.instruction || '') + '</div>' +
-      '<span class="go">' + (pick.empty || !pick.known ? 'See the detail' : 'Open') + '</span>';
+    var v = verdictOf(pick);
+    var now = new Date();
+    var clock = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+    var out = [];
+
+    /* ------------------------------------------------ THE VERDICT, and the day.
+       One card, and the only thing on the screen allowed to be loud. The state of
+       the business in a sentence a person reads standing up, the hour it was true,
+       and directly beneath it the fleet drawn as one bar, so the words and the
+       shape arrive in the same glance. */
+    var day = dayFrom(state.vehicles);
+    out.push('<a class="md-card md-state v-' + v[1] + '" href="' +
+      esc((pick && pick.destination) || 'insights/index.html') + '">');
+    out.push('<div class="md-head"><span class="md-word">' + esc(v[0]) + '</span>' +
+             '<span class="md-when">as at ' + esc(clock) + '</span></div>');
+    out.push('<p class="md-say">' + esc(headline(pick)) + '</p>');
+    if (pick && pick.instruction) {
+      out.push('<p class="md-sub">' + esc(pick.instruction) + '</p>');
+    }
+    if (day) {
+      out.push(bar([
+        ['s-move', day.moving, day.moving + ' moving'],
+        ['s-stand', day.standing, day.standing + ' standing'],
+        ['s-quiet', day.quiet, day.quiet + ' not out']
+      ]));
+      out.push(keys([
+        ['s-move', day.moving + ' moving'],
+        ['s-stand', day.standing + ' standing'],
+        ['s-quiet', day.quiet + ' not out']
+      ]));
+      /* THE FINDING. The hours a fleet moved against the hours it was out. */
+      out.push('<p class="md-find">' + (day.time_known
+        ? 'The fleet moved for <b>' + esc(spell(day.moved)) + '</b> of the ' +
+          esc(spell(day.out)) + ' it was on a trip' +
+          (day.drops_known ? ', and delivered <b>' + day.drops + '</b> times' : '') + '.'
+        : 'No vehicle has reported its running time today, so how much of the day ' +
+          'was spent moving cannot be said yet.') + '</p>');
+    }
+    out.push('<span class="md-go">' +
+      ((pick && (pick.empty || !pick.known)) ? 'See the detail' : 'Open this') + '</span>');
+    out.push('</a>');
+
+    /* --------------------------------------------------------------- THE MONEY.
+       ONE bar, not two. Billed against collected, and owed against overdue, are
+       both true and they do not add up to each other, so side by side they read as
+       a contradiction to anybody who is not holding the definitions in their head.
+       A director is not holding the definitions in their head. */
+    /* WHO MAY SEE THE MONEY. Not everybody, and this is not a nicety. What the
+       company is owed, and which three customers most of the month rests on, are
+       director's facts. A driver opening this app has no business holding them and
+       would not thank anybody for the weight.
+
+       The roles named here are the ones this system actually has: admin, staff,
+       ops, accounts, manager, driver. A branch was once written in this very file
+       for a role called sales, which does not exist, and it sat dead for days. */
+    var SEES_MONEY = { admin: 1, accounts: 1, manager: 1 };
+    var money_ok = !!SEES_MONEY[role];
+
+    var cash = money_ok ? (state.cash || null) : null;
+    var owed = cash && cash.owed_thebe != null ? Number(cash.owed_thebe) : null;
+    var late = cash && cash.overdue_thebe != null ? Number(cash.overdue_thebe) : null;
+    if (owed != null) {
+      var oldest = (cash.overdue_by_customer || []).slice().sort(function (x, y) {
+        return (y.days || 0) - (x.days || 0);
+      })[0];
+      out.push('<a class="md-card md-money" href="accounts/index.html">');
+      out.push('<div class="md-lab">Owed to Sprint</div>');
+      out.push('<div class="md-fig">' + esc(money(owed)) + '</div>');
+      out.push(bar([
+        ['s-late', late || 0, 'past due'],
+        ['s-onterm', Math.max(0, owed - (late || 0)), 'still inside terms']
+      ]));
+      out.push(keys([
+        ['s-late', (late == null ? UNKNOWN : money(late)) + ' past due'],
+        ['s-onterm', money(Math.max(0, owed - (late || 0))) + ' inside terms']
+      ]));
+      if (oldest) {
+        out.push('<p class="md-find">Oldest is <b>' +
+          esc(String(oldest.customer_name || '').replace(/^EXAMPLE /, '')) + '</b> at ' +
+          esc(money(oldest.amount_thebe)) + ', ' + esc(String(oldest.days)) + ' days.</p>');
+      }
+      out.push('<span class="md-go">Open the chase list</span>');
+      out.push('</a>');
+    }
+
+    /* ------------------------------------------------------- WHAT IT DEPENDS ON.
+       The concentration bar. This is the one thing on the screen that proves a
+       machine read everything and formed a view nobody had: three customers are
+       most of the month, and no screen in this business has ever said so. */
+    var rev = money_ok ? state.revenue : null;
+    if (rev && rev.rows && rev.rows.length >= 3 && rev.top3_share != null) {
+      var rows = rev.rows.slice(0, 3);
+      var rest = rev.total_thebe - rev.top3_thebe;
+      var shades = ['s-c1', 's-c2', 's-c3'];
+      out.push('<a class="md-card md-conc" href="insights/index.html">');
+      out.push('<div class="md-lab">Who the month depends on</div>');
+      out.push('<div class="md-fig">' + esc(String(rev.top3_share)) + '<small> per cent</small></div>');
+      out.push(bar(rows.map(function (r, i) {
+        return [shades[i], r.thebe, String(r.name).replace(/^EXAMPLE /, '')];
+      }).concat([['s-rest', rest, 'everybody else']])));
+      out.push(keys(rows.map(function (r, i) {
+        return [shades[i], String(r.name).replace(/^EXAMPLE /, '') + ' ' + r.share + '%'];
+      }).concat([['s-rest', 'everybody else ' + (100 - rev.top3_share) + '%']])));
+      out.push('<p class="md-find">Three customers are <b>' + esc(String(rev.top3_share)) +
+        ' per cent</b> of what the company billed. Losing one of them is not a bad ' +
+        'month, it is a different company.</p>');
+      out.push('<span class="md-go">See every customer</span>');
+      out.push('</a>');
+    }
+
+    /* ------------------------------------------------------------------- NEXT.
+       The reason the screen exists, per the standing specification. Three lines,
+       each a thing that needs a decision, with what it costs if it is left, and
+       the place the answer lives. Nothing here sends anything. */
+    var nexts = q.filter(function (r) { return !pick || r.id !== pick.id; }).slice(0, 3);
+    if (nexts.length) {
+      out.push('<div class="md-next"><div class="md-lab">Then these, in this order</div>');
+      nexts.forEach(function (r) {
+        var when = r.minutes_left != null && r.minutes_left >= 0 && r.minutes_left <= 1440
+          ? '<b class="in">' + r.minutes_left + ' min</b>' : '';
+        out.push('<a class="md-row" href="' + esc(r.destination || 'insights/index.html') + '">' +
+          '<span class="md-dot ' +
+            esc(r.severity >= 4 ? 'hot' : r.severity >= 3 ? 'warm' : 'cool') + '"></span>' +
+          '<span class="md-rt"><b>' + esc(headline(r)) + '</b>' +
+          (r.consequence ? '<small>' + esc(r.consequence) + '</small>' : '') + '</span>' + when +
+          '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" ' +
+          'stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></a>');
+      });
+      if (q.length > nexts.length + 1) {
+        out.push('<a class="md-more" href="insights/index.html">' +
+          (q.length - nexts.length - 1) + ' more waiting</a>');
+      }
+      out.push('</div>');
+    }
+
+    md.innerHTML = out.join('');
   }
 
   /* Four shortcuts, for a role that actually exists. */
@@ -847,18 +1131,20 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     <div class="bell" id="bell" role="button" title="What needs you"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#F4F7F5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
   </div>
 
-  <!-- THE COCKPIT STRIP. Three numbers, then the one thing to do, then the way to
-       work. The large morning card that used to sit here was 241 px of beautiful
-       sentence, and a person opening this at seven in the morning needs a number
-       before they need a paragraph. The card it replaced still exists: it is the
-       Open button on the action card below, going to the same place. -->
-  <!-- THE LIVE STRIP. Three operational numbers, and every one of them is a door.
-       The rule this follows, from now on everywhere in Sprint OS: if a person can see
-       a number, they can touch it, and touching it shows the things that make it up.
-       A number nobody can open is a poster. -->
-  <div class="kpis" id="kpis" aria-label="What is happening right now"></div>
+  <!-- THE FIRST SCREEN, FOR THE PERSON WHO OPENS IT ONCE.
 
-  <a class="donow" id="doNow" href="insights/index.html"></a>
+       What stood here was three small tiles reading Moving, Stopped and Need
+       attention, then one instruction card. That is a dispatcher's screen. The
+       person this demonstration is being built for is a managing director, and her
+       first three questions are not those: is the business all right right now,
+       what is it owed and how much of that has gone wrong, and who does the month
+       actually depend on.
+
+       Everything below is DRAWN. A quantity is a length, never a digit in a box,
+       because a director reads a shape in a second and a number in four. Every bar
+       sits inside something she can open, because a number nobody can open is a
+       poster. -->
+  <section class="md" id="md" aria-label="The state of the business right now"></section>
 
   <div class="sec"><h2>Quick access</h2><span id="qaRole">tap to open</span></div>
   <div class="quick" id="quick"></div>
@@ -957,7 +1243,11 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
       name = clean(localStorage.getItem(KEY));
     } catch (e) {}
     var d = new Date();
-    document.getElementById('today').textContent =
+    /* GUARDED, because the element it wrote into was deleted with the greeting on
+       16 September and this line has thrown on every load since, silently taking
+       the settings sheet and the high contrast switch down with it. */
+    var todayEl = document.getElementById('today');
+    if (todayEl) todayEl.textContent =
       ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()] + ' ' + d.getDate() + ' ' +
       ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][d.getMonth()];
     var copy = { dawn: ['This morning', 'What the system saw while you slept'], morning: ['This morning', 'What the system saw while you slept'],
