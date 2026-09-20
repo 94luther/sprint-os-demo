@@ -389,7 +389,9 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
    a stripe down the leading edge rather than by a filled panel, because a filled
    panel fights the glass behind it and a stripe does not. */
 .md-state{padding:0}
-.md-body{padding:18px 18px 16px}
+.md-body{display:block;padding:18px 18px 16px;color:inherit}
+.md-skylink{display:block;position:relative;color:inherit}
+.md-skylink:active{opacity:.88}
 /* THE MAP IS THE TOP OF THE CARD. It keeps the country's own proportions rather
    than being squeezed to a band, because a squashed Botswana is worse than no
    Botswana, and it is capped so the verdict underneath still clears the fold on
@@ -997,20 +999,28 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
 
        The map fills the top of the verdict card rather than sitting in a card of
        its own, so the state of the business is written ON the picture of it. */
-    out.push('<a class="md-card md-state v-' + v[1] + '" href="' +
-      esc((pick && pick.destination) || 'insights/index.html') + '">');
+    /* TWO LINKS, NOT ONE, and it is the phone that forced it. The whole card used
+       to be a single anchor to whatever the top finding was, so tapping the map
+       took you to a tender. A picture of the fleet has to open the fleet. HTML
+       will not nest one anchor inside another, so the card is a plain box holding
+       two of them: the country, and the words. */
+    out.push('<div class="md-card md-state v-' + v[1] + '">');
     if (state.vehicles && state.vehicles.length) {
+      out.push('<a class="md-skylink" href="fleet/index.html" ' +
+               'aria-label="Where every vehicle is right now">');
       out.push('<div class="md-sky" id="mdSky"></div>');
       out.push('<div class="md-age" id="mdAge"></div>');
+      out.push('</a>');
     }
-    out.push('<div class="md-body">');
+    out.push('<a class="md-body" href="' +
+      esc((pick && pick.destination) || 'insights/index.html') + '">');
     out.push('<div class="md-head"><span class="md-word">' + esc(v[0]) + '</span>' +
              '<span class="md-when">as at ' + esc(clock) + '</span></div>');
     out.push('<p class="md-say">' + esc(headline(pick)) + '</p>');
     if (pick && pick.instruction) {
       out.push('<p class="md-sub">' + esc(pick.instruction) + '</p>');
     }
-    out.push('</div></a>');
+    out.push('</a></div>');
 
     /* The day, in a card of its own now that the hero carries the map. */
     if (day) {
@@ -1149,7 +1159,11 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     try {
       var sky = document.getElementById('mdSky');
       if (sky && window.SprintMap && state.vehicles) {
-        sky.innerHTML = window.SprintMap.draw(state.vehicles, { standing_limit: 20 });
+        /* taps:false, because at this size a per vehicle target measures eight
+           pixels against a 44 pixel floor. The whole picture is the target and it
+           opens the fleet screen, where the map is big enough to tap. */
+        sky.innerHTML = window.SprintMap.draw(state.vehicles,
+          { standing_limit: 20, taps: false });
         window.SprintMap.settle(sky);
         /* THE AGE OF THE DATA, SAID OUT LOUD, under the picture of it. Not the
            age of the redraw. A screen that refreshes every twenty seconds tells
@@ -1601,7 +1615,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
      looks at has said so since 5 September: "The map is the ground, never a
      slide. Where the assets are is zero clicks away, always." It was two taps
      away, on the one page whose job is to be looked at first. -->
-<script src="shared/sprint-map.js?v=3ddc8c70"></script>
+<script src="shared/sprint-map.js?v=7b72074b"></script>
 <script src="shared/sprint-live.js?v=3b2b0dd4"></script>
 <script src="shared/sprint-example.js?v=6cb7f85c"></script>
 <script src="shared/sprint-attention.js?v=6c588aa8"></script>

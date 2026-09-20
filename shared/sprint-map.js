@@ -645,7 +645,20 @@
           'stroke-dasharray="2.6 2.2"/>'
         : '<circle cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="5" fill="' + col +
           '" stroke="rgba(0,0,0,.45)" stroke-width="1"/>');
-      s.push('<circle class="sp-veh-hit" data-veh="' + esc(v.reg) + '" ' +
+      /* TAPS ARE OPTIONAL NOW, AND THE REASON IS ARITHMETIC.
+
+         This disc is r=13 in SVG user units on a 340 by 400 viewBox. Wherever the
+         map renders small, those units shrink with it: measured on a real 430 px
+         handset on 20 September 2026, the vehicle tap target came out EIGHT CSS
+         PIXELS wide against a 44 pixel floor. Nobody can hit a van with a thumb,
+         and the cursor:pointer underneath was advertising that they could.
+
+         A target too small to hit is worse than no target, because the person
+         concludes the app is broken rather than that the dot was decoration. So a
+         small map says taps:false, becomes one honest picture that opens the
+         fleet screen, and per vehicle tapping lives where the map is big enough
+         to deserve it. */
+      if (opts.taps !== false) s.push('<circle class="sp-veh-hit" data-veh="' + esc(v.reg) + '" ' +
         'cx="' + vx.toFixed(1) + '" cy="' + vy.toFixed(1) + '" r="13" fill="transparent" ' +
         'role="button" tabindex="0" aria-label="' + esc(v.reg) + ', ' +
         esc(STATE_WORD[v.state] || v.state) + '"><title>' + esc(v.reg) + ', ' +
