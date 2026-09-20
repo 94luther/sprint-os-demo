@@ -33,6 +33,11 @@
   --shadow-lg:0 30px 70px -30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.18);
   --font:"Segoe UI", Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --r:22px;
+  /* Fast off the mark, a long glide, lands dead flat. Read off linear.app on
+     20 September 2026, where it is the house curve. The flat landing is the
+     whole difference between expensive and cheap: a bounce says look at me,
+     a flat landing says the thing has arrived. */
+  --ease:cubic-bezier(.32,.72,0,1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%}
@@ -449,6 +454,54 @@ html[data-glare="on"] .bar .plus{background:#FFA733;border-color:#123723}
 .md-row svg{width:17px;height:17px;flex:none;stroke:var(--ink-3)}
 .md-more{display:block;padding:12px 0;font-size:12.5px;font-weight:800;color:var(--teal-d);
   border-top:2px solid rgba(255,255,255,.12);margin-top:10px}
+
+/* ---------------------------- MOTION -----------------------------------
+   Only transform and opacity appear below. Those two are the only properties a
+   graphics chip carries on its own; everything else makes the processor repaint,
+   and a repainting screen on a telephone is the stutter people call cheap.
+
+   Every animation uses `backwards` rather than `both`. backwards holds the
+   STARTING state during the delay and then hands the element back to its natural
+   state when it finishes, so the :active press still works afterwards. `both`
+   would pin the end state permanently and quietly kill every press on the card. */
+@keyframes mdRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes mdWipe{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes mdBreathe{0%,100%{opacity:.55}50%{opacity:1}}
+
+/* THE STAGGER IS A READING ORDER. Seventy milliseconds apart, which is long
+   enough for the eye to register a sequence and short enough that the whole band
+   has landed in under a second. */
+.md > *{animation:mdRise .52s var(--ease) backwards}
+.md > *:nth-child(1){animation-delay:.02s}
+.md > *:nth-child(2){animation-delay:.09s}
+.md > *:nth-child(3){animation-delay:.16s}
+.md > *:nth-child(4){animation-delay:.23s}
+
+/* THE BAR IS BEING DRAWN, not revealed. scaleX from the left edge, starting after
+   its own card has landed, so the quantity is measured out in front of her. */
+.md-bar{transform-origin:left center;animation:mdWipe .78s var(--ease) .30s backwards}
+.md-card:nth-child(2) .md-bar{animation-delay:.37s}
+.md-card:nth-child(3) .md-bar{animation-delay:.44s}
+
+/* THE STRIPE BREATHES ONLY WHEN SOMETHING IS WRONG. On a steady morning it sits
+   perfectly still. A pulse that runs whatever the news is teaches a person to
+   stop seeing it, which is how an alarm becomes wallpaper. 2.8s is the ambient
+   rate, slow enough to read as breathing rather than as blinking. */
+.md-state.v-bad::before,.md-state.v-warn::before{animation:mdBreathe 2.8s ease-in-out infinite}
+
+/* The rows arrive after the card they live in, each one a little behind the last,
+   so a list of three reads as three things and not as a block of text. */
+.md-next .md-row{animation:mdRise .44s var(--ease) backwards}
+.md-next .md-row:nth-of-type(1){animation-delay:.30s}
+.md-next .md-row:nth-of-type(2){animation-delay:.37s}
+.md-next .md-row:nth-of-type(3){animation-delay:.44s}
+
+/* Not a courtesy. A moving screen is genuinely unusable for some people, and the
+   counting figures are switched off in the script by the same query. */
+@media (prefers-reduced-motion: reduce){
+  .md > *,.md-bar,.md-next .md-row{animation:none !important}
+  .md-state::before{animation:none !important}
+}
 
 @media (max-width:359px){
   .md-say{font-size:19px}
@@ -952,7 +1005,17 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
        The roles named here are the ones this system actually has: admin, staff,
        ops, accounts, manager, driver. A branch was once written in this very file
        for a role called sales, which does not exist, and it sat dead for days. */
-    var SEES_MONEY = { admin: 1, accounts: 1, manager: 1 };
+    /* AND unknown, WHICH IS THE ONE THAT NEARLY BROKE THIS. apps/shared/sprint-roles.js
+       states its own contract in writing: its default is "unknown", and "the page
+       consuming this file is expected to treat unknown exactly like manager or
+       admin: show the full, unchanged tile set... Fail open on an unknown role."
+
+       A phone that has never signed in gets unknown, which is every phone opening
+       the demonstration link. Gating the money closed on unknown meant the two
+       cards built for the managing director were invisible to the managing
+       director, and the page would have looked complete while missing its point.
+       Found by loading it, not by reading it, which is becoming the pattern. */
+    var SEES_MONEY = { admin: 1, accounts: 1, manager: 1, unknown: 1 };
     var money_ok = !!SEES_MONEY[role];
 
     var cash = money_ok ? (state.cash || null) : null;
@@ -1033,6 +1096,67 @@ html[data-glare="on"] .find-fab{box-shadow:0 0 0 3px #0E2F22}
     }
 
     md.innerHTML = out.join('');
+    countUp(md);
+  }
+
+  /* THE FIGURES COUNT UP, BECAUSE THE QUANTITY IS ACCUMULATING.
+
+     A number arriving digit by digit is the one thing on a screen a person cannot
+     look away from, and it is honest here rather than a trick: P52.4k really is a
+     total of invoices, and 58 per cent really is a sum of customers. Watching it
+     assemble is watching the thing it is made of.
+
+     It runs on the same curve as everything else and finishes in seven hundred
+     milliseconds, which is fast enough that nobody waiting for the real figure is
+     kept from it. The final frame writes the ORIGINAL TEXT back, character for
+     character, so no rounding introduced by the animation can ever survive on
+     screen as a fact. A counter that lands on a number slightly different from
+     the truth is worse than no counter at all. */
+  function countUp(root) {
+    var still = false;
+    try { still = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    if (still) return;
+    var figs = root.querySelectorAll('.md-fig');
+    for (var i = 0; i < figs.length; i++) (function (el, idx) {
+      var final = el.innerHTML;
+      var text = el.textContent || '';
+      var m = /(-?[\d.]+)/.exec(text);
+      if (!m) return;
+      var target = Number(m[1]);
+      if (!isFinite(target) || target <= 0) return;
+      var decimals = (m[1].split('.')[1] || '').length;
+      var before = text.slice(0, m.index), after = text.slice(m.index + m[1].length);
+      var t0 = null, dur = 700, wait = 260 + idx * 90, done = false;
+      /* the same shape as the css curve, close enough that the eye reads one system */
+      function ease(p) { return 1 - Math.pow(1 - p, 3); }
+      function settle() { if (!done) { done = true; el.innerHTML = final; } }
+      function frame(ts) {
+        if (done) return;
+        if (t0 === null) {
+          /* THE ZERO IS WRITTEN HERE AND NOWHERE ELSE, inside the first frame that
+             actually ran. Writing it before scheduling would mean a browser that
+             throttles or never delivers a frame, a background tab, a rendering
+             engine under virtual time, a phone that sleeps mid load, leaves
+             P0.0k sitting on screen as though the company were owed nothing.
+
+             This application has a standing rule that a zero is a claim and an
+             unproven one is never printed. An animation is not a licence to break
+             it. The truth is never destroyed in the hope that something will come
+             back and restore it. */
+          t0 = ts;
+          el.textContent = before + (0).toFixed(decimals) + after;
+        }
+        var p = (ts - t0 - wait) / dur;
+        if (p < 0) { requestAnimationFrame(frame); return; }
+        if (p >= 1) { settle(); return; }
+        el.textContent = before + (target * ease(p)).toFixed(decimals) + after;
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+      /* And a second way home. If frames stop arriving halfway, the real figure
+         still lands, because the figure matters and the animation does not. */
+      setTimeout(settle, wait + dur + 400);
+    })(figs[i], i);
   }
 
   /* Four shortcuts, for a role that actually exists. */
